@@ -1,0 +1,186 @@
+import React, { useState, useRef, memo } from 'react';
+import { Trash2, Check } from 'lucide-react';
+import { WorkoutItem } from '../types';
+import { Card } from './ui/Card';
+import { Timer } from './Timer';
+import { cn, vibrate } from '../utils';
+
+interface WorkoutSectionProps {
+  title: string;
+  items: WorkoutItem[];
+  timerMs: number;
+  notes: string;
+  onToggleItem: (id: string, isDone: boolean) => void;
+  onDeleteItem: (id: string) => void;
+  onUpdateTimer: (ms: number) => void;
+  onUpdateNotes: (text: string) => void;
+  headerExtra?: React.ReactNode;
+}
+
+// Internal component for handling swipe logic - MEMOIZED for performance
+const SwipeableWorkoutItem: React.FC<{ 
+  item: WorkoutItem; 
+  onToggle: (id: string, done: boolean) => void;
+  onDelete: (id: string) => void; 
+}> = memo(({ item, onToggle, onDelete }) => {
+  const [translateX, setTranslateX] = useState(0);
+  const startX = useRef<number | null>(null);
+  const isDragging = useRef(false);
+
+  const DELETE_THRESHOLD = -60; 
+  const MAX_SWIPE = -100;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startX.current = e.touches[0].clientX;
+    isDragging.current = true;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!startX.current) return;
+    const currentX = e.touches[0].clientX;
+    const diff = currentX - startX.current;
+
+    if (diff < 0) {
+      setTranslateX(Math.max(diff, MAX_SWIPE));
+    } else if (diff > 0 && translateX < 0) {
+       setTranslateX(Math.min(0, translateX + diff));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    isDragging.current = false;
+    startX.current = null;
+
+    if (translateX < DELETE_THRESHOLD) {
+      setTranslateX(MAX_SWIPE); 
+    } else {
+      setTranslateX(0); 
+    }
+  };
+
+  const handleDeleteClick = () => {
+    vibrate(10);
+    if (window.confirm("Delete this item?")) {
+      onDelete(item.id);
+    } else {
+      setTranslateX(0);
+    }
+  };
+
+  const handleToggle = (checked: boolean) => {
+    vibrate(15);
+    onToggle(item.id, checked);
+  };
+
+  return (
+    <div className="relative overflow-hidden rounded-xl mb-3 group">
+      {/* Background Layer (Delete Button) */}
+      <div className="absolute inset-0 bg-red-500/10 flex items-center justify-end pr-5 rounded-xl border border-red-500/20">
+        <button 
+          onClick={handleDeleteClick}
+          className="text-red-400 font-bold text-xs uppercase flex items-center gap-1 active:scale-95 transition-transform"
+        >
+          <Trash2 size={16} />
+          Delete
+        </button>
+      </div>
+
+      {/* Foreground Layer (Content) */}
+      <label 
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        style={{ 
+          transform: `translateX(${translateX}px)`,
+          transition: isDragging.current ? 'none' : 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' 
+        }}
+        className={cn(
+          "relative flex items-start gap-4 p-4 rounded-xl border transition-all duration-300 cursor-pointer select-none z-10",
+          item.done 
+            ? "bg-surface/30 border-transparent opacity-60 backdrop-blur-sm" 
+            : "bg-surfaceHighlight/40 border-white/5 hover:border-primary/30 hover:bg-surfaceHighlight/60 backdrop-blur-md shadow-sm"
+        )}
+      >
+        <div className="pt-0.5 shrink-0 relative">
+           <input 
+            type="checkbox" 
+            checked={item.done}
+            onChange={(e) => handleToggle(e.target.checked)}
+            className="peer sr-only" // Hide default checkbox
+          />
+          {/* Custom Checkbox UI */}
+          <div className={cn(
+            "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300",
+            item.done 
+              ? "bg-primary border-primary text-white scale-110" 
+              : "border-slate-500 bg-transparent"
+          )}>
+            {item.done && <Check size={14} strokeWidth={3} />}
+          </div>
+        </div>
+       
+        <div className="flex-1 pointer-events-none"> 
+          <div className={cn("text-base font-medium leading-snug transition-colors", item.done ? "line-through text-slate-500" : "text-slate-100")}>
+            {item.text}
+          </div>
+          {item.target && (
+            <div className="text-xs font-medium text-accent/80 mt-1.5 flex items-center gap-1">
+              <span className="w-1 h-1 rounded-full bg-accent inline-block" />
+              {item.target}
+            </div>
+          )}
+        </div>
+      </label>
+    </div>
+  );
+});
+
+export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
+  title,
+  items,
+  timerMs,
+  notes,
+  onToggleItem,
+  onDeleteItem,
+  onUpdateTimer,
+  onUpdateNotes,
+  headerExtra
+}) => {
+  return (
+    <Card 
+      title={title}
+      headerAction={<div className="flex items-center gap-2">{headerExtra}<Timer initialMs={timerMs} onSave={onUpdateTimer} /></div>}
+      className="h-full flex flex-col"
+    >
+      <div className="flex-1 mb-6">
+        {items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-slate-500 border-2 border-dashed border-white/5 rounded-2xl bg-white/5">
+            <div className="text-sm font-medium">No items yet</div>
+            <div className="text-xs opacity-60 mt-1">Load a template to get started</div>
+          </div>
+        ) : (
+          items.map((item) => (
+            <SwipeableWorkoutItem 
+              key={item.id} 
+              item={item} 
+              onToggle={onToggleItem} 
+              onDelete={onDeleteItem}
+            />
+          ))
+        )}
+      </div>
+
+      <div className="mt-auto">
+        <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider pl-1">
+          Session Notes
+        </label>
+        <textarea
+          value={notes}
+          onChange={(e) => onUpdateNotes(e.target.value)}
+          placeholder="Log weights, feelings, or adjustments..."
+          className="w-full bg-black/20 border border-white/10 rounded-xl p-4 text-sm text-slate-200 placeholder:text-slate-600 focus:ring-2 focus:ring-primary/50 focus:border-transparent outline-none resize-none h-24 transition-all"
+        />
+      </div>
+    </Card>
+  );
+};

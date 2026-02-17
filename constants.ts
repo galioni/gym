@@ -1,0 +1,68 @@
+import { Templates, SessionType } from './types';
+
+export const STORAGE_KEY = "daily-workout-tracker:v2";
+
+export const SESSION_OPTIONS: { value: SessionType; label: string }[] = [
+  { value: 'tennis', label: 'Tennis day (warm-up + strength mini)' },
+  { value: 'gym', label: 'Gym day (full session)' },
+  { value: 'swim', label: 'Swim day (short warm-up)' },
+  { value: 'rest', label: 'Rest / Recovery' },
+];
+
+export const TEMPLATES: Templates = {
+  tennis: {
+    warmup: [
+      { text: "2–3 min brisk walk / light jog", target: "Raise heart rate" },
+      { text: "Joint prep: ankles, hips, T-spine (30–60s)", target: "Loosen up" },
+      { text: "Dynamic legs: leg swings + lunges (2 x 6 each)", target: "Open hips" },
+      { text: "Shoulder prep: arm circles + band pull-aparts (2 x 10)", target: "Shoulders ready" },
+      { text: "Wrist/forearm prep (30–60s)", target: "Tennis comfort" },
+      { text: "Easy shadow swings (1–2 min)", target: "Groove form" }
+    ],
+    main: [
+      { text: "Strength mini (30 min): squat pattern", target: "2–3 sets" },
+      { text: "Strength mini: hinge pattern", target: "2–3 sets" },
+      { text: "Strength mini: push (press)", target: "2–3 sets" },
+      { text: "Strength mini: pull (row)", target: "2–3 sets" },
+      { text: "Core: plank / deadbug", target: "2–3 sets" },
+      { text: "Tennis session (60 min)", target: "Focus: consistency" },
+      { text: "Cool-down: walk + light stretch (5 min)", target: "Downshift" }
+    ]
+  },
+
+  gym: {
+    warmup: [
+      { text: "5 min easy cardio (walk/bike)", target: "Warm body" },
+      { text: "Mobility: hips + T-spine (2–3 min)", target: "Move well" },
+      { text: "2 ramp-up sets for first lift", target: "Prepare load" }
+    ],
+    main: [
+      { text: "Main lift A (compound)", target: "3 working sets" },
+      { text: "Main lift B (compound)", target: "3 working sets" },
+      { text: "Accessory 1", target: "2–3 sets" },
+      { text: "Accessory 2", target: "2–3 sets" },
+      { text: "Core", target: "2–3 sets" },
+      { text: "Optional: 10 min Zone 2", target: "Easy pace" },
+      { text: "Cool-down (5 min)", target: "Stretch / breathe" }
+    ]
+  },
+
+  swim: {
+    warmup: [
+      { text: "2–3 min brisk walk", target: "Warm body" },
+      { text: "Shoulders: circles + light band work (2 x 10)", target: "Protect shoulders" }
+    ],
+    main: [
+      { text: "Swim (30 min)", target: "Easy/moderate" },
+      { text: "Cool-down: easy float / stretch", target: "Relax" }
+    ]
+  },
+
+  rest: {
+    warmup: [],
+    main: [
+      { text: "10–20 min walk", target: "Recovery" },
+      { text: "5–10 min mobility", target: "Loosen up" }
+    ]
+  }
+};
