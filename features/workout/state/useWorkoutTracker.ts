@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { WorkoutDataService } from "../../../application/workout/WorkoutDataService";
 import { DayData, SessionType, Templates } from "../../../types";
-import { createEmptyDay } from "../../../utils";
+import { createEmptyDay, fromLocalDateKey, toLocalDateKey } from "../../../utils";
 import {
   applyDayUpdates,
   clearDayKeepingSession,
@@ -35,8 +35,7 @@ interface UseWorkoutTrackerResult {
  */
 export function useWorkoutTracker(service: WorkoutDataService, templates: Templates): UseWorkoutTrackerResult {
   const [currentDate, setCurrentDate] = useState<string>(() => {
-    const now = new Date();
-    return now.toISOString().split("T")[0];
+    return toLocalDateKey(new Date());
   });
   const [allData, setAllData] = useState<Record<string, DayData>>({});
   const [isLoaded, setIsLoaded] = useState(false);
@@ -179,14 +178,13 @@ export function useWorkoutTracker(service: WorkoutDataService, templates: Templa
   }, [currentDate, currentDay.sessionType, updateDay, templates]);
 
   const jumpToToday = useCallback(() => {
-    const now = new Date();
-    setCurrentDate(now.toISOString().split("T")[0]);
+    setCurrentDate(toLocalDateKey(new Date()));
   }, []);
 
   const duplicatePreviousDayNotesAndWeight = useCallback(() => {
-    const current = new Date(`${currentDate}T00:00:00`);
+    const current = fromLocalDateKey(currentDate);
     current.setDate(current.getDate() - 1);
-    const previousDateKey = current.toISOString().split("T")[0];
+    const previousDateKey = toLocalDateKey(current);
     const previousDay = allData[previousDateKey];
     if (!previousDay) {
       return false;

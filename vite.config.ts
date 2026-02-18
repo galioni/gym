@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   // This MUST match your repository name on GitHub
   // If your repo is https://github.com/galioni/gym, the base is '/gym/'
-  base: '/gym/', 
+  base: '', 
   build: {
     outDir: 'dist',
     assetsDir: 'assets',

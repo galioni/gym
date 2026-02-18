@@ -3,7 +3,7 @@ import { Menu, X, Calendar, Activity, RefreshCw, Download, Upload, Crosshair } f
 import { SessionType } from '../types';
 import { SESSION_OPTIONS } from '../constants';
 import { Button } from './ui/Button';
-import { cn } from '../utils';
+import { cn, fromLocalDateKey } from '../utils';
 import { useBackupIO } from '../features/session-controls/hooks/useBackupIO';
 import { APP_THEME_OPTIONS, AppTheme } from '../features/theme/constants/themeOptions';
 
@@ -32,7 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   const { fileInputRef, exportBackup, openImportPicker, handleImportFileChange } = useBackupIO();
 
   // Helper to format date for display
-  const formattedDate = new Date(currentDate).toLocaleDateString('en-GB', { 
+  const formattedDate = fromLocalDateKey(currentDate).toLocaleDateString('en-GB', {
     weekday: 'short', 
     day: 'numeric', 
     month: 'short' 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SyncService } from "../../../application/sync/SyncService";
 import {
   ConflictResolution,
@@ -34,14 +34,26 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
   const [conflicts, setConflicts] = useState<SyncConflict[]>([]);
   const [restorePoints, setRestorePoints] = useState<SyncRestorePoint[]>([]);
   const [syncMessage, setSyncMessage] = useState("");
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       const loaded = await service.getSettings();
       if (!cancelled) {
+        const loadedRestorePoints = await service.getRestorePoints();
+        if (cancelled || !mountedRef.current) {
+          return;
+        }
         setSettings(loaded);
-        setRestorePoints(await service.getRestorePoints());
+        setRestorePoints(loadedRestorePoints);
       }
     };
     void load();
@@ -53,6 +65,9 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
   const setMode = useCallback(
     async (mode: SyncMode) => {
       const next = await service.setMode(mode);
+      if (!mountedRef.current) {
+        return;
+      }
       setSettings(next);
       setConflicts([]);
       setSyncMessage("");
@@ -68,10 +83,15 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
     ) => {
       setIsSyncing(true);
       const result = await service.syncNow(resolution);
+      const loadedSettings = await service.getSettings();
+      const loadedRestorePoints = await service.getRestorePoints();
+      if (!mountedRef.current) {
+        return result;
+      }
       setSyncMessage(result.message);
       setConflicts(result.conflicts);
-      setSettings(await service.getSettings());
-      setRestorePoints(await service.getRestorePoints());
+      setSettings(loadedSettings);
+      setRestorePoints(loadedRestorePoints);
       setIsSyncing(false);
       return result;
     },
@@ -80,9 +100,14 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
   const rollbackToRestorePoint = useCallback(
     async (id: string) => {
       const result = await service.rollbackToRestorePoint(id);
+      const loadedSettings = await service.getSettings();
+      const loadedRestorePoints = await service.getRestorePoints();
+      if (!mountedRef.current) {
+        return result;
+      }
       setSyncMessage(result.message);
-      setSettings(await service.getSettings());
-      setRestorePoints(await service.getRestorePoints());
+      setSettings(loadedSettings);
+      setRestorePoints(loadedRestorePoints);
       return result;
     },
     [service]

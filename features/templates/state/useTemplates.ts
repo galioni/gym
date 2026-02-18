@@ -7,6 +7,7 @@ import { TemplateValidationError, validateTemplateRows } from "../../../applicat
 interface UseTemplatesResult {
   templates: Templates;
   isLoaded: boolean;
+  lastError: string | null;
   saveSectionTemplate: (
     session: SessionType,
     section: keyof TemplateData,
@@ -22,6 +23,7 @@ interface UseTemplatesResult {
 export function useTemplates(service: TemplateService): UseTemplatesResult {
   const [templates, setTemplates] = useState<Templates>(TEMPLATES);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
   const [history, setHistory] = useState<
     Record<SessionType, Partial<Record<keyof TemplateData, TemplateData[keyof TemplateData]>>>
   >({
@@ -62,6 +64,7 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
         return validationErrors;
       }
 
+      setLastError(null);
       setTemplates((previous) => {
         setHistory((historyState) => ({
           ...historyState,
@@ -78,7 +81,10 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
             [section]: rows,
           },
         };
-        void service.saveTemplates(next);
+        void service.saveTemplates(next).catch((error) => {
+          console.error("Failed to save templates", error);
+          setLastError("Failed to save template changes.");
+        });
         return next;
       });
       return [];
@@ -93,6 +99,7 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
         return;
       }
 
+      setLastError(null);
       setTemplates((current) => {
         const next = {
           ...current,
@@ -101,7 +108,10 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
             [section]: previousValue.map((row) => ({ ...row })),
           },
         };
-        void service.saveTemplates(next);
+        void service.saveTemplates(next).catch((error) => {
+          console.error("Failed to save templates", error);
+          setLastError("Failed to save template changes.");
+        });
         return next;
       });
 
@@ -118,6 +128,7 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
 
   const resetSectionTemplate = useCallback(
     (session: SessionType, section: keyof TemplateData) => {
+      setLastError(null);
       setTemplates((current) => {
         setHistory((historyState) => ({
           ...historyState,
@@ -134,12 +145,15 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
             [section]: service.getDefaultSection(session, section),
           },
         };
-        void service.saveTemplates(next);
+        void service.saveTemplates(next).catch((error) => {
+          console.error("Failed to save templates", error);
+          setLastError("Failed to save template changes.");
+        });
         return next;
       });
     },
     [service]
   );
 
-  return { templates, isLoaded, saveSectionTemplate, undoSectionTemplate, resetSectionTemplate };
+  return { templates, isLoaded, lastError, saveSectionTemplate, undoSectionTemplate, resetSectionTemplate };
 }

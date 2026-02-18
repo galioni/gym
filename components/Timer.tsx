@@ -13,10 +13,12 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, onSave }) => {
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(0);
+  const msRef = useRef(initialMs);
 
   // Sync with prop changes (e.g., date change)
   useEffect(() => {
     setMs(initialMs);
+    msRef.current = initialMs;
     setIsRunning(false);
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -29,7 +31,11 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, onSave }) => {
     const delta = now - lastTimeRef.current;
     lastTimeRef.current = now;
     
-    setMs(prev => prev + delta);
+    setMs((previous) => {
+      const next = previous + delta;
+      msRef.current = next;
+      return next;
+    });
   }, []);
 
   const toggle = () => {
@@ -40,7 +46,7 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, onSave }) => {
         intervalRef.current = null;
       }
       setIsRunning(false);
-      onSave(ms);
+      onSave(msRef.current);
     } else {
       // Start
       lastTimeRef.current = Date.now();
@@ -56,6 +62,7 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, onSave }) => {
     }
     setIsRunning(false);
     setMs(0);
+    msRef.current = 0;
     onSave(0);
   };
 
@@ -68,13 +75,13 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, onSave }) => {
     };
   }, []);
 
-  // Auto-save periodically if running to prevent massive data loss on crash
+  // Keep one autosave interval while running; msRef avoids effect churn on each tick.
   useEffect(() => {
     if (isRunning) {
-      const saveInterval = setInterval(() => onSave(ms), 5000);
+      const saveInterval = setInterval(() => onSave(msRef.current), 5000);
       return () => clearInterval(saveInterval);
     }
-  }, [isRunning, ms, onSave]);
+  }, [isRunning, onSave]);
 
   return (
     <div className="flex items-center gap-2 bg-background/60 p-1.5 rounded-xl border border-white/10">

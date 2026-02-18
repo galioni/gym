@@ -2,9 +2,10 @@ import {
   SyncSettings,
   SyncSettingsRepository,
 } from "../../interfaces/sync/SyncSettingsRepository";
-
-const SYNC_SETTINGS_KEY = "daily-workout-tracker:sync-settings:v1";
-const SYNC_RESTORE_POINTS_KEY = "daily-workout-tracker:sync-restore-points:v1";
+import {
+  SYNC_RESTORE_POINTS_STORAGE_KEY,
+  SYNC_SETTINGS_STORAGE_KEY,
+} from "../../constants";
 
 /**
  * Local persistence for sync mode/status metadata.
@@ -13,7 +14,7 @@ export class LocalStorageSyncSettingsRepository
   implements SyncSettingsRepository
 {
   public async readSettings(): Promise<SyncSettings> {
-    const raw = localStorage.getItem(SYNC_SETTINGS_KEY);
+    const raw = localStorage.getItem(SYNC_SETTINGS_STORAGE_KEY);
     if (!raw) {
       return { mode: "local", lastSyncedAt: null, lastError: null };
     }
@@ -31,7 +32,7 @@ export class LocalStorageSyncSettingsRepository
   }
 
   public async writeSettings(settings: SyncSettings): Promise<void> {
-    localStorage.setItem(SYNC_SETTINGS_KEY, JSON.stringify(settings));
+    localStorage.setItem(SYNC_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
   }
 
   public async readRestorePoints(): Promise<
@@ -42,7 +43,7 @@ export class LocalStorageSyncSettingsRepository
       templates: unknown;
     }>
   > {
-    const raw = localStorage.getItem(SYNC_RESTORE_POINTS_KEY);
+    const raw = localStorage.getItem(SYNC_RESTORE_POINTS_STORAGE_KEY);
     if (!raw) {
       return [];
     }
@@ -67,6 +68,6 @@ export class LocalStorageSyncSettingsRepository
       templates: unknown;
     }>
   ): Promise<void> {
-    localStorage.setItem(SYNC_RESTORE_POINTS_KEY, JSON.stringify(points));
+    localStorage.setItem(SYNC_RESTORE_POINTS_STORAGE_KEY, JSON.stringify(points));
   }
 }

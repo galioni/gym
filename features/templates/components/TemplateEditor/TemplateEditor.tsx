@@ -12,6 +12,7 @@ import { TemplateValidationError } from "../../../../application/workout/templat
 
 interface TemplateEditorProps {
   templates: Templates;
+  saveError: string | null;
   onSaveSection: (
     session: SessionType,
     section: keyof TemplateData,
@@ -23,6 +24,7 @@ interface TemplateEditorProps {
 
 export const TemplateEditor: React.FC<TemplateEditorProps> = ({
   templates,
+  saveError,
   onSaveSection,
   onUndoSection,
   onResetSection,
@@ -117,6 +119,11 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
       {errors.length > 0 && (
         <div className="mb-3 rounded-xl border border-danger/40 bg-danger/10 p-3 text-xs text-red-200">
           {errors[0].message}
+        </div>
+      )}
+      {saveError && (
+        <div className="mb-3 rounded-xl border border-danger/40 bg-danger/10 p-3 text-xs text-red-200">
+          {saveError}
         </div>
       )}
 
