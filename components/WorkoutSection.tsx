@@ -73,19 +73,17 @@ const SwipeableWorkoutItem: React.FC<{
   };
 
   return (
-    <div className="relative overflow-hidden rounded-xl mb-3 group">
-      {/* Background Layer (Delete Button) */}
-      <div className="absolute inset-0 bg-red-500/10 flex items-center justify-end pr-5 rounded-xl border border-red-500/20">
+    <div className="relative overflow-hidden rounded-2xl mb-3 group">
+      <div className="absolute inset-0 bg-danger/10 flex items-center justify-end pr-5 rounded-2xl border border-danger/30">
         <button 
           onClick={handleDeleteClick}
-          className="text-red-400 font-bold text-xs uppercase flex items-center gap-1 active:scale-95 transition-transform"
+          className="text-red-300 font-bold text-xs uppercase tracking-[0.15em] flex items-center gap-1 active:scale-95 transition-transform"
         >
           <Trash2 size={16} />
           Delete
         </button>
       </div>
 
-      {/* Foreground Layer (Content) */}
       <label 
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -95,10 +93,10 @@ const SwipeableWorkoutItem: React.FC<{
           transition: isDragging.current ? 'none' : 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' 
         }}
         className={cn(
-          "relative flex items-start gap-4 p-4 rounded-xl border transition-all duration-300 cursor-pointer select-none z-10",
+          "relative flex items-start gap-4 p-4 rounded-2xl border transition-all duration-300 cursor-pointer select-none z-10",
           item.done 
-            ? "bg-surface/30 border-transparent opacity-60 backdrop-blur-sm" 
-            : "bg-surfaceHighlight/40 border-white/5 hover:border-primary/30 hover:bg-surfaceHighlight/60 backdrop-blur-md shadow-sm"
+            ? "bg-surface/35 border-transparent opacity-60 backdrop-blur-sm" 
+            : "bg-surfaceHighlight/45 border-white/10 hover:border-primary/40 hover:bg-surfaceHighlight/75 backdrop-blur-md shadow-md shadow-black/20"
         )}
       >
         <div className="pt-0.5 shrink-0 relative">
@@ -106,9 +104,8 @@ const SwipeableWorkoutItem: React.FC<{
             type="checkbox" 
             checked={item.done}
             onChange={(e) => handleToggle(e.target.checked)}
-            className="peer sr-only" // Hide default checkbox
+            className="peer sr-only"
           />
-          {/* Custom Checkbox UI */}
           <div className={cn(
             "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300",
             item.done 
@@ -150,11 +147,11 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
     <Card 
       title={title}
       headerAction={<div className="flex items-center gap-2">{headerExtra}<Timer initialMs={timerMs} onSave={onUpdateTimer} /></div>}
-      className="h-full flex flex-col"
+      className="h-full flex flex-col motion-rise"
     >
       <div className="flex-1 mb-6">
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-slate-500 border-2 border-dashed border-white/5 rounded-2xl bg-white/5">
+          <div className="flex flex-col items-center justify-center py-12 text-slate-500 border-2 border-dashed border-white/10 rounded-2xl bg-background/35">
             <div className="text-sm font-medium">No items yet</div>
             <div className="text-xs opacity-60 mt-1">Load a template to get started</div>
           </div>
@@ -171,14 +168,14 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
       </div>
 
       <div className="mt-auto">
-        <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider pl-1">
+        <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-[0.2em] pl-1">
           Session Notes
         </label>
         <textarea
           value={notes}
           onChange={(e) => onUpdateNotes(e.target.value)}
           placeholder="Log weights, feelings, or adjustments..."
-          className="w-full bg-black/20 border border-white/10 rounded-xl p-4 text-sm text-slate-200 placeholder:text-slate-600 focus:ring-2 focus:ring-primary/50 focus:border-transparent outline-none resize-none h-24 transition-all"
+          className="w-full bg-background/40 border border-white/10 rounded-2xl p-4 text-sm text-slate-200 placeholder:text-slate-600 focus:ring-2 focus:ring-primary/50 focus:border-transparent outline-none resize-none h-24 transition-all"
         />
       </div>
     </Card>

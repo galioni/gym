@@ -1,0 +1,145 @@
+import { useCallback, useEffect, useState } from "react";
+import { TemplateService } from "../../../application/workout/TemplateService";
+import { TEMPLATES } from "../../../constants";
+import { SessionType, TemplateData, Templates } from "../../../types";
+import { TemplateValidationError, validateTemplateRows } from "../../../application/workout/templates/templateRules";
+
+interface UseTemplatesResult {
+  templates: Templates;
+  isLoaded: boolean;
+  saveSectionTemplate: (
+    session: SessionType,
+    section: keyof TemplateData,
+    rows: TemplateData[keyof TemplateData]
+  ) => TemplateValidationError[];
+  undoSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
+  resetSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
+}
+
+/**
+ * Manages editable session templates and persists user changes.
+ */
+export function useTemplates(service: TemplateService): UseTemplatesResult {
+  const [templates, setTemplates] = useState<Templates>(TEMPLATES);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [history, setHistory] = useState<
+    Record<SessionType, Partial<Record<keyof TemplateData, TemplateData[keyof TemplateData]>>>
+  >({
+    tennis: {},
+    gym: {},
+    swim: {},
+    rest: {},
+  });
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const load = async () => {
+      try {
+        const loaded = await service.loadTemplates();
+        if (!isCancelled) {
+          setTemplates(loaded);
+        }
+      } catch (error) {
+        console.error("Failed to load templates", error);
+      } finally {
+        if (!isCancelled) {
+          setIsLoaded(true);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      isCancelled = true;
+    };
+  }, [service]);
+
+  const saveSectionTemplate = useCallback(
+    (session: SessionType, section: keyof TemplateData, rows: TemplateData[keyof TemplateData]) => {
+      const validationErrors = validateTemplateRows(rows);
+      if (validationErrors.length > 0) {
+        return validationErrors;
+      }
+
+      setTemplates((previous) => {
+        setHistory((historyState) => ({
+          ...historyState,
+          [session]: {
+            ...historyState[session],
+            [section]: previous[session][section].map((row) => ({ ...row })),
+          },
+        }));
+
+        const next = {
+          ...previous,
+          [session]: {
+            ...previous[session],
+            [section]: rows,
+          },
+        };
+        void service.saveTemplates(next);
+        return next;
+      });
+      return [];
+    },
+    [service]
+  );
+
+  const undoSectionTemplate = useCallback(
+    (session: SessionType, section: keyof TemplateData) => {
+      const previousValue = history[session][section];
+      if (!previousValue) {
+        return;
+      }
+
+      setTemplates((current) => {
+        const next = {
+          ...current,
+          [session]: {
+            ...current[session],
+            [section]: previousValue.map((row) => ({ ...row })),
+          },
+        };
+        void service.saveTemplates(next);
+        return next;
+      });
+
+      setHistory((current) => ({
+        ...current,
+        [session]: {
+          ...current[session],
+          [section]: undefined,
+        },
+      }));
+    },
+    [history, service]
+  );
+
+  const resetSectionTemplate = useCallback(
+    (session: SessionType, section: keyof TemplateData) => {
+      setTemplates((current) => {
+        setHistory((historyState) => ({
+          ...historyState,
+          [session]: {
+            ...historyState[session],
+            [section]: current[session][section].map((row) => ({ ...row })),
+          },
+        }));
+
+        const next = {
+          ...current,
+          [session]: {
+            ...current[session],
+            [section]: service.getDefaultSection(session, section),
+          },
+        };
+        void service.saveTemplates(next);
+        return next;
+      });
+    },
+    [service]
+  );
+
+  return { templates, isLoaded, saveSectionTemplate, undoSectionTemplate, resetSectionTemplate };
+}

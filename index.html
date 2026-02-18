@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="editorial-sport">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -19,7 +19,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -27,18 +27,18 @@
       tailwind.config = {
         theme: {
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
+            sans: ['var(--font-body)'],
           },
           extend: {
             colors: {
-              background: '#0f172a',
-              surface: '#1e293b',
-              surfaceHighlight: '#334155',
-              border: 'rgba(255, 255, 255, 0.08)',
-              primary: '#6366f1',
-              primaryHover: '#4f46e5',
-              accent: '#06b6d4',
-              danger: '#ef4444',
+              background: 'rgb(var(--color-background) / <alpha-value>)',
+              surface: 'rgb(var(--color-surface) / <alpha-value>)',
+              surfaceHighlight: 'rgb(var(--color-surface-highlight) / <alpha-value>)',
+              border: 'rgb(var(--color-border) / var(--border-opacity))',
+              primary: 'rgb(var(--color-primary) / <alpha-value>)',
+              primaryHover: 'rgb(var(--color-primary-hover) / <alpha-value>)',
+              accent: 'rgb(var(--color-accent) / <alpha-value>)',
+              danger: 'rgb(var(--color-danger) / <alpha-value>)',
             },
             spacing: {
               'safe-top': 'env(safe-area-inset-top)',
@@ -51,36 +51,6 @@
         }
       }
     </script>
-    <style>
-      ::-webkit-scrollbar { width: 6px; }
-      ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-      
-      body {
-        -webkit-tap-highlight-color: transparent;
-        padding-top: env(safe-area-inset-top);
-        background-color: #0f172a;
-        background-image: 
-          radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-          radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
-          radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
-        background-attachment: fixed;
-        min-height: 100vh;
-      }
-
-      .glass {
-        background: rgba(30, 41, 59, 0.7);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-      }
-      
-      .glass-panel {
-        background: rgba(15, 23, 42, 0.6);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-      }
-    </style>
   <script type="importmap">
 {
   "imports": {

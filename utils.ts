@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { DayData, SessionType, WorkoutItem } from "./types";
+import { DayData, SessionType, Templates } from "./types";
 import { TEMPLATES } from "./constants";
 
 export function cn(...inputs: ClassValue[]) {
@@ -24,8 +24,8 @@ export function vibrate(pattern: number | number[] = 10) {
   }
 }
 
-export function createEmptyDay(date: string, sessionType: SessionType): DayData {
-  const t = TEMPLATES[sessionType];
+export function createEmptyDay(date: string, sessionType: SessionType, templates: Templates = TEMPLATES): DayData {
+  const t = templates[sessionType];
   return {
     date,
     sessionType,

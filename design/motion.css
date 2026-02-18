@@ -1,0 +1,55 @@
+:root {
+  --motion-enter: 440ms;
+  --motion-stagger-step: 90ms;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sweep-in {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.motion-rise {
+  animation: rise-in var(--motion-enter) var(--ease-standard) both;
+}
+
+.motion-sweep {
+  animation: sweep-in var(--motion-enter) var(--ease-standard) both;
+}
+
+.motion-delay-1 {
+  animation-delay: calc(var(--motion-stagger-step) * 1);
+}
+
+.motion-delay-2 {
+  animation-delay: calc(var(--motion-stagger-step) * 2);
+}
+
+.motion-delay-3 {
+  animation-delay: calc(var(--motion-stagger-step) * 3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-standard: 0ms;
+    --motion-slow: 0ms;
+    --motion-enter: 0ms;
+    --motion-stagger-step: 0ms;
+  }
+}

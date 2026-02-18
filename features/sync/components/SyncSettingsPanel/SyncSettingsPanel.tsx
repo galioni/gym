@@ -1,0 +1,160 @@
+import React, { useMemo, useState } from "react";
+import { RefreshCw } from "lucide-react";
+import { Card } from "../../../../components/ui/Card";
+import { Button } from "../../../../components/ui/Button";
+import {
+  SyncConflict,
+  SyncRestorePoint,
+} from "../../../../application/sync/syncTypes";
+import { SyncMode } from "../../../../interfaces/sync/SyncSettingsRepository";
+
+interface SyncSettingsPanelProps {
+  mode: SyncMode;
+  lastSyncedAt: string | null;
+  lastError: string | null;
+  syncMessage: string;
+  conflicts: SyncConflict[];
+  restorePoints: SyncRestorePoint[];
+  isSyncing: boolean;
+  onModeChange: (mode: SyncMode) => void;
+  onSyncNow: (
+    resolution?: Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
+  ) => Promise<void>;
+  onRollback: (id: string) => Promise<void>;
+}
+
+export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
+  mode,
+  lastSyncedAt,
+  lastError,
+  syncMessage,
+  conflicts,
+  restorePoints,
+  isSyncing,
+  onModeChange,
+  onSyncNow,
+  onRollback,
+}) => {
+  const [resolutions, setResolutions] = useState<
+    Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
+  >({});
+
+  const hasConflicts = conflicts.length > 0;
+  const canResolve = useMemo(
+    () => conflicts.every((conflict) => Boolean(resolutions[conflict.entity])),
+    [conflicts, resolutions]
+  );
+
+  return (
+    <Card
+      className="motion-rise"
+      title="Sync Settings"
+      headerAction={
+        <Button
+          variant="secondary"
+          size="sm"
+          className="gap-2"
+          onClick={() => void onSyncNow(hasConflicts ? resolutions : undefined)}
+          disabled={isSyncing || (hasConflicts && !canResolve)}
+        >
+          <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} />
+          {isSyncing ? "Syncing..." : "Sync Now"}
+        </Button>
+      }
+    >
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <select
+          value={mode}
+          onChange={(event) => onModeChange(event.target.value as SyncMode)}
+          className="bg-background/70 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
+        >
+          <option value="local">Local</option>
+          <option value="cloud">Cloud</option>
+        </select>
+        <div className="text-xs text-slate-400 flex items-center">
+          Last sync: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : "Never"}
+        </div>
+        <div className="text-xs text-slate-400 flex items-center">Mode: {mode.toUpperCase()}</div>
+      </div>
+
+      {syncMessage && (
+        <div className="mb-3 rounded-xl border border-white/10 bg-background/40 p-3 text-xs text-slate-300">
+          {syncMessage}
+        </div>
+      )}
+      {lastError && (
+        <div className="mb-3 rounded-xl border border-danger/40 bg-danger/10 p-3 text-xs text-red-200">
+          {lastError}
+        </div>
+      )}
+
+      {hasConflicts && (
+        <div className="space-y-3">
+          {conflicts.map((conflict) => (
+            <div key={conflict.entity} className="rounded-xl border border-white/10 p-3">
+              <div className="text-sm text-white font-semibold capitalize">
+                {conflict.entity === "workoutData" ? "Workout Data Conflict" : "Template Conflict"}
+              </div>
+              <div className="text-xs text-slate-400 mt-1">
+                Local: {new Date(conflict.localUpdatedAt).toLocaleString()} | Cloud:{" "}
+                {new Date(conflict.cloudUpdatedAt).toLocaleString()}
+              </div>
+              {conflict.previewPaths.length > 0 && (
+                <div className="mt-2 rounded-lg border border-white/10 bg-background/40 p-2">
+                  <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400 mb-1">
+                    Changed Paths
+                  </div>
+                  <ul className="text-xs text-slate-300 space-y-1">
+                    {conflict.previewPaths.map((path) => (
+                      <li key={`${conflict.entity}-${path}`} className="font-mono">
+                        {path}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <div className="mt-2 flex gap-2">
+                <Button
+                  size="sm"
+                  variant={resolutions[conflict.entity] === "keepLocal" ? "primary" : "ghost"}
+                  onClick={() =>
+                    setResolutions((current) => ({ ...current, [conflict.entity]: "keepLocal" }))
+                  }
+                >
+                  Keep Local
+                </Button>
+                <Button
+                  size="sm"
+                  variant={resolutions[conflict.entity] === "keepCloud" ? "primary" : "ghost"}
+                  onClick={() =>
+                    setResolutions((current) => ({ ...current, [conflict.entity]: "keepCloud" }))
+                  }
+                >
+                  Keep Cloud
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {restorePoints.length > 0 && (
+        <div className="mt-4 rounded-xl border border-white/10 p-3">
+          <div className="text-sm text-white font-semibold mb-2">Pre-sync Restore Points</div>
+          <div className="space-y-2">
+            {restorePoints.map((point) => (
+              <div key={point.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/10 p-2">
+                <div className="text-xs text-slate-300">
+                  {new Date(point.createdAt).toLocaleString()}
+                </div>
+                <Button size="sm" variant="ghost" onClick={() => void onRollback(point.id)}>
+                  Rollback
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+};

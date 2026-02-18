@@ -77,15 +77,15 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, onSave }) => {
   }, [isRunning, ms, onSave]);
 
   return (
-    <div className="flex items-center gap-2 bg-surfaceHighlight/50 p-1.5 rounded-lg border border-border/50">
-      <div className="font-mono text-lg font-bold w-[70px] text-center text-primary tabular-nums">
+    <div className="flex items-center gap-2 bg-background/60 p-1.5 rounded-xl border border-white/10">
+      <div className="text-lg font-bold w-[76px] text-center text-primary tabular-nums" style={{ fontFamily: "var(--font-mono)" }}>
         {formatTimer(ms)}
       </div>
       <Button 
         size="icon" 
         variant={isRunning ? "secondary" : "primary"} 
         onClick={toggle}
-        className="h-8 w-8 rounded-md"
+        className="h-8 w-8 rounded-lg"
         title={isRunning ? "Pause" : "Start"}
       >
         {isRunning ? <Pause size={14} /> : <Play size={14} />}
@@ -94,7 +94,7 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, onSave }) => {
         size="icon" 
         variant="ghost" 
         onClick={reset}
-        className="h-8 w-8 rounded-md text-slate-400 hover:text-red-400"
+        className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-300"
         title="Reset"
       >
         <RotateCcw size={14} />

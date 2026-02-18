@@ -1,0 +1,53 @@
+@import "./design/tokens.css";
+@import "./design/themes.css";
+@import "./design/motion.css";
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 10px;
+}
+
+body {
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+  padding-top: env(safe-area-inset-top);
+  background-color: rgb(var(--color-background));
+  background-image:
+    radial-gradient(circle at 0% 0%, rgb(255 122 26 / 0.18), transparent 38%),
+    radial-gradient(circle at 100% 0%, rgb(72 213 151 / 0.15), transparent 40%),
+    linear-gradient(145deg, rgb(9 12 18), rgb(12 16 24) 46%, rgb(8 13 23));
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/*
+ Keep these utility classes in global CSS for Phase 0 so existing components
+ can be migrated incrementally without a visual regression.
+*/
+.glass {
+  background: rgb(var(--color-surface) / var(--glass-surface-opacity));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgb(var(--color-border) / var(--border-opacity));
+  box-shadow: 0 22px 45px rgb(0 0 0 / 0.28);
+}
+
+.glass-panel {
+  background: rgb(var(--color-background) / var(--glass-panel-opacity));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.display-title {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}

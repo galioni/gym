@@ -13,10 +13,10 @@ export const Button: React.FC<ButtonProps> = ({
   ...props 
 }) => {
   const variants = {
-    primary: "bg-gradient-to-r from-primary to-indigo-600 hover:to-indigo-500 text-white shadow-lg shadow-primary/20 border-transparent",
-    secondary: "bg-surfaceHighlight/50 hover:bg-surfaceHighlight text-slate-200 border-border hover:border-slate-500",
-    danger: "bg-danger/10 hover:bg-danger/20 text-red-400 border-danger/20 hover:border-danger/50",
-    ghost: "bg-transparent hover:bg-white/5 text-slate-400 hover:text-white border-transparent"
+    primary: "bg-gradient-to-r from-primary to-primaryHover text-black shadow-lg shadow-primary/25 border-transparent hover:brightness-105",
+    secondary: "bg-surfaceHighlight/55 hover:bg-surfaceHighlight/80 text-slate-100 border-white/10 hover:border-primary/40",
+    danger: "bg-danger/10 hover:bg-danger/20 text-red-300 border-danger/30 hover:border-danger/60",
+    ghost: "bg-transparent hover:bg-white/10 text-slate-400 hover:text-white border-transparent"
   };
 
   const sizes = {

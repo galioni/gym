@@ -1,0 +1,26 @@
+:root {
+  --font-display: "Bebas Neue", "Oswald", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+
+  /* RGB channels are used so Tailwind classes with /opacity continue to work. */
+  --color-background: 12 16 24;
+  --color-surface: 23 29 42;
+  --color-surface-highlight: 35 44 64;
+  --color-border: 255 255 255;
+  --color-primary: 255 122 26;
+  --color-primary-hover: 255 99 0;
+  --color-accent: 72 213 151;
+  --color-danger: 255 84 84;
+
+  --border-opacity: 0.12;
+  --glass-surface-opacity: 0.78;
+  --glass-panel-opacity: 0.66;
+
+  --radius-card: 1.25rem;
+  --radius-control: 0.85rem;
+
+  --motion-standard: 240ms;
+  --motion-slow: 520ms;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
