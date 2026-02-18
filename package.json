@@ -12,13 +12,14 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.400.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^2.3.0",
-    "lucide-react": "^0.400.0"
+    "tailwind-merge": "^2.3.0"
   },
   "devDependencies": {
+    "@types/node": "^25.2.3",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.1",
