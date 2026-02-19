@@ -150,10 +150,17 @@ export class SyncService {
   ): Promise<SyncNowResult> {
     const settings = await this.getSettings();
     if (settings.mode === "local") {
+      // Local mode still records a manual sync checkpoint so "Last sync" reflects user action.
+      const syncedAt = new Date().toISOString();
+      await this.deps.settingsRepository.writeSettings({
+        ...settings,
+        lastSyncedAt: syncedAt,
+        lastError: null,
+      });
       return {
         status: "idle",
         conflicts: [],
-        message: "Sync mode is local. Switch to cloud mode to sync.",
+        message: "Local checkpoint updated.",
       };
     }
 

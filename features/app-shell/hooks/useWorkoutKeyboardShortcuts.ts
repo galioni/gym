@@ -2,8 +2,8 @@ import { useEffect } from "react";
 
 interface UseWorkoutKeyboardShortcutsParams {
   onJumpToday: () => void;
-  onResetFromTemplate: () => void;
-  onDuplicatePreviousDayNotesAndWeight: () => boolean;
+  onLoadTemplate: () => void;
+  onDuplicatePreviousDayNotesAndWeight: () => void;
 }
 
 /**
@@ -11,7 +11,7 @@ interface UseWorkoutKeyboardShortcutsParams {
  */
 export function useWorkoutKeyboardShortcuts({
   onJumpToday,
-  onResetFromTemplate,
+  onLoadTemplate,
   onDuplicatePreviousDayNotesAndWeight,
 }: UseWorkoutKeyboardShortcutsParams): void {
   useEffect(() => {
@@ -39,19 +39,14 @@ export function useWorkoutKeyboardShortcuts({
         onJumpToday();
       } else if (key === "l") {
         event.preventDefault();
-        if (confirm("This will overwrite the current list items. Continue?")) {
-          onResetFromTemplate();
-        }
+        onLoadTemplate();
       } else if (key === "d") {
         event.preventDefault();
-        const duplicated = onDuplicatePreviousDayNotesAndWeight();
-        if (!duplicated) {
-          alert("No previous day data found to duplicate.");
-        }
+        onDuplicatePreviousDayNotesAndWeight();
       }
     };
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onJumpToday, onResetFromTemplate, onDuplicatePreviousDayNotesAndWeight]);
+  }, [onJumpToday, onLoadTemplate, onDuplicatePreviousDayNotesAndWeight]);
 }

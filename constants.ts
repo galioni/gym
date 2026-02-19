@@ -27,10 +27,10 @@ export const TEMPLATES: Templates = {
       { text: "Easy shadow swings (1-2 min)", target: "Groove form" }
     ],
     main: [
-      { text: "Strength mini (30 min): squat pattern", target: "2-3 sets" },
-      { text: "Strength mini: hinge pattern", target: "2-3 sets" },
-      { text: "Strength mini: push (press)", target: "2-3 sets" },
-      { text: "Strength mini: pull (row)", target: "2-3 sets" },
+      { text: "Strength (30 min): squat pattern", target: "2-3 sets" },
+      { text: "Strength hinge pattern", target: "2-3 sets" },
+      { text: "Strength push (press)", target: "2-3 sets" },
+      { text: "Strength pull (row)", target: "2-3 sets" },
       { text: "Core: plank / deadbug", target: "2-3 sets" },
       { text: "Tennis session (60 min)", target: "Focus: consistency" },
       { text: "Cool-down: walk + light stretch (5 min)", target: "Downshift" }

@@ -20,9 +20,9 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const sizes = {
-    sm: "px-3 py-1.5 text-xs",
-    md: "px-5 py-2.5 text-sm",
-    icon: "p-2 aspect-square flex items-center justify-center"
+    sm: "min-h-11 px-3 py-2 text-xs",
+    md: "min-h-11 px-5 py-2.5 text-sm",
+    icon: "h-11 w-11 inline-flex items-center justify-center"
   };
 
   return (

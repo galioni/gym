@@ -2,7 +2,7 @@ import React from "react";
 import { Button } from "../../../../components/ui/Button";
 import { InfoBanner } from "../InfoBanner/InfoBanner";
 import { DayData, SessionType, TemplateData, Templates } from "../../../../types";
-import { SyncConflict, SyncRestorePoint } from "../../../../application/sync/syncTypes";
+import { SyncConflict, SyncNowResult, SyncRestorePoint } from "../../../../application/sync/syncTypes";
 import { SyncMode } from "../../../../interfaces/sync/SyncSettingsRepository";
 import { TemplateValidationError } from "../../../../application/workout/templates/templateRules";
 import { DashboardWorkoutGrid } from "./DashboardWorkoutGrid";
@@ -20,10 +20,10 @@ interface DashboardContentProps {
   restorePoints: SyncRestorePoint[];
   isSyncing: boolean;
   onToggleItem: (section: "warmup" | "main", id: string, done: boolean) => void;
-  onDeleteItem: (section: "warmup" | "main", id: string) => void;
+  onDeleteItem: (section: "warmup" | "main", id: string) => Promise<boolean>;
   onUpdateDay: (updates: Partial<DayData>) => void;
   onUpdateDayDebounced: (updates: Partial<DayData>) => void;
-  onDuplicatePreviousDayNotesAndWeight: () => boolean;
+  onDuplicatePreviousDayNotesAndWeight: () => void;
   onSaveSectionTemplate: (
     session: SessionType,
     section: keyof TemplateData,
@@ -34,8 +34,8 @@ interface DashboardContentProps {
   onSyncModeChange: (mode: SyncMode) => Promise<void>;
   onSyncNow: (
     resolution?: Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
-  ) => Promise<void>;
-  onRollbackSyncPoint: (id: string) => Promise<void>;
+  ) => Promise<SyncNowResult>;
+  onRollbackSyncPoint: (id: string) => Promise<SyncNowResult>;
 }
 
 export const DashboardContent: React.FC<DashboardContentProps> = ({
@@ -63,18 +63,19 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   onRollbackSyncPoint,
 }) => {
   return (
-    <main className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
+    <main
+      className="max-w-4xl mx-auto p-4 md:p-6 space-y-5 sm:space-y-6"
+      style={{ paddingBottom: "calc(var(--sticky-footer-height, 0px) + 1rem)" }}
+    >
       <InfoBanner content={fridayHint} />
 
       <div className="flex items-center justify-end gap-2 motion-rise">
         <Button
           variant="secondary"
           size="sm"
+          className="min-h-11"
           onClick={() => {
-            const duplicated = onDuplicatePreviousDayNotesAndWeight();
-            if (!duplicated) {
-              alert("No previous day data found to duplicate.");
-            }
+            onDuplicatePreviousDayNotesAndWeight();
           }}
         >
           Duplicate Prev Notes/Weight

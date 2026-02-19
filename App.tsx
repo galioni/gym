@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { Header } from "./components/Header";
 import { StickyFooter } from "./components/StickyFooter";
 import { useWorkoutTracker } from "./features/workout/state/useWorkoutTracker";
@@ -11,8 +11,10 @@ import { createWorkoutServices } from "./infrastructure/workout/factory/createWo
 import { useSyncSettings } from "./features/sync/state/useSyncSettings";
 import { useWorkoutKeyboardShortcuts } from "./features/app-shell/hooks/useWorkoutKeyboardShortcuts";
 import { DashboardContent } from "./features/app-shell/components/DashboardContent/DashboardContent";
+import { useFeedback } from "./features/feedback/hooks/useFeedback";
 
 function App() {
+  const { confirm, showToast } = useFeedback();
   const services = useMemo(() => createWorkoutServices(), []);
   const isQAMode = useMemo(() => {
     if (typeof window === "undefined") {
@@ -58,11 +60,82 @@ function App() {
   } = useSyncSettings(services.syncService);
 
   const fridayHint = useMemo(() => getFridayHint(currentDate), [currentDate]);
+  const [stickyFooterHeight, setStickyFooterHeight] = useState(124);
+
+  const appShellStyle = useMemo(
+    () =>
+      ({
+        "--sticky-footer-height": `${stickyFooterHeight}px`,
+      }) as React.CSSProperties,
+    [stickyFooterHeight]
+  );
+
+  const handleLoadTemplate = useCallback(async () => {
+    const confirmed = await confirm({
+      title: "Load session template?",
+      description: "This will overwrite the current workout list for the selected day.",
+      confirmLabel: "Load Template",
+      cancelLabel: "Keep Current",
+      tone: "danger",
+    });
+    if (!confirmed) {
+      return;
+    }
+    resetFromTemplate();
+    showToast({ tone: "success", title: "Template loaded" });
+  }, [confirm, resetFromTemplate, showToast]);
+
+  const handleClearDay = useCallback(async () => {
+    const confirmed = await confirm({
+      title: "Clear all day data?",
+      description: "This removes workout entries, notes, and checks for the selected day.",
+      confirmLabel: "Clear Day",
+      cancelLabel: "Cancel",
+      tone: "danger",
+    });
+    if (!confirmed) {
+      return;
+    }
+    clearCurrentDay();
+    showToast({ tone: "success", title: "Day cleared" });
+  }, [clearCurrentDay, confirm, showToast]);
+
+  const handleDuplicatePreviousDayNotesAndWeight = useCallback(() => {
+    const duplicated = duplicatePreviousDayNotesAndWeight();
+    if (!duplicated) {
+      showToast({
+        tone: "info",
+        title: "Nothing to duplicate",
+        description: "No previous day notes or weight were found.",
+      });
+      return;
+    }
+    showToast({ tone: "success", title: "Previous notes and weight duplicated" });
+  }, [duplicatePreviousDayNotesAndWeight, showToast]);
+
+  const handleDeleteItem = useCallback(
+    async (section: "warmup" | "main", id: string) => {
+      const confirmed = await confirm({
+        title: "Remove exercise?",
+        description: "This action removes the item from your current workout list.",
+        confirmLabel: "Delete",
+        cancelLabel: "Cancel",
+        tone: "danger",
+      });
+      if (!confirmed) {
+        return false;
+      }
+      deleteItem(section, id);
+      showToast({ tone: "info", title: "Exercise removed" });
+      return true;
+    },
+    [confirm, deleteItem, showToast]
+  );
 
   useWorkoutKeyboardShortcuts({
     onJumpToday: jumpToToday,
-    onResetFromTemplate: resetFromTemplate,
-    onDuplicatePreviousDayNotesAndWeight: duplicatePreviousDayNotesAndWeight,
+    onLoadTemplate: () => void handleLoadTemplate(),
+    onDuplicatePreviousDayNotesAndWeight: handleDuplicatePreviousDayNotesAndWeight,
   });
 
   if (!isLoaded || !areTemplatesLoaded) {
@@ -70,17 +143,13 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-slate-200">
+    <div className="min-h-screen bg-background text-slate-200" style={appShellStyle}>
       <Header
         currentDate={currentDate}
         onDateChange={(event) => setCurrentDate(event.target.value)}
         sessionType={currentDay.sessionType}
         onSessionTypeChange={(event) => changeSessionType(event.target.value as SessionType)}
-        onLoadTemplate={() => {
-          if (confirm("This will overwrite the current list items. Continue?")) {
-            resetFromTemplate();
-          }
-        }}
+        onLoadTemplate={() => void handleLoadTemplate()}
         onJumpToday={jumpToToday}
         theme={theme}
         onThemeChange={setTheme}
@@ -99,26 +168,23 @@ function App() {
         restorePoints={restorePoints}
         isSyncing={isSyncing}
         onToggleItem={toggleItem}
-        onDeleteItem={deleteItem}
+        onDeleteItem={handleDeleteItem}
         onUpdateDay={updateDay}
         onUpdateDayDebounced={updateDayDebounced}
-        onDuplicatePreviousDayNotesAndWeight={duplicatePreviousDayNotesAndWeight}
+        onDuplicatePreviousDayNotesAndWeight={handleDuplicatePreviousDayNotesAndWeight}
         onSaveSectionTemplate={saveSectionTemplate}
         onUndoSectionTemplate={undoSectionTemplate}
         onResetSectionTemplate={resetSectionTemplate}
         onSyncModeChange={setSyncMode}
-        onSyncNow={(resolution) => syncNow(resolution).then(() => undefined)}
-        onRollbackSyncPoint={(id) => rollbackToRestorePoint(id).then(() => undefined)}
+        onSyncNow={syncNow}
+        onRollbackSyncPoint={rollbackToRestorePoint}
       />
 
       <StickyFooter
         day={currentDay}
         isSaving={isSaving}
-        onClear={() => {
-          if (confirm("Are you sure you want to clear all data for this day?")) {
-            clearCurrentDay();
-          }
-        }}
+        onClear={() => void handleClearDay()}
+        onHeightChange={setStickyFooterHeight}
       />
 
       {isQAMode && <QASmokePanel />}

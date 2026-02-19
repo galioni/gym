@@ -19,6 +19,7 @@
 
   --radius-card: 1.25rem;
   --radius-control: 0.85rem;
+  --sticky-footer-height: 124px;
 
   --motion-standard: 240ms;
   --motion-slow: 520ms;

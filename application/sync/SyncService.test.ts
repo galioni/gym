@@ -82,6 +82,30 @@ class InMemorySyncSettingsRepository implements SyncSettingsRepository {
 }
 
 describe("SyncService", () => {
+  it("updates lastSyncedAt in local mode when sync is triggered", async () => {
+    const settingsRepository = new InMemorySyncSettingsRepository();
+    settingsRepository.settings = {
+      mode: "local",
+      lastSyncedAt: null,
+      lastError: "Previous cloud error",
+    };
+
+    const service = new SyncService({
+      settingsRepository,
+      localWorkoutRepository: new InMemoryWorkoutRepository(null),
+      localTemplateRepository: new InMemoryTemplateRepository(null),
+      cloudWorkoutRepository: null,
+      cloudTemplateRepository: null,
+    });
+
+    const result = await service.syncNow();
+
+    expect(result.status).toBe("idle");
+    expect(result.message).toBe("Local checkpoint updated.");
+    expect(settingsRepository.settings.lastSyncedAt).toBeTruthy();
+    expect(settingsRepository.settings.lastError).toBeNull();
+  });
+
   it("returns conflict details when snapshots differ and no resolution is provided", async () => {
     const settingsRepository = new InMemorySyncSettingsRepository();
     const localWorkoutRepository = new InMemoryWorkoutRepository({

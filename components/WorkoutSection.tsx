@@ -11,7 +11,7 @@ interface WorkoutSectionProps {
   timerMs: number;
   notes: string;
   onToggleItem: (id: string, isDone: boolean) => void;
-  onDeleteItem: (id: string) => void;
+  onDeleteItem: (id: string) => Promise<boolean>;
   onUpdateTimer: (ms: number) => void;
   onUpdateNotes: (text: string) => void;
   headerExtra?: React.ReactNode;
@@ -21,7 +21,7 @@ interface WorkoutSectionProps {
 const SwipeableWorkoutItem: React.FC<{ 
   item: WorkoutItem; 
   onToggle: (id: string, done: boolean) => void;
-  onDelete: (id: string) => void; 
+  onDelete: (id: string) => Promise<boolean>;
 }> = memo(({ item, onToggle, onDelete }) => {
   const [translateX, setTranslateX] = useState(0);
   const startX = useRef<number | null>(null);
@@ -58,11 +58,14 @@ const SwipeableWorkoutItem: React.FC<{
     }
   };
 
-  const handleDeleteClick = () => {
+  const handleDeleteClick = async () => {
     vibrate(10);
-    if (window.confirm("Delete this item?")) {
-      onDelete(item.id);
-    } else {
+    try {
+      const wasDeleted = await onDelete(item.id);
+      if (wasDeleted) {
+        return;
+      }
+    } finally {
       setTranslateX(0);
     }
   };
@@ -146,7 +149,12 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
   return (
     <Card 
       title={title}
-      headerAction={<div className="flex items-center gap-2">{headerExtra}<Timer initialMs={timerMs} onSave={onUpdateTimer} /></div>}
+      headerAction={
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap sm:justify-end">
+          {headerExtra}
+          <Timer initialMs={timerMs} onSave={onUpdateTimer} />
+        </div>
+      }
       className="h-full flex flex-col motion-rise"
     >
       <div className="flex-1 mb-6">
@@ -168,7 +176,7 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
       </div>
 
       <div className="mt-auto">
-        <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-[0.2em] pl-1">
+        <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-[0.16em] pl-1">
           Session Notes
         </label>
         <textarea

@@ -4,9 +4,11 @@ import { Card } from "../../../../components/ui/Card";
 import { Button } from "../../../../components/ui/Button";
 import {
   SyncConflict,
+  SyncNowResult,
   SyncRestorePoint,
 } from "../../../../application/sync/syncTypes";
 import { SyncMode } from "../../../../interfaces/sync/SyncSettingsRepository";
+import { useFeedback } from "../../../feedback/hooks/useFeedback";
 
 interface SyncSettingsPanelProps {
   mode: SyncMode;
@@ -19,8 +21,8 @@ interface SyncSettingsPanelProps {
   onModeChange: (mode: SyncMode) => void;
   onSyncNow: (
     resolution?: Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
-  ) => Promise<void>;
-  onRollback: (id: string) => Promise<void>;
+  ) => Promise<SyncNowResult>;
+  onRollback: (id: string) => Promise<SyncNowResult>;
 }
 
 export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
@@ -35,6 +37,7 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
   onSyncNow,
   onRollback,
 }) => {
+  const { showToast } = useFeedback();
   const [resolutions, setResolutions] = useState<
     Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
   >({});
@@ -45,6 +48,48 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
     [conflicts, resolutions]
   );
 
+  const toastSyncResult = (result: SyncNowResult) => {
+    if (result.status === "success") {
+      showToast({ tone: "success", title: result.message || "Sync completed" });
+      return;
+    }
+    if (result.status === "conflict") {
+      showToast({
+        tone: "info",
+        title: "Conflict resolution required",
+        description: result.message,
+      });
+      return;
+    }
+    if (result.status === "error") {
+      showToast({ tone: "error", title: "Sync failed", description: result.message });
+    }
+  };
+
+  const handleSyncNow = async () => {
+    try {
+      const result = await onSyncNow(hasConflicts ? resolutions : undefined);
+      toastSyncResult(result);
+    } catch (error) {
+      const description = error instanceof Error ? error.message : "Unexpected sync failure.";
+      showToast({ tone: "error", title: "Sync failed", description });
+    }
+  };
+
+  const handleRollback = async (id: string) => {
+    try {
+      const result = await onRollback(id);
+      if (result.status === "success") {
+        showToast({ tone: "success", title: "Rollback complete" });
+        return;
+      }
+      showToast({ tone: "error", title: "Rollback failed", description: result.message });
+    } catch (error) {
+      const description = error instanceof Error ? error.message : "Unexpected rollback failure.";
+      showToast({ tone: "error", title: "Rollback failed", description });
+    }
+  };
+
   return (
     <Card
       className="motion-rise"
@@ -53,8 +98,8 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
         <Button
           variant="secondary"
           size="sm"
-          className="gap-2"
-          onClick={() => void onSyncNow(hasConflicts ? resolutions : undefined)}
+          className="w-full sm:w-auto min-h-11 gap-2 justify-center"
+          onClick={() => void handleSyncNow()}
           disabled={isSyncing || (hasConflicts && !canResolve)}
         >
           <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} />
@@ -71,10 +116,10 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
           <option value="local">Local</option>
           <option value="cloud">Cloud</option>
         </select>
-        <div className="text-xs text-slate-400 flex items-center">
+        <div className="text-xs text-slate-400 flex items-center break-words">
           Last sync: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : "Never"}
         </div>
-        <div className="text-xs text-slate-400 flex items-center">Mode: {mode.toUpperCase()}</div>
+        <div className="text-xs text-slate-400 flex items-center break-words">Mode: {mode.toUpperCase()}</div>
       </div>
 
       {syncMessage && (
@@ -101,19 +146,19 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
               </div>
               {conflict.previewPaths.length > 0 && (
                 <div className="mt-2 rounded-lg border border-white/10 bg-background/40 p-2">
-                  <div className="text-[11px] uppercase tracking-[0.16em] text-slate-400 mb-1">
+                  <div className="text-[11px] uppercase tracking-[0.12em] text-slate-400 mb-1">
                     Changed Paths
                   </div>
                   <ul className="text-xs text-slate-300 space-y-1">
                     {conflict.previewPaths.map((path) => (
-                      <li key={`${conflict.entity}-${path}`} className="font-mono">
+                      <li key={`${conflict.entity}-${path}`} className="font-mono break-all">
                         {path}
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex flex-wrap gap-2">
                 <Button
                   size="sm"
                   variant={resolutions[conflict.entity] === "keepLocal" ? "primary" : "ghost"}
@@ -143,11 +188,11 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
           <div className="text-sm text-white font-semibold mb-2">Pre-sync Restore Points</div>
           <div className="space-y-2">
             {restorePoints.map((point) => (
-              <div key={point.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/10 p-2">
+              <div key={point.id} className="flex flex-col items-start gap-2 rounded-lg border border-white/10 p-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-xs text-slate-300">
                   {new Date(point.createdAt).toLocaleString()}
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => void onRollback(point.id)}>
+                <Button size="sm" variant="ghost" onClick={() => void handleRollback(point.id)}>
                   Rollback
                 </Button>
               </div>

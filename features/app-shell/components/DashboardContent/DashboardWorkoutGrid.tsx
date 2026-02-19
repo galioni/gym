@@ -5,7 +5,7 @@ import { DailyCheckCard } from "../../../workout/components/DailyCheckCard/Daily
 import { TemplateEditor } from "../../../templates/components/TemplateEditor/TemplateEditor";
 import { SyncSettingsPanel } from "../../../sync/components/SyncSettingsPanel/SyncSettingsPanel";
 import { DayData, SessionType, TemplateData, Templates } from "../../../../types";
-import { SyncConflict, SyncRestorePoint } from "../../../../application/sync/syncTypes";
+import { SyncConflict, SyncNowResult, SyncRestorePoint } from "../../../../application/sync/syncTypes";
 import { SyncMode } from "../../../../interfaces/sync/SyncSettingsRepository";
 import { TemplateValidationError } from "../../../../application/workout/templates/templateRules";
 
@@ -21,7 +21,7 @@ interface DashboardWorkoutGridProps {
   restorePoints: SyncRestorePoint[];
   isSyncing: boolean;
   onToggleItem: (section: "warmup" | "main", id: string, done: boolean) => void;
-  onDeleteItem: (section: "warmup" | "main", id: string) => void;
+  onDeleteItem: (section: "warmup" | "main", id: string) => Promise<boolean>;
   onUpdateDay: (updates: Partial<DayData>) => void;
   onUpdateDayDebounced: (updates: Partial<DayData>) => void;
   onSaveSectionTemplate: (
@@ -34,8 +34,8 @@ interface DashboardWorkoutGridProps {
   onSyncModeChange: (mode: SyncMode) => Promise<void>;
   onSyncNow: (
     resolution?: Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
-  ) => Promise<void>;
-  onRollbackSyncPoint: (id: string) => Promise<void>;
+  ) => Promise<SyncNowResult>;
+  onRollbackSyncPoint: (id: string) => Promise<SyncNowResult>;
 }
 
 export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
@@ -61,7 +61,7 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
   onRollbackSyncPoint,
 }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 pb-4">
       <div className="motion-rise motion-delay-1">
         <WorkoutSection
           title="Warm-up"
@@ -89,7 +89,7 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
         />
       </div>
 
-      <div className="md:hidden -mt-4 mb-2 flex justify-end">
+      <div className="md:hidden -mt-2 mb-1 flex justify-end">
         <RpeSelect mobile value={currentDay.rpe} onChange={(value) => onUpdateDay({ rpe: value })} />
       </div>
 
@@ -126,8 +126,8 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
           restorePoints={restorePoints}
           isSyncing={isSyncing}
           onModeChange={(mode) => void onSyncModeChange(mode)}
-          onSyncNow={(resolution) => onSyncNow(resolution).then(() => undefined)}
-          onRollback={(id) => onRollbackSyncPoint(id).then(() => undefined)}
+          onSyncNow={onSyncNow}
+          onRollback={onRollbackSyncPoint}
         />
       </div>
     </div>

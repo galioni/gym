@@ -84,8 +84,8 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, onSave }) => {
   }, [isRunning, onSave]);
 
   return (
-    <div className="flex items-center gap-2 bg-background/60 p-1.5 rounded-xl border border-white/10">
-      <div className="text-lg font-bold w-[76px] text-center text-primary tabular-nums" style={{ fontFamily: "var(--font-mono)" }}>
+    <div className="flex w-full items-center justify-between gap-2 bg-background/60 p-1.5 rounded-xl border border-white/10 sm:w-auto sm:justify-start">
+      <div className="text-base sm:text-lg font-bold w-[68px] sm:w-[76px] text-center text-primary tabular-nums" style={{ fontFamily: "var(--font-mono)" }}>
         {formatTimer(ms)}
       </div>
       <Button 

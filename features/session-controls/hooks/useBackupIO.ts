@@ -6,6 +6,7 @@ import {
   TEMPLATE_STORAGE_KEY,
 } from "../../../constants";
 import { toLocalDateKey } from "../../../utils";
+import { useFeedback } from "../../feedback/hooks/useFeedback";
 
 interface UseBackupIOResult {
   fileInputRef: RefObject<HTMLInputElement | null>;
@@ -38,6 +39,7 @@ function isFullBackupEnvelope(value: unknown): value is FullBackupEnvelope {
  */
 export function useBackupIO(): UseBackupIOResult {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { confirm, showToast } = useFeedback();
 
   const exportBackup = () => {
     try {
@@ -48,7 +50,7 @@ export function useBackupIO(): UseBackupIOResult {
         syncRestorePoints: localStorage.getItem(SYNC_RESTORE_POINTS_STORAGE_KEY),
       };
       if (!stores.workout && !stores.templates && !stores.syncSettings && !stores.syncRestorePoints) {
-        alert("No data to export!");
+        showToast({ tone: "info", title: "No data to export", description: "Create or import data first." });
         return;
       }
 
@@ -66,9 +68,10 @@ export function useBackupIO(): UseBackupIOResult {
       anchor.click();
       document.body.removeChild(anchor);
       URL.revokeObjectURL(url);
+      showToast({ tone: "success", title: "Backup exported" });
     } catch (error) {
       console.error(error);
-      alert("Failed to export data.");
+      showToast({ tone: "error", title: "Export failed", description: "Could not create the backup file." });
     }
   };
 
@@ -83,33 +86,43 @@ export function useBackupIO(): UseBackupIOResult {
     }
 
     const reader = new FileReader();
-    reader.onload = (loadEvent) => {
+    reader.onload = async (loadEvent) => {
       try {
         const json = loadEvent.target?.result as string;
         const parsed = JSON.parse(json) as unknown;
 
-        if (confirm("This will replace ALL your current data. Are you sure?")) {
-          if (isFullBackupEnvelope(parsed)) {
-            const stores = parsed.stores;
-            const writeStore = (key: string, value: string | null) => {
-              if (value === null) {
-                localStorage.removeItem(key);
-                return;
-              }
-              localStorage.setItem(key, value);
-            };
-            writeStore(STORAGE_KEY, stores.workout);
-            writeStore(TEMPLATE_STORAGE_KEY, stores.templates);
-            writeStore(SYNC_SETTINGS_STORAGE_KEY, stores.syncSettings);
-            writeStore(SYNC_RESTORE_POINTS_STORAGE_KEY, stores.syncRestorePoints);
-          } else {
-            // Backward compatibility: old backups contained only workout payload.
-            localStorage.setItem(STORAGE_KEY, json);
-          }
-          window.location.reload();
+        const shouldImport = await confirm({
+          title: "Replace existing data?",
+          description: "Import will overwrite workout, templates, and sync settings with this backup.",
+          confirmLabel: "Import Backup",
+          cancelLabel: "Cancel",
+          tone: "danger",
+        });
+        if (!shouldImport) {
+          return;
         }
+
+        if (isFullBackupEnvelope(parsed)) {
+          const stores = parsed.stores;
+          const writeStore = (key: string, value: string | null) => {
+            if (value === null) {
+              localStorage.removeItem(key);
+              return;
+            }
+            localStorage.setItem(key, value);
+          };
+          writeStore(STORAGE_KEY, stores.workout);
+          writeStore(TEMPLATE_STORAGE_KEY, stores.templates);
+          writeStore(SYNC_SETTINGS_STORAGE_KEY, stores.syncSettings);
+          writeStore(SYNC_RESTORE_POINTS_STORAGE_KEY, stores.syncRestorePoints);
+        } else {
+          // Backward compatibility: old backups contained only workout payload.
+          localStorage.setItem(STORAGE_KEY, json);
+        }
+        showToast({ tone: "success", title: "Backup imported", description: "Reloading with restored data..." });
+        window.setTimeout(() => window.location.reload(), 450);
       } catch {
-        alert("Invalid backup file.");
+        showToast({ tone: "error", title: "Invalid backup file", description: "Please select a valid JSON backup." });
       }
     };
     reader.readAsText(file);
