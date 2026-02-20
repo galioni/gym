@@ -1,5 +1,5 @@
-import { ApiRequest, ApiResponse, toBearerToken } from "./http";
-import { verifySupabaseJwt } from "./verifySupabaseJwt";
+import { ApiRequest, ApiResponse, toBearerToken } from "./http.js";
+import { verifySupabaseJwt } from "./verifySupabaseJwt.js";
 
 export interface AuthContext {
   userId: string;

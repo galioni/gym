@@ -1,13 +1,13 @@
-import { CloudSyncApiService } from "../application/sync/CloudSyncApiService";
-import { isTemplateSnapshotPayload } from "../application/sync/cloudApiRules";
-import { VercelKvCloudDocumentStore } from "../infrastructure/sync/vercel/VercelKvCloudDocumentStore";
-import { requireAuth } from "./_lib/authContext";
+import { CloudSyncApiService } from "./_lib/cloudSyncApiService.js";
+import { isTemplateSnapshotPayload } from "./_lib/cloudApiRules.js";
+import { VercelKvCloudDocumentStore } from "./_lib/vercelKvCloudDocumentStore.js";
+import { requireAuth } from "./_lib/authContext.js";
 import {
   enforceMethod,
   handlePreflight,
   parseJsonBody,
   setCorsHeaders,
-} from "./_lib/http";
+} from "./_lib/http.js";
 
 const TEMPLATES_KEY_SUFFIX = "templates";
 
