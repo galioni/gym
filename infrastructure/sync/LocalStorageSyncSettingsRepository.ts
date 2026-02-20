@@ -16,18 +16,18 @@ export class LocalStorageSyncSettingsRepository
   public async readSettings(): Promise<SyncSettings> {
     const raw = localStorage.getItem(SYNC_SETTINGS_STORAGE_KEY);
     if (!raw) {
-      return { mode: "local", lastSyncedAt: null, lastError: null };
+      return { mode: "cloud", lastSyncedAt: null, lastError: null };
     }
     try {
       const parsed = JSON.parse(raw) as Partial<SyncSettings>;
       return {
-        mode: parsed.mode === "cloud" ? "cloud" : "local",
+        mode: "cloud",
         lastSyncedAt:
           typeof parsed.lastSyncedAt === "string" ? parsed.lastSyncedAt : null,
         lastError: typeof parsed.lastError === "string" ? parsed.lastError : null,
       };
     } catch {
-      return { mode: "local", lastSyncedAt: null, lastError: null };
+      return { mode: "cloud", lastSyncedAt: null, lastError: null };
     }
   }
 

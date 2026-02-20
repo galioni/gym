@@ -6,14 +6,12 @@ import { TemplateEditor } from "../../../templates/components/TemplateEditor/Tem
 import { SyncSettingsPanel } from "../../../sync/components/SyncSettingsPanel/SyncSettingsPanel";
 import { DayData, SessionType, TemplateData, Templates } from "../../../../types";
 import { SyncConflict, SyncNowResult, SyncRestorePoint } from "../../../../application/sync/syncTypes";
-import { SyncMode } from "../../../../interfaces/sync/SyncSettingsRepository";
 import { TemplateValidationError } from "../../../../application/workout/templates/templateRules";
 
 interface DashboardWorkoutGridProps {
   currentDay: DayData;
   templates: Templates;
   templateSaveError: string | null;
-  syncMode: SyncMode;
   lastSyncedAt: string | null;
   lastSyncError: string | null;
   syncMessage: string;
@@ -31,7 +29,6 @@ interface DashboardWorkoutGridProps {
   ) => TemplateValidationError[];
   onUndoSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
   onResetSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
-  onSyncModeChange: (mode: SyncMode) => Promise<void>;
   onSyncNow: (
     resolution?: Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
   ) => Promise<SyncNowResult>;
@@ -42,7 +39,6 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
   currentDay,
   templates,
   templateSaveError,
-  syncMode,
   lastSyncedAt,
   lastSyncError,
   syncMessage,
@@ -56,7 +52,6 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
   onSaveSectionTemplate,
   onUndoSectionTemplate,
   onResetSectionTemplate,
-  onSyncModeChange,
   onSyncNow,
   onRollbackSyncPoint,
 }) => {
@@ -118,14 +113,12 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
 
       <div className="md:col-span-2 motion-rise">
         <SyncSettingsPanel
-          mode={syncMode}
           lastSyncedAt={lastSyncedAt}
           lastError={lastSyncError}
           syncMessage={syncMessage}
           conflicts={conflicts}
           restorePoints={restorePoints}
           isSyncing={isSyncing}
-          onModeChange={(mode) => void onSyncModeChange(mode)}
           onSyncNow={onSyncNow}
           onRollback={onRollbackSyncPoint}
         />

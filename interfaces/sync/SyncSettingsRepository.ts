@@ -1,4 +1,4 @@
-export type SyncMode = "local" | "cloud";
+export type SyncMode = "cloud";
 
 export interface SyncSettings {
   mode: SyncMode;

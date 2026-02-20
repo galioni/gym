@@ -7,18 +7,15 @@ import {
   SyncNowResult,
   SyncRestorePoint,
 } from "../../../../application/sync/syncTypes";
-import { SyncMode } from "../../../../interfaces/sync/SyncSettingsRepository";
 import { useFeedback } from "../../../feedback/hooks/useFeedback";
 
 interface SyncSettingsPanelProps {
-  mode: SyncMode;
   lastSyncedAt: string | null;
   lastError: string | null;
   syncMessage: string;
   conflicts: SyncConflict[];
   restorePoints: SyncRestorePoint[];
   isSyncing: boolean;
-  onModeChange: (mode: SyncMode) => void;
   onSyncNow: (
     resolution?: Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
   ) => Promise<SyncNowResult>;
@@ -26,14 +23,12 @@ interface SyncSettingsPanelProps {
 }
 
 export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
-  mode,
   lastSyncedAt,
   lastError,
   syncMessage,
   conflicts,
   restorePoints,
   isSyncing,
-  onModeChange,
   onSyncNow,
   onRollback,
 }) => {
@@ -108,18 +103,13 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
       }
     >
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-        <select
-          value={mode}
-          onChange={(event) => onModeChange(event.target.value as SyncMode)}
-          className="bg-background/70 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
-        >
-          <option value="local">Local</option>
-          <option value="cloud">Cloud</option>
-        </select>
+        <div className="bg-background/70 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 flex items-center">
+          Sync Mode: CLOUD
+        </div>
         <div className="text-xs text-slate-400 flex items-center break-words">
           Last sync: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : "Never"}
         </div>
-        <div className="text-xs text-slate-400 flex items-center break-words">Mode: {mode.toUpperCase()}</div>
+        <div className="text-xs text-slate-400 flex items-center break-words">Auth: Google OAuth</div>
       </div>
 
       {syncMessage && (

@@ -54,7 +54,6 @@ function App() {
     conflicts,
     restorePoints,
     syncMessage,
-    setMode: setSyncMode,
     syncNow,
     rollbackToRestorePoint,
   } = useSyncSettings(services.syncService);
@@ -160,7 +159,6 @@ function App() {
         currentDay={currentDay}
         templates={templates}
         templateSaveError={templateSaveError}
-        syncMode={syncSettings.mode}
         lastSyncedAt={syncSettings.lastSyncedAt}
         lastSyncError={syncSettings.lastError}
         syncMessage={syncMessage}
@@ -175,7 +173,6 @@ function App() {
         onSaveSectionTemplate={saveSectionTemplate}
         onUndoSectionTemplate={undoSectionTemplate}
         onResetSectionTemplate={resetSectionTemplate}
-        onSyncModeChange={setSyncMode}
         onSyncNow={syncNow}
         onRollbackSyncPoint={rollbackToRestorePoint}
       />

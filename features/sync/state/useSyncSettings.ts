@@ -7,7 +7,6 @@ import {
   SyncRestorePoint,
 } from "../../../application/sync/syncTypes";
 import {
-  SyncMode,
   SyncSettings,
 } from "../../../interfaces/sync/SyncSettingsRepository";
 
@@ -17,7 +16,6 @@ interface UseSyncSettingsResult {
   conflicts: SyncConflict[];
   restorePoints: SyncRestorePoint[];
   syncMessage: string;
-  setMode: (mode: SyncMode) => Promise<void>;
   syncNow: (
     resolution?: Partial<Record<"workoutData" | "templates", ConflictResolution>>
   ) => Promise<SyncNowResult>;
@@ -26,7 +24,7 @@ interface UseSyncSettingsResult {
 
 export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
   const [settings, setSettings] = useState<SyncSettings>({
-    mode: "local",
+    mode: "cloud",
     lastSyncedAt: null,
     lastError: null,
   });
@@ -61,19 +59,6 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
       cancelled = true;
     };
   }, [service]);
-
-  const setMode = useCallback(
-    async (mode: SyncMode) => {
-      const next = await service.setMode(mode);
-      if (!mountedRef.current) {
-        return;
-      }
-      setSettings(next);
-      setConflicts([]);
-      setSyncMessage("");
-    },
-    [service]
-  );
 
   const syncNow = useCallback(
     async (
@@ -119,7 +104,6 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
     conflicts,
     restorePoints,
     syncMessage,
-    setMode,
     syncNow,
     rollbackToRestorePoint,
   };

@@ -82,10 +82,10 @@ class InMemorySyncSettingsRepository implements SyncSettingsRepository {
 }
 
 describe("SyncService", () => {
-  it("updates lastSyncedAt in local mode when sync is triggered", async () => {
+  it("returns error when cloud repositories are unavailable", async () => {
     const settingsRepository = new InMemorySyncSettingsRepository();
     settingsRepository.settings = {
-      mode: "local",
+      mode: "cloud",
       lastSyncedAt: null,
       lastError: "Previous cloud error",
     };
@@ -100,10 +100,10 @@ describe("SyncService", () => {
 
     const result = await service.syncNow();
 
-    expect(result.status).toBe("idle");
-    expect(result.message).toBe("Local checkpoint updated.");
-    expect(settingsRepository.settings.lastSyncedAt).toBeTruthy();
-    expect(settingsRepository.settings.lastError).toBeNull();
+    expect(result.status).toBe("error");
+    expect(result.message).toContain("cloud repositories are unavailable");
+    expect(settingsRepository.settings.lastSyncedAt).toBeNull();
+    expect(settingsRepository.settings.lastError).toContain("cloud repositories are unavailable");
   });
 
   it("returns conflict details when snapshots differ and no resolution is provided", async () => {

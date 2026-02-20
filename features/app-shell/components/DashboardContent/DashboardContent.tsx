@@ -3,7 +3,6 @@ import { Button } from "../../../../components/ui/Button";
 import { InfoBanner } from "../InfoBanner/InfoBanner";
 import { DayData, SessionType, TemplateData, Templates } from "../../../../types";
 import { SyncConflict, SyncNowResult, SyncRestorePoint } from "../../../../application/sync/syncTypes";
-import { SyncMode } from "../../../../interfaces/sync/SyncSettingsRepository";
 import { TemplateValidationError } from "../../../../application/workout/templates/templateRules";
 import { DashboardWorkoutGrid } from "./DashboardWorkoutGrid";
 
@@ -12,7 +11,6 @@ interface DashboardContentProps {
   currentDay: DayData;
   templates: Templates;
   templateSaveError: string | null;
-  syncMode: SyncMode;
   lastSyncedAt: string | null;
   lastSyncError: string | null;
   syncMessage: string;
@@ -31,7 +29,6 @@ interface DashboardContentProps {
   ) => TemplateValidationError[];
   onUndoSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
   onResetSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
-  onSyncModeChange: (mode: SyncMode) => Promise<void>;
   onSyncNow: (
     resolution?: Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
   ) => Promise<SyncNowResult>;
@@ -43,7 +40,6 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   currentDay,
   templates,
   templateSaveError,
-  syncMode,
   lastSyncedAt,
   lastSyncError,
   syncMessage,
@@ -58,7 +54,6 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   onSaveSectionTemplate,
   onUndoSectionTemplate,
   onResetSectionTemplate,
-  onSyncModeChange,
   onSyncNow,
   onRollbackSyncPoint,
 }) => {
@@ -86,7 +81,6 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
         currentDay={currentDay}
         templates={templates}
         templateSaveError={templateSaveError}
-        syncMode={syncMode}
         lastSyncedAt={lastSyncedAt}
         lastSyncError={lastSyncError}
         syncMessage={syncMessage}
@@ -100,7 +94,6 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
         onSaveSectionTemplate={onSaveSectionTemplate}
         onUndoSectionTemplate={onUndoSectionTemplate}
         onResetSectionTemplate={onResetSectionTemplate}
-        onSyncModeChange={onSyncModeChange}
         onSyncNow={onSyncNow}
         onRollbackSyncPoint={onRollbackSyncPoint}
       />

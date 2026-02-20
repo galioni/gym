@@ -23,23 +23,26 @@ function toSyncApiBaseUrl(rawValue: string | undefined): string | null {
   return normalized.endsWith("/api") ? normalized : `${normalized}/api`;
 }
 
+function getRequiredSyncApiBaseUrl(): string {
+  const normalizedBaseUrl = toSyncApiBaseUrl(import.meta.env.VITE_SYNC_API_BASE_URL);
+  if (!normalizedBaseUrl) {
+    throw new Error("Missing required env var: VITE_SYNC_API_BASE_URL");
+  }
+  return normalizedBaseUrl;
+}
+
 /**
- * Local-first service factory with optional cloud mode.
- * Cloud adapters are wired only when `VITE_SYNC_API_BASE_URL` is configured.
+ * Local-first service factory with mandatory cloud sync support.
  */
 export function createWorkoutServices(): WorkoutServices {
   const localWorkoutRepository = new LocalStorageWorkoutDataRepository();
   const localTemplateRepository = new LocalStorageTemplateRepository();
   const syncSettingsRepository = new LocalStorageSyncSettingsRepository();
 
-  const baseUrl = toSyncApiBaseUrl(import.meta.env.VITE_SYNC_API_BASE_URL);
+  const baseUrl = getRequiredSyncApiBaseUrl();
   const tokenProvider = new SupabaseTokenProvider();
-  const cloudWorkoutRepository = baseUrl
-    ? new CloudWorkoutDataRepository(baseUrl, tokenProvider)
-    : null;
-  const cloudTemplateRepository = baseUrl
-    ? new CloudTemplateRepository(baseUrl, tokenProvider)
-    : null;
+  const cloudWorkoutRepository = new CloudWorkoutDataRepository(baseUrl, tokenProvider);
+  const cloudTemplateRepository = new CloudTemplateRepository(baseUrl, tokenProvider);
 
   return {
     workoutDataService: new WorkoutDataService(localWorkoutRepository),

@@ -1,6 +1,6 @@
 # Daily Workout Tracker
 
-Local-first workout tracker built with React + TypeScript (Vite), with optional cloud sync.
+Local-first workout tracker built with React + TypeScript (Vite), with cloud sync enabled.
 
 ## Run
 

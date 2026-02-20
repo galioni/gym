@@ -1,5 +1,4 @@
 import {
-  SyncMode,
   SyncSettings,
   SyncSettingsRepository,
 } from "../../interfaces/sync/SyncSettingsRepository";
@@ -104,13 +103,6 @@ export class SyncService {
     return this.deps.settingsRepository.readSettings();
   }
 
-  public async setMode(mode: SyncMode): Promise<SyncSettings> {
-    const current = await this.getSettings();
-    const next = { ...current, mode };
-    await this.deps.settingsRepository.writeSettings(next);
-    return next;
-  }
-
   public async getRestorePoints(): Promise<SyncRestorePoint[]> {
     const raw = await this.deps.settingsRepository.readRestorePoints();
     return raw as SyncRestorePoint[];
@@ -149,20 +141,6 @@ export class SyncService {
     resolution: ConflictResolutionMap = {}
   ): Promise<SyncNowResult> {
     const settings = await this.getSettings();
-    if (settings.mode === "local") {
-      // Local mode still records a manual sync checkpoint so "Last sync" reflects user action.
-      const syncedAt = new Date().toISOString();
-      await this.deps.settingsRepository.writeSettings({
-        ...settings,
-        lastSyncedAt: syncedAt,
-        lastError: null,
-      });
-      return {
-        status: "idle",
-        conflicts: [],
-        message: "Local checkpoint updated.",
-      };
-    }
 
     if (!this.deps.cloudWorkoutRepository || !this.deps.cloudTemplateRepository) {
       const message =
