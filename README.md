@@ -32,6 +32,13 @@ Application logic depends on repository interfaces, while storage details remain
 - Templates: `daily-workout-tracker:templates:v1`
 - Sync settings: `daily-workout-tracker:sync-settings:v1`
 - Sync restore points: `daily-workout-tracker:sync-restore-points:v1`
+- Cloud sync keys: `sync:{supabaseUserId}:workout-data`, `sync:{supabaseUserId}:templates`
+
+## Authentication
+
+- Client auth uses Supabase Google OAuth (`Continue with Google` only).
+- API sync endpoints require a valid Supabase access token in `Authorization: Bearer <token>`.
+- Legacy static sync API key auth is removed.
 
 ## Backup Format
 

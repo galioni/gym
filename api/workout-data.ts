@@ -1,15 +1,15 @@
 import { CloudSyncApiService } from "../application/sync/CloudSyncApiService";
 import { isWorkoutSnapshotPayload } from "../application/sync/cloudApiRules";
 import { VercelKvCloudDocumentStore } from "../infrastructure/sync/vercel/VercelKvCloudDocumentStore";
+import { requireAuth } from "./_lib/authContext";
 import {
-  enforceApiKey,
   enforceMethod,
   handlePreflight,
   parseJsonBody,
   setCorsHeaders,
 } from "./_lib/http";
 
-const WORKOUT_DATA_KEY = "sync:workout-data";
+const WORKOUT_DATA_KEY_SUFFIX = "workout-data";
 
 function getRequiredEnv(name: string): string {
   const value = process.env[name];
@@ -29,8 +29,8 @@ export default async function handler(req: any, res: any): Promise<void> {
   }
 
   try {
-    const syncApiKey = getRequiredEnv("SYNC_API_KEY");
-    if (!enforceApiKey(req, res, syncApiKey)) {
+    const auth = await requireAuth(req, res);
+    if (!auth) {
       return;
     }
 
@@ -40,9 +40,10 @@ export default async function handler(req: any, res: any): Promise<void> {
         kvRestApiToken: getRequiredEnv("KV_REST_API_TOKEN"),
       })
     );
+    const key = `sync:${auth.userId}:${WORKOUT_DATA_KEY_SUFFIX}`;
 
     if (req.method === "GET") {
-      const payload = await service.getResource<Record<string, unknown>>(WORKOUT_DATA_KEY);
+      const payload = await service.getResource<Record<string, unknown>>(key);
       if (!payload) {
         res.status(404).json({ error: "Not found" });
         return;
@@ -56,7 +57,7 @@ export default async function handler(req: any, res: any): Promise<void> {
       res.status(400).json({ error: "Invalid workout payload." });
       return;
     }
-    await service.putResource(WORKOUT_DATA_KEY, payload);
+    await service.putResource(key, payload);
     res.status(200).json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown API error";

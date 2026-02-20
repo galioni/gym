@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { FeedbackProvider } from './features/feedback/context/FeedbackProvider';
+import { AuthProvider } from './features/auth/context/AuthProvider';
+import { AuthGate } from './features/auth/components/AuthGate/AuthGate';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -11,8 +13,12 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <FeedbackProvider>
-      <App />
-    </FeedbackProvider>
+    <AuthProvider>
+      <FeedbackProvider>
+        <AuthGate>
+          <App />
+        </AuthGate>
+      </FeedbackProvider>
+    </AuthProvider>
   </React.StrictMode>
 );

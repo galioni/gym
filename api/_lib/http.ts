@@ -1,12 +1,12 @@
 const ALLOWED_METHODS = new Set(["GET", "PUT", "OPTIONS"]);
 
-interface ApiRequest {
+export interface ApiRequest {
   method?: string;
   headers?: Record<string, string | string[] | undefined>;
   body?: unknown;
 }
 
-interface ApiResponse {
+export interface ApiResponse {
   status: (statusCode: number) => ApiResponse;
   json: (payload: unknown) => void;
   setHeader: (name: string, value: string) => void;
@@ -17,7 +17,7 @@ export interface ApiHandlerContext {
   res: ApiResponse;
 }
 
-function toBearerToken(header: string | string[] | undefined): string | null {
+export function toBearerToken(header: string | string[] | undefined): string | null {
   if (!header) {
     return null;
   }
@@ -43,15 +43,6 @@ export function handlePreflight(req: ApiRequest, res: ApiResponse): boolean {
 export function enforceMethod(req: ApiRequest, res: ApiResponse): boolean {
   if (!req.method || !ALLOWED_METHODS.has(req.method)) {
     res.status(405).json({ error: "Method not allowed" });
-    return false;
-  }
-  return true;
-}
-
-export function enforceApiKey(req: ApiRequest, res: ApiResponse, expectedApiKey: string): boolean {
-  const bearerToken = toBearerToken(req.headers?.authorization);
-  if (!bearerToken || bearerToken !== expectedApiKey) {
-    res.status(401).json({ error: "Unauthorized" });
     return false;
   }
   return true;

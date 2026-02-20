@@ -2,6 +2,7 @@ import { TemplateRepository } from "../../../interfaces/workout/TemplateReposito
 import { Templates } from "../../../types";
 import { sanitizeTemplates } from "../../../application/workout/templates/templateRules";
 import { TemplateSnapshot } from "../../../application/sync/syncTypes";
+import { AuthTokenProvider } from "../../../interfaces/auth/AuthTokenProvider";
 
 interface CloudTemplateEnvelope {
   version: number;
@@ -15,15 +16,23 @@ interface CloudTemplateEnvelope {
 export class CloudTemplateRepository implements TemplateRepository {
   public constructor(
     private readonly apiBaseUrl: string,
-    private readonly apiKey: string
+    private readonly tokenProvider: AuthTokenProvider
   ) {}
+
+  private async getAuthHeader(): Promise<Record<string, string>> {
+    const accessToken = await this.tokenProvider.getAccessToken();
+    if (!accessToken) {
+      throw new Error("Missing authenticated session. Sign in again and retry sync.");
+    }
+    return {
+      Authorization: `Bearer ${accessToken}`,
+    };
+  }
 
   public async readSnapshot(): Promise<TemplateSnapshot | null> {
     const response = await fetch(`${this.apiBaseUrl}/templates`, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-      },
+      headers: await this.getAuthHeader(),
     });
     if (response.status === 404) {
       return null;
@@ -60,7 +69,7 @@ export class CloudTemplateRepository implements TemplateRepository {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`,
+        ...(await this.getAuthHeader()),
       },
       body: JSON.stringify({
         version: snapshot.version,

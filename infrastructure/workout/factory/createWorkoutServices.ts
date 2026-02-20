@@ -6,6 +6,7 @@ import { CloudWorkoutDataRepository } from "../cloud/CloudWorkoutDataRepository"
 import { LocalStorageTemplateRepository } from "../LocalStorageTemplateRepository";
 import { LocalStorageWorkoutDataRepository } from "../LocalStorageWorkoutDataRepository";
 import { LocalStorageSyncSettingsRepository } from "../../sync/LocalStorageSyncSettingsRepository";
+import { SupabaseTokenProvider } from "../../auth/supabase/SupabaseTokenProvider";
 
 interface WorkoutServices {
   workoutDataService: WorkoutDataService;
@@ -15,7 +16,7 @@ interface WorkoutServices {
 
 /**
  * Local-first service factory with optional cloud mode.
- * If cloud mode is enabled, required env vars must be present.
+ * Cloud adapters are wired only when `VITE_SYNC_API_BASE_URL` is configured.
  */
 export function createWorkoutServices(): WorkoutServices {
   const localWorkoutRepository = new LocalStorageWorkoutDataRepository();
@@ -23,11 +24,13 @@ export function createWorkoutServices(): WorkoutServices {
   const syncSettingsRepository = new LocalStorageSyncSettingsRepository();
 
   const baseUrl = import.meta.env.VITE_SYNC_API_BASE_URL;
-  const apiKey = import.meta.env.VITE_SYNC_API_KEY;
-  const cloudWorkoutRepository =
-    baseUrl && apiKey ? new CloudWorkoutDataRepository(baseUrl, apiKey) : null;
-  const cloudTemplateRepository =
-    baseUrl && apiKey ? new CloudTemplateRepository(baseUrl, apiKey) : null;
+  const tokenProvider = new SupabaseTokenProvider();
+  const cloudWorkoutRepository = baseUrl
+    ? new CloudWorkoutDataRepository(baseUrl, tokenProvider)
+    : null;
+  const cloudTemplateRepository = baseUrl
+    ? new CloudTemplateRepository(baseUrl, tokenProvider)
+    : null;
 
   return {
     workoutDataService: new WorkoutDataService(localWorkoutRepository),

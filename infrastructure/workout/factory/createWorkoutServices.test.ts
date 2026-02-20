@@ -11,7 +11,6 @@ describe("createWorkoutServices", () => {
 
   it("still creates services when cloud env vars are missing", () => {
     vi.stubEnv("VITE_SYNC_API_BASE_URL", "");
-    vi.stubEnv("VITE_SYNC_API_KEY", "");
     const services = createWorkoutServices();
     expect(services.syncService).toBeDefined();
   });

@@ -3,6 +3,7 @@ import { DayData } from "../../../types";
 import { sanitizeDayDataRecord } from "../../../application/workout/data/dayDataRules";
 import { TEMPLATES } from "../../../constants";
 import { WorkoutDataSnapshot } from "../../../application/sync/syncTypes";
+import { AuthTokenProvider } from "../../../interfaces/auth/AuthTokenProvider";
 
 interface CloudRecordEnvelope {
   version: number;
@@ -16,15 +17,23 @@ interface CloudRecordEnvelope {
 export class CloudWorkoutDataRepository implements WorkoutDataRepository {
   public constructor(
     private readonly apiBaseUrl: string,
-    private readonly apiKey: string
+    private readonly tokenProvider: AuthTokenProvider
   ) {}
+
+  private async getAuthHeader(): Promise<Record<string, string>> {
+    const accessToken = await this.tokenProvider.getAccessToken();
+    if (!accessToken) {
+      throw new Error("Missing authenticated session. Sign in again and retry sync.");
+    }
+    return {
+      Authorization: `Bearer ${accessToken}`,
+    };
+  }
 
   public async readSnapshot(): Promise<WorkoutDataSnapshot | null> {
     const response = await fetch(`${this.apiBaseUrl}/workout-data`, {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-      },
+      headers: await this.getAuthHeader(),
     });
     if (response.status === 404) {
       return null;
@@ -61,7 +70,7 @@ export class CloudWorkoutDataRepository implements WorkoutDataRepository {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`,
+        ...(await this.getAuthHeader()),
       },
       body: JSON.stringify({
         version: snapshot.version,
