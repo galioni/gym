@@ -20,7 +20,7 @@ function getRequiredEnv(name: string): string {
 }
 
 export default async function handler(req: any, res: any): Promise<void> {
-  setCorsHeaders(res);
+  setCorsHeaders(req, res);
   if (handlePreflight(req, res)) {
     return;
   }
@@ -60,7 +60,7 @@ export default async function handler(req: any, res: any): Promise<void> {
     await service.putResource(key, payload);
     res.status(200).json({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown API error";
-    res.status(500).json({ error: message });
+    console.error("templates handler error", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 }

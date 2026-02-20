@@ -72,9 +72,9 @@ function App() {
 
   const handleLoadTemplate = useCallback(async () => {
     const confirmed = await confirm({
-      title: "Load session template?",
+      title: "Load session?",
       description: "This will overwrite the current workout list for the selected day.",
-      confirmLabel: "Load Template",
+      confirmLabel: "Load",
       cancelLabel: "Keep Current",
       tone: "danger",
     });

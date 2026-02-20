@@ -87,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
                      <label className="text-[10px] opacity-0 select-none">Action</label>
                      <Button onClick={onLoadTemplate} size="sm" variant="secondary" className="gap-2 min-h-11 px-3 text-xs">
                        <RefreshCw size={12} />
-                       Load Template
+                       Load
                      </Button>
                  </div>
 
@@ -175,7 +175,7 @@ export const Header: React.FC<HeaderProps> = ({
                  <div className="grid grid-cols-2 gap-3 pt-2">
                     <Button onClick={() => { onLoadTemplate(); setIsOpen(false); }} variant="primary" className="gap-2 min-h-11 text-xs">
                        <RefreshCw size={14} />
-                       Load Template
+                       Load
                     </Button>
                      <Button onClick={() => { onJumpToday(); setIsOpen(false); }} variant="ghost" className="gap-2 min-h-11 text-xs">
                        <Crosshair size={14} />

@@ -13,11 +13,7 @@ This file tracks only upcoming phases and steps. It does not track completed wor
    - Switch to cloud mode
    - Sync workout data and templates
    - Verify reads/writes per authenticated user
-3. Redeploy latest API/frontend build and verify runtime envs are attached.
-4. Run negative auth tests:
-   - No bearer token -> `401`
-   - Invalid bearer token -> `401`
-5. Run regression checks for workout/template UX.
+3. Run regression checks for workout/template UX.
 
 ## Phase 4: Deployment and Stabilization
 1. Deploy API updates.
@@ -26,3 +22,11 @@ This file tracks only upcoming phases and steps. It does not track completed wor
 4. Verify user data isolation across different accounts.
 5. Monitor auth/sync errors and fix rollout issues.
 6. Remove any remaining legacy static-key auth documentation/config.
+
+## Phase 5: Cloud-Only Sync Mode
+1. Remove local/cloud mode toggle from the sync settings UI.
+2. Update sync contracts/types to cloud-only mode.
+3. Remove local-mode logic branches from sync application services.
+4. Fail loudly if cloud sync env configuration is missing.
+5. Update tests to reflect cloud-only behavior.
+6. Update docs and env examples to remove local sync mode references.
