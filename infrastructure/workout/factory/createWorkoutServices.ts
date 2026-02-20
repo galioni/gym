@@ -14,6 +14,15 @@ interface WorkoutServices {
   syncService: SyncService;
 }
 
+function toSyncApiBaseUrl(rawValue: string | undefined): string | null {
+  if (!rawValue || rawValue.trim().length === 0) {
+    return null;
+  }
+  const normalized = rawValue.trim().replace(/\/+$/, "");
+  // Vercel serverless functions are mounted under /api by default.
+  return normalized.endsWith("/api") ? normalized : `${normalized}/api`;
+}
+
 /**
  * Local-first service factory with optional cloud mode.
  * Cloud adapters are wired only when `VITE_SYNC_API_BASE_URL` is configured.
@@ -23,7 +32,7 @@ export function createWorkoutServices(): WorkoutServices {
   const localTemplateRepository = new LocalStorageTemplateRepository();
   const syncSettingsRepository = new LocalStorageSyncSettingsRepository();
 
-  const baseUrl = import.meta.env.VITE_SYNC_API_BASE_URL;
+  const baseUrl = toSyncApiBaseUrl(import.meta.env.VITE_SYNC_API_BASE_URL);
   const tokenProvider = new SupabaseTokenProvider();
   const cloudWorkoutRepository = baseUrl
     ? new CloudWorkoutDataRepository(baseUrl, tokenProvider)
