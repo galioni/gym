@@ -84,3 +84,19 @@ Backup export/import supports:
 
 - Run tests: `npm run test`
 - Smoke panel (dev): `/?qa=1`
+
+## Observability
+
+API handlers emit structured request lifecycle logs for `/api/workout-data` and `/api/templates` with:
+
+- `requestId`
+- `endpoint`
+- `method`
+- `status`
+- `latencyMs`
+- `userIdHash` (hashed and truncated)
+
+Alert thresholds and incident steps:
+
+- `docs/observability/alerting.md`
+- `docs/observability/incident-runbook.md`

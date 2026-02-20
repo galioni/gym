@@ -4,6 +4,7 @@ import { VercelKvCloudDocumentStore } from "./_lib/vercelKvCloudDocumentStore.js
 import { requireAuth } from "./_lib/authContext.js";
 import { getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
 import { syncRequestGuards } from "./_lib/requestGuards.js";
+import { attachApiRequestObservability } from "./_lib/observability.js";
 import {
   enforceMethod,
   handlePreflight,
@@ -14,6 +15,7 @@ import {
 const WORKOUT_DATA_KEY_SUFFIX = "workout-data";
 
 export default async function handler(req: any, res: any): Promise<void> {
+  const observation = attachApiRequestObservability(req, res, "/api/workout-data");
   setCorsHeaders(req, res);
   if (handlePreflight(req, res)) {
     return;
@@ -36,6 +38,7 @@ export default async function handler(req: any, res: any): Promise<void> {
     if (!auth) {
       return;
     }
+    observation.setUserId(auth.userId);
 
     const service = new CloudSyncApiService(
       new VercelKvCloudDocumentStore(getRequiredVercelKvEnv())
@@ -60,7 +63,7 @@ export default async function handler(req: any, res: any): Promise<void> {
     await service.putResource(key, payload);
     res.status(200).json({ ok: true });
   } catch (error) {
-    console.error("workout-data handler error", error);
+    observation.logUnhandledError(error);
     res.status(500).json({ error: "Internal server error" });
   }
 }
