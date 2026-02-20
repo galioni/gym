@@ -4,6 +4,8 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     include: [
+      "api/**/*.test.ts",
+      "api/**/*.test.tsx",
       "application/**/*.test.ts",
       "application/**/*.test.tsx",
       "infrastructure/**/*.test.ts",

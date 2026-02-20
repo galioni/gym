@@ -40,6 +40,39 @@ Application logic depends on repository interfaces, while storage details remain
 - API sync endpoints require a valid Supabase access token in `Authorization: Bearer <token>`.
 - Legacy static sync API key auth is removed.
 
+## Environment Ownership (Least Privilege)
+
+Only configure variables required by each runtime. Do not copy platform/admin secrets into local app env files.
+
+Client runtime (`.env.local`, exposed as `VITE_*`):
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_SUPABASE_REDIRECT_URL`
+- `VITE_SYNC_API_BASE_URL`
+
+API runtime (Vercel project env for `/api/*` handlers):
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `KV_REST_API_URL`
+- `KV_REST_API_TOKEN`
+- Optional: `CORS_ALLOWED_ORIGINS`
+
+Never store these in local working app env files unless a separate admin-only tool explicitly requires them:
+
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_SECRET_KEY`
+- `SUPABASE_JWT_SECRET`
+- `VERCEL_OIDC_TOKEN`
+- `POSTGRES_*`
+
+Rotation policy:
+
+1. Rotate privileged secrets immediately if exposed.
+2. Remove them from local env files and deployment scopes that do not need them.
+3. Validate app behavior with `npm run qa:check` and sync smoke tests.
+
 ## Backup Format
 
 Backup export/import supports:

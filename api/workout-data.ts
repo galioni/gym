@@ -2,6 +2,8 @@ import { CloudSyncApiService } from "./_lib/cloudSyncApiService.js";
 import { isWorkoutSnapshotPayload } from "./_lib/cloudApiRules.js";
 import { VercelKvCloudDocumentStore } from "./_lib/vercelKvCloudDocumentStore.js";
 import { requireAuth } from "./_lib/authContext.js";
+import { getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
+import { syncRequestGuards } from "./_lib/requestGuards.js";
 import {
   enforceMethod,
   handlePreflight,
@@ -11,20 +13,21 @@ import {
 
 const WORKOUT_DATA_KEY_SUFFIX = "workout-data";
 
-function getRequiredEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required env var: ${name}`);
-  }
-  return value;
-}
-
 export default async function handler(req: any, res: any): Promise<void> {
   setCorsHeaders(req, res);
   if (handlePreflight(req, res)) {
     return;
   }
   if (!enforceMethod(req, res)) {
+    return;
+  }
+  if (!syncRequestGuards.enforceRateLimit(req, res, WORKOUT_DATA_KEY_SUFFIX)) {
+    return;
+  }
+  if (!syncRequestGuards.enforcePutJsonContentType(req, res)) {
+    return;
+  }
+  if (!syncRequestGuards.enforcePutBodySize(req, res)) {
     return;
   }
 
@@ -35,10 +38,7 @@ export default async function handler(req: any, res: any): Promise<void> {
     }
 
     const service = new CloudSyncApiService(
-      new VercelKvCloudDocumentStore({
-        kvRestApiUrl: getRequiredEnv("KV_REST_API_URL"),
-        kvRestApiToken: getRequiredEnv("KV_REST_API_TOKEN"),
-      })
+      new VercelKvCloudDocumentStore(getRequiredVercelKvEnv())
     );
     const key = `sync:${auth.userId}:${WORKOUT_DATA_KEY_SUFFIX}`;
 

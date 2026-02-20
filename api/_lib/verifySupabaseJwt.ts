@@ -1,23 +1,18 @@
+import { getRequiredSupabaseJwtEnv } from "./apiEnv.js";
+
 interface VerifiedSupabaseUser {
   id: string;
   email: string | null;
 }
 
-function getRequiredEnv(name: "SUPABASE_URL" | "SUPABASE_ANON_KEY"): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required env var: ${name}`);
-  }
-  return value;
-}
-
 export async function verifySupabaseJwt(
   accessToken: string
 ): Promise<VerifiedSupabaseUser | null> {
-  const response = await fetch(`${getRequiredEnv("SUPABASE_URL")}/auth/v1/user`, {
+  const env = getRequiredSupabaseJwtEnv();
+  const response = await fetch(`${env.supabaseUrl}/auth/v1/user`, {
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      apikey: getRequiredEnv("SUPABASE_ANON_KEY"),
+      apikey: env.supabaseAnonKey,
     },
   });
 
