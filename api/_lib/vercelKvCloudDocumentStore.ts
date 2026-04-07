@@ -13,7 +13,7 @@ export class VercelKvCloudDocumentStore implements CloudDocumentStore {
 
   public async readDocument(key: string): Promise<unknown | null> {
     const response = await this.execute(["GET", key]);
-    return response.result ?? null;
+    return this.normalizeResult(response.result);
   }
 
   public async writeDocument(key: string, value: unknown): Promise<void> {
@@ -33,5 +33,22 @@ export class VercelKvCloudDocumentStore implements CloudDocumentStore {
       throw new Error(`Vercel KV request failed: ${response.status}`);
     }
     return (await response.json()) as { result: unknown };
+  }
+
+  private normalizeResult(result: unknown): unknown | null {
+    if (result === null || typeof result === "undefined") {
+      return null;
+    }
+    if (typeof result !== "string") {
+      return result;
+    }
+
+    try {
+      // Documents are persisted as JSON strings on write, so reads must parse them
+      // back into objects before the sync layer validates snapshot envelopes.
+      return JSON.parse(result) as unknown;
+    } catch {
+      return result;
+    }
   }
 }

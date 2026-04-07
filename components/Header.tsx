@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Menu, X, Calendar, Activity, RefreshCw, Download, Upload, Crosshair } from 'lucide-react';
-import { SessionType } from '../types';
-import { SESSION_OPTIONS } from '../constants';
+import { SessionOption, SessionType } from '../types';
 import { Button } from './ui/Button';
 import { cn, fromLocalDateKey } from '../utils';
 import { useBackupIO } from '../features/session-controls/hooks/useBackupIO';
@@ -11,6 +10,7 @@ interface HeaderProps {
   currentDate: string;
   onDateChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   sessionType: SessionType;
+  sessionOptions: SessionOption[];
   onSessionTypeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onLoadTemplate: () => void;
   onJumpToday: () => void;
@@ -22,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   currentDate,
   onDateChange,
   sessionType,
+  sessionOptions,
   onSessionTypeChange,
   onLoadTemplate,
   onJumpToday,
@@ -31,7 +32,6 @@ export const Header: React.FC<HeaderProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const { fileInputRef, exportBackup, openImportPicker, handleImportFileChange } = useBackupIO();
 
-  // Helper to format date for display
   const formattedDate = fromLocalDateKey(currentDate).toLocaleDateString('en-GB', {
     weekday: 'short', 
     day: 'numeric', 
@@ -77,7 +77,7 @@ export const Header: React.FC<HeaderProps> = ({
                         onChange={onSessionTypeChange}
                         className="bg-background/70 border border-white/10 rounded-lg px-2 py-1 text-xs text-slate-200 focus:ring-1 focus:ring-primary outline-none w-40 hover:border-primary/60 transition-colors"
                     >
-                        {SESSION_OPTIONS.map(opt => (
+                        {sessionOptions.map((opt) => (
                           <option key={opt.value} value={opt.value}>{opt.label.split('(')[0].trim()}</option>
                         ))}
                     </select>
@@ -151,7 +151,7 @@ export const Header: React.FC<HeaderProps> = ({
                         onChange={(e) => { onSessionTypeChange(e); setIsOpen(false); }}
                         className="w-full bg-background/80 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none appearance-none"
                     >
-                        {SESSION_OPTIONS.map(opt => (
+                        {sessionOptions.map((opt) => (
                           <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                     </select>

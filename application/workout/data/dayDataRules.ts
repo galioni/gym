@@ -1,16 +1,13 @@
-import { SessionType, DayData, Templates } from "../../../types";
+import { DayData, Templates } from "../../../types";
 import { createEmptyDay } from "../../../utils";
-
-function isSessionType(value: unknown): value is SessionType {
-  return value === "tennis" || value === "gym" || value === "swim" || value === "rest";
-}
+import { getValidSessionType } from "../sessionTypes/sessionTypeRules";
 
 /**
  * Coerces unknown day payload into a safe DayData shape with section-level recovery.
  */
 export function sanitizeDayData(raw: unknown, date: string, templates: Templates): DayData {
   const record = (raw && typeof raw === "object" ? raw : {}) as Partial<DayData>;
-  const sessionType = isSessionType(record.sessionType) ? record.sessionType : "tennis";
+  const sessionType = getValidSessionType(record.sessionType);
   const baseline = createEmptyDay(date, sessionType, templates);
 
   const normalizeItems = (items: unknown, fallback: DayData["warmup"]) => {
@@ -60,4 +57,3 @@ export function sanitizeDayDataRecord(
     return accumulator;
   }, {});
 }
-

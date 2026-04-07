@@ -83,6 +83,7 @@ export function setCorsHeaders(req: ApiRequest, res: ApiResponse): void {
   }
   res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
   res.setHeader("Access-Control-Allow-Methods", "GET, PUT, OPTIONS");
+  res.setHeader("Access-Control-Expose-Headers", "x-request-id");
 }
 
 export function handlePreflight(req: ApiRequest, res: ApiResponse): boolean {

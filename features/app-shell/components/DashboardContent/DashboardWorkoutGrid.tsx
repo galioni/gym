@@ -4,13 +4,15 @@ import { RpeSelect } from "../../../workout/components/RpeSelect/RpeSelect";
 import { DailyCheckCard } from "../../../workout/components/DailyCheckCard/DailyCheckCard";
 import { TemplateEditor } from "../../../templates/components/TemplateEditor/TemplateEditor";
 import { SyncSettingsPanel } from "../../../sync/components/SyncSettingsPanel/SyncSettingsPanel";
-import { DayData, SessionType, TemplateData, Templates } from "../../../../types";
+import { DayData, SessionOption, SessionType, TemplateData, Templates } from "../../../../types";
 import { SyncConflict, SyncNowResult, SyncRestorePoint } from "../../../../application/sync/syncTypes";
 import { TemplateValidationError } from "../../../../application/workout/templates/templateRules";
+import { CreateSessionTypeResult } from "../../../../application/workout/sessionTypes/sessionTypeRules";
 
 interface DashboardWorkoutGridProps {
   currentDay: DayData;
   templates: Templates;
+  sessionOptions: SessionOption[];
   templateSaveError: string | null;
   lastSyncedAt: string | null;
   lastSyncError: string | null;
@@ -29,6 +31,7 @@ interface DashboardWorkoutGridProps {
   ) => TemplateValidationError[];
   onUndoSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
   onResetSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
+  onCreateSessionType: (label: string) => Promise<CreateSessionTypeResult>;
   onSyncNow: (
     resolution?: Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
   ) => Promise<SyncNowResult>;
@@ -38,6 +41,7 @@ interface DashboardWorkoutGridProps {
 export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
   currentDay,
   templates,
+  sessionOptions,
   templateSaveError,
   lastSyncedAt,
   lastSyncError,
@@ -52,6 +56,7 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
   onSaveSectionTemplate,
   onUndoSectionTemplate,
   onResetSectionTemplate,
+  onCreateSessionType,
   onSyncNow,
   onRollbackSyncPoint,
 }) => {
@@ -104,10 +109,12 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
       <div className="md:col-span-2 motion-rise">
         <TemplateEditor
           templates={templates}
+          sessionOptions={sessionOptions}
           saveError={templateSaveError}
           onSaveSection={onSaveSectionTemplate}
           onUndoSection={onUndoSectionTemplate}
           onResetSection={onResetSectionTemplate}
+          onCreateSessionType={onCreateSessionType}
         />
       </div>
 

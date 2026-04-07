@@ -1,4 +1,4 @@
-import { Templates, SessionType } from './types';
+import { SessionOption, SessionType, TemplateData, Templates } from './types';
 
 export const STORAGE_KEY = "daily-workout-tracker:v2";
 export const TEMPLATE_STORAGE_KEY = "daily-workout-tracker:templates:v1";
@@ -8,13 +8,19 @@ export const STORAGE_SCHEMA_VERSION = 1;
 export const TEMPLATE_SCHEMA_VERSION = 1;
 export const TEMPLATE_TEXT_MAX_LENGTH = 80;
 export const TEMPLATE_TARGET_MAX_LENGTH = 40;
+export const DEFAULT_SESSION_TYPE: SessionType = 'tennis';
 
-export const SESSION_OPTIONS: { value: SessionType; label: string }[] = [
+export const DEFAULT_SESSION_OPTIONS: SessionOption[] = [
   { value: 'tennis', label: 'Tennis day (warm-up + strength mini)' },
   { value: 'gym', label: 'Gym day (full session)' },
   { value: 'swim', label: 'Swim day (short warm-up)' },
   { value: 'rest', label: 'Rest / Recovery' },
 ];
+
+export const EMPTY_TEMPLATE: TemplateData = {
+  warmup: [],
+  main: [],
+};
 
 export const TEMPLATES: Templates = {
   tennis: {
@@ -36,7 +42,6 @@ export const TEMPLATES: Templates = {
       { text: "Cool-down: walk + light stretch (5 min)", target: "Downshift" }
     ]
   },
-
   gym: {
     warmup: [
       { text: "5 min easy cardio (walk/bike)", target: "Warm body" },
@@ -51,7 +56,6 @@ export const TEMPLATES: Templates = {
       { text: "Plank", target: "3 sets" }
     ]
   },
-
   swim: {
     warmup: [
       { text: "2-3 min brisk walk", target: "Warm body" },
@@ -62,7 +66,6 @@ export const TEMPLATES: Templates = {
       { text: "Cool-down: easy float / stretch", target: "Relax" }
     ]
   },
-
   rest: {
     warmup: [],
     main: [

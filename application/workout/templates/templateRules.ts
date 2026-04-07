@@ -1,9 +1,11 @@
 import {
+  EMPTY_TEMPLATE,
   TEMPLATE_TARGET_MAX_LENGTH,
   TEMPLATE_TEXT_MAX_LENGTH,
   TEMPLATES,
 } from "../../../constants";
 import { SessionType, TemplateData, Templates } from "../../../types";
+import { cloneTemplateData } from "../sessionTypes/sessionTypeRules";
 
 export interface TemplateValidationError {
   rowIndex: number;
@@ -23,6 +25,27 @@ function sanitizeRows(rows: Array<{ text: string; target?: string }>): Array<{ t
     }))
     .filter((row) => row.text.length > 0)
     .map((row) => ({ text: row.text, target: row.target || undefined }));
+}
+
+function sanitizeSessionTemplate(
+  sessionInput: unknown,
+  fallbackTemplate: TemplateData
+): TemplateData {
+  const safeSession = sessionInput && typeof sessionInput === "object"
+    ? (sessionInput as Partial<TemplateData>)
+    : null;
+
+  const warmup = Array.isArray(safeSession?.warmup)
+    ? sanitizeRows(safeSession.warmup as Array<{ text: string; target?: string }>)
+    : fallbackTemplate.warmup;
+  const main = Array.isArray(safeSession?.main)
+    ? sanitizeRows(safeSession.main as Array<{ text: string; target?: string }>)
+    : fallbackTemplate.main;
+
+  return {
+    warmup: warmup.length > 0 ? warmup : fallbackTemplate.warmup,
+    main: main.length > 0 ? main : fallbackTemplate.main,
+  };
 }
 
 export function validateTemplateRows(rows: Array<{ text: string; target?: string }>): TemplateValidationError[] {
@@ -59,31 +82,21 @@ export function validateTemplateRows(rows: Array<{ text: string; target?: string
  */
 export function sanitizeTemplates(payload: Partial<Templates> | null | undefined): Templates {
   const safe = payload ?? {};
+  const nextTemplates: Templates = {};
 
-  const sanitizeSession = (session: SessionType): TemplateData => {
-    const sessionInput = safe[session];
-    if (!sessionInput) {
-      return TEMPLATES[session];
+  (Object.keys(TEMPLATES) as SessionType[]).forEach((session) => {
+    nextTemplates[session] = sanitizeSessionTemplate(safe[session], cloneTemplateData(TEMPLATES[session]));
+  });
+
+  Object.entries(safe).forEach(([session, template]) => {
+    if (session in nextTemplates || session.trim().length === 0) {
+      return;
     }
 
-    const warmup = Array.isArray(sessionInput.warmup)
-      ? sanitizeRows(sessionInput.warmup as Array<{ text: string; target?: string }>)
-      : TEMPLATES[session].warmup;
-    const main = Array.isArray(sessionInput.main)
-      ? sanitizeRows(sessionInput.main as Array<{ text: string; target?: string }>)
-      : TEMPLATES[session].main;
+    // Custom session types have no seeded workout rows, so malformed payloads fall back
+    // to an empty template instead of impersonating one of the built-in sessions.
+    nextTemplates[session] = sanitizeSessionTemplate(template, cloneTemplateData(EMPTY_TEMPLATE));
+  });
 
-    return {
-      warmup: warmup.length > 0 ? warmup : TEMPLATES[session].warmup,
-      main: main.length > 0 ? main : TEMPLATES[session].main,
-    };
-  };
-
-  return {
-    tennis: sanitizeSession("tennis"),
-    gym: sanitizeSession("gym"),
-    swim: sanitizeSession("swim"),
-    rest: sanitizeSession("rest"),
-  };
+  return nextTemplates;
 }
-
