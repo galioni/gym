@@ -12,6 +12,7 @@ import { useSyncSettings } from "./features/sync/state/useSyncSettings";
 import { useWorkoutKeyboardShortcuts } from "./features/app-shell/hooks/useWorkoutKeyboardShortcuts";
 import { DashboardContent } from "./features/app-shell/components/DashboardContent/DashboardContent";
 import { useFeedback } from "./features/feedback/hooks/useFeedback";
+import { getSessionOptions } from "./application/workout/sessionTypes/sessionTypeRules";
 
 function App() {
   const { confirm, showToast } = useFeedback();
@@ -30,6 +31,7 @@ function App() {
     saveSectionTemplate,
     undoSectionTemplate,
     resetSectionTemplate,
+    addSessionType,
   } = useTemplates(services.templateService);
 
   const {
@@ -58,6 +60,7 @@ function App() {
     rollbackToRestorePoint,
   } = useSyncSettings(services.syncService);
 
+  const sessionOptions = useMemo(() => getSessionOptions(templates), [templates]);
   const fridayHint = useMemo(() => getFridayHint(currentDate), [currentDate]);
   const [stickyFooterHeight, setStickyFooterHeight] = useState(124);
 
@@ -147,6 +150,7 @@ function App() {
         currentDate={currentDate}
         onDateChange={(event) => setCurrentDate(event.target.value)}
         sessionType={currentDay.sessionType}
+        sessionOptions={sessionOptions}
         onSessionTypeChange={(event) => changeSessionType(event.target.value as SessionType)}
         onLoadTemplate={() => void handleLoadTemplate()}
         onJumpToday={jumpToToday}
@@ -158,6 +162,7 @@ function App() {
         fridayHint={fridayHint}
         currentDay={currentDay}
         templates={templates}
+        sessionOptions={sessionOptions}
         templateSaveError={templateSaveError}
         lastSyncedAt={syncSettings.lastSyncedAt}
         lastSyncError={syncSettings.lastError}
@@ -173,6 +178,7 @@ function App() {
         onSaveSectionTemplate={saveSectionTemplate}
         onUndoSectionTemplate={undoSectionTemplate}
         onResetSectionTemplate={resetSectionTemplate}
+        onCreateSessionType={addSessionType}
         onSyncNow={syncNow}
         onRollbackSyncPoint={rollbackToRestorePoint}
       />

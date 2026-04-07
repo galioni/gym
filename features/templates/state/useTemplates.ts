@@ -3,6 +3,7 @@ import { TemplateService } from "../../../application/workout/TemplateService";
 import { TEMPLATES } from "../../../constants";
 import { SessionType, TemplateData, Templates } from "../../../types";
 import { TemplateValidationError, validateTemplateRows } from "../../../application/workout/templates/templateRules";
+import { CreateSessionTypeResult } from "../../../application/workout/sessionTypes/sessionTypeRules";
 
 interface UseTemplatesResult {
   templates: Templates;
@@ -15,6 +16,7 @@ interface UseTemplatesResult {
   ) => TemplateValidationError[];
   undoSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
   resetSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
+  addSessionType: (label: string) => Promise<CreateSessionTypeResult>;
 }
 
 /**
@@ -25,13 +27,8 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
   const [isLoaded, setIsLoaded] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const [history, setHistory] = useState<
-    Record<SessionType, Partial<Record<keyof TemplateData, TemplateData[keyof TemplateData]>>>
-  >({
-    tennis: {},
-    gym: {},
-    swim: {},
-    rest: {},
-  });
+    Partial<Record<SessionType, Partial<Record<keyof TemplateData, TemplateData[keyof TemplateData]>>>>
+  >({});
 
   useEffect(() => {
     let isCancelled = false;
@@ -94,7 +91,7 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
 
   const undoSectionTemplate = useCallback(
     (session: SessionType, section: keyof TemplateData) => {
-      const previousValue = history[session][section];
+      const previousValue = history[session]?.[section];
       if (!previousValue) {
         return;
       }
@@ -155,5 +152,37 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
     [service]
   );
 
-  return { templates, isLoaded, lastError, saveSectionTemplate, undoSectionTemplate, resetSectionTemplate };
+  const addSessionType = useCallback(
+    async (label: string): Promise<CreateSessionTypeResult> => {
+      const result = service.createSessionType(templates, label);
+      if (result.status === "error" || !result.templates || !result.sessionType) {
+        return result;
+      }
+
+      setLastError(null);
+      setTemplates(result.templates);
+      try {
+        await service.saveTemplates(result.templates);
+        return result;
+      } catch (error) {
+        console.error("Failed to save templates", error);
+        setLastError("Failed to save template changes.");
+        return {
+          status: "error",
+          message: "Failed to save template changes.",
+        };
+      }
+    },
+    [service, templates]
+  );
+
+  return {
+    templates,
+    isLoaded,
+    lastError,
+    saveSectionTemplate,
+    undoSectionTemplate,
+    resetSectionTemplate,
+    addSessionType,
+  };
 }

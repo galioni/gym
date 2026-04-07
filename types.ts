@@ -1,4 +1,9 @@
-export type SessionType = 'tennis' | 'gym' | 'swim' | 'rest';
+export type SessionType = string;
+
+export interface SessionOption {
+  value: SessionType;
+  label: string;
+}
 
 export interface WorkoutItem {
   id: string;

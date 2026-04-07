@@ -64,6 +64,9 @@ export default async function handler(req: any, res: any): Promise<void> {
     res.status(200).json({ ok: true });
   } catch (error) {
     observation.logUnhandledError(error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({
+      error: "Internal server error",
+      requestId: observation.requestId,
+    });
   }
 }

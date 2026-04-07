@@ -1,15 +1,17 @@
 import React from "react";
 import { Button } from "../../../../components/ui/Button";
 import { InfoBanner } from "../InfoBanner/InfoBanner";
-import { DayData, SessionType, TemplateData, Templates } from "../../../../types";
+import { DayData, SessionOption, SessionType, TemplateData, Templates } from "../../../../types";
 import { SyncConflict, SyncNowResult, SyncRestorePoint } from "../../../../application/sync/syncTypes";
 import { TemplateValidationError } from "../../../../application/workout/templates/templateRules";
 import { DashboardWorkoutGrid } from "./DashboardWorkoutGrid";
+import { CreateSessionTypeResult } from "../../../../application/workout/sessionTypes/sessionTypeRules";
 
 interface DashboardContentProps {
   fridayHint: string;
   currentDay: DayData;
   templates: Templates;
+  sessionOptions: SessionOption[];
   templateSaveError: string | null;
   lastSyncedAt: string | null;
   lastSyncError: string | null;
@@ -29,6 +31,7 @@ interface DashboardContentProps {
   ) => TemplateValidationError[];
   onUndoSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
   onResetSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
+  onCreateSessionType: (label: string) => Promise<CreateSessionTypeResult>;
   onSyncNow: (
     resolution?: Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
   ) => Promise<SyncNowResult>;
@@ -39,6 +42,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   fridayHint,
   currentDay,
   templates,
+  sessionOptions,
   templateSaveError,
   lastSyncedAt,
   lastSyncError,
@@ -54,6 +58,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   onSaveSectionTemplate,
   onUndoSectionTemplate,
   onResetSectionTemplate,
+  onCreateSessionType,
   onSyncNow,
   onRollbackSyncPoint,
 }) => {
@@ -80,6 +85,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
       <DashboardWorkoutGrid
         currentDay={currentDay}
         templates={templates}
+        sessionOptions={sessionOptions}
         templateSaveError={templateSaveError}
         lastSyncedAt={lastSyncedAt}
         lastSyncError={lastSyncError}
@@ -94,6 +100,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
         onSaveSectionTemplate={onSaveSectionTemplate}
         onUndoSectionTemplate={onUndoSectionTemplate}
         onResetSectionTemplate={onResetSectionTemplate}
+        onCreateSessionType={onCreateSessionType}
         onSyncNow={onSyncNow}
         onRollbackSyncPoint={onRollbackSyncPoint}
       />

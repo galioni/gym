@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { DayData, SessionType, Templates } from "./types";
-import { TEMPLATES } from "./constants";
+import { EMPTY_TEMPLATE, TEMPLATES } from "./constants";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -49,12 +49,12 @@ export function vibrate(pattern: number | number[] = 10) {
 }
 
 export function createEmptyDay(date: string, sessionType: SessionType, templates: Templates = TEMPLATES): DayData {
-  const t = templates[sessionType];
+  const template = templates[sessionType] ?? EMPTY_TEMPLATE;
   return {
     date,
     sessionType,
-    warmup: t.warmup.map(x => ({ ...x, id: generateId(), done: false })),
-    main: t.main.map(x => ({ ...x, id: generateId(), done: false })),
+    warmup: template.warmup.map((row) => ({ ...row, id: generateId(), done: false })),
+    main: template.main.map((row) => ({ ...row, id: generateId(), done: false })),
     warmupNotes: "",
     mainNotes: "",
     rpe: "",

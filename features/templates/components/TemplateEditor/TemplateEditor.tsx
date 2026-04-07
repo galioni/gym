@@ -1,18 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { GripVertical, Plus, Save, Trash2 } from "lucide-react";
+import { Plus, Save } from "lucide-react";
 import { Card } from "../../../../components/ui/Card";
 import { Button } from "../../../../components/ui/Button";
-import {
-  SESSION_OPTIONS,
-  TEMPLATE_TARGET_MAX_LENGTH,
-  TEMPLATE_TEXT_MAX_LENGTH,
-} from "../../../../constants";
-import { SessionType, TemplateData, Templates } from "../../../../types";
+import { SessionOption, SessionType, TemplateData, Templates } from "../../../../types";
 import { TemplateValidationError } from "../../../../application/workout/templates/templateRules";
 import { useFeedback } from "../../../feedback/hooks/useFeedback";
+import { CreateSessionTypeResult } from "../../../../application/workout/sessionTypes/sessionTypeRules";
+import { SessionTypeCreateForm } from "./SessionTypeCreateForm";
+import { TemplateRowList } from "./TemplateRowList";
 
 interface TemplateEditorProps {
   templates: Templates;
+  sessionOptions: SessionOption[];
   saveError: string | null;
   onSaveSection: (
     session: SessionType,
@@ -21,45 +20,40 @@ interface TemplateEditorProps {
   ) => TemplateValidationError[];
   onUndoSection: (session: SessionType, section: keyof TemplateData) => void;
   onResetSection: (session: SessionType, section: keyof TemplateData) => void;
+  onCreateSessionType: (label: string) => Promise<CreateSessionTypeResult>;
 }
 
 export const TemplateEditor: React.FC<TemplateEditorProps> = ({
   templates,
+  sessionOptions,
   saveError,
   onSaveSection,
   onUndoSection,
   onResetSection,
+  onCreateSessionType,
 }) => {
   const { showToast } = useFeedback();
-  const [session, setSession] = useState<SessionType>("gym");
+  const [session, setSession] = useState<SessionType>(sessionOptions[0]?.value ?? "gym");
   const [section, setSection] = useState<keyof TemplateData>("main");
   const [rows, setRows] = useState<TemplateData[keyof TemplateData]>([]);
   const [errors, setErrors] = useState<TemplateValidationError[]>([]);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [isCoarsePointer, setIsCoarsePointer] = useState(false);
   const previousSaveErrorRef = useRef<string | null>(null);
 
-  const sectionRows = useMemo(() => templates[session][section], [templates, session, section]);
+  useEffect(() => {
+    if (sessionOptions.some((option) => option.value === session)) {
+      return;
+    }
+    if (sessionOptions[0]?.value) {
+      setSession(sessionOptions[0].value);
+    }
+  }, [session, sessionOptions]);
+
+  const sectionRows = useMemo(() => templates[session]?.[section] ?? [], [templates, session, section]);
 
   useEffect(() => {
     setRows(sectionRows.map((row) => ({ ...row })));
     setErrors([]);
   }, [sectionRows]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-      return;
-    }
-    const pointerMedia = window.matchMedia("(pointer: coarse)");
-    const syncPointerMode = () => setIsCoarsePointer(pointerMedia.matches);
-    syncPointerMode();
-    if (typeof pointerMedia.addEventListener === "function") {
-      pointerMedia.addEventListener("change", syncPointerMode);
-      return () => pointerMedia.removeEventListener("change", syncPointerMode);
-    }
-    pointerMedia.addListener(syncPointerMode);
-    return () => pointerMedia.removeListener(syncPointerMode);
-  }, []);
 
   useEffect(() => {
     if (saveError && saveError !== previousSaveErrorRef.current) {
@@ -68,22 +62,13 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
     previousSaveErrorRef.current = saveError;
   }, [saveError, showToast]);
 
-  const handleRowChange = (index: number, field: "text" | "target", value: string) => {
-    setRows((previous) =>
-      previous.map((row, rowIndex) => (rowIndex === index ? { ...row, [field]: value } : row))
-    );
-  };
-
-  const reorderRows = (fromIndex: number, toIndex: number) => {
-    if (fromIndex === toIndex) {
+  const toastCreateResult = (result: CreateSessionTypeResult) => {
+    if (result.status === "success") {
+      showToast({ tone: "success", title: result.message });
       return;
     }
-    setRows((previous) => {
-      const next = [...previous];
-      const [moved] = next.splice(fromIndex, 1);
-      next.splice(toIndex, 0, moved);
-      return next;
-    });
+
+    showToast({ tone: "error", title: result.message });
   };
 
   return (
@@ -116,7 +101,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
           onChange={(event) => setSession(event.target.value as SessionType)}
           className="bg-background/70 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
         >
-          {SESSION_OPTIONS.map((option) => (
+          {sessionOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -139,6 +124,11 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
           <Plus size={14} />
           Add Exercise
         </Button>
+        <SessionTypeCreateForm
+          onCreateSessionType={onCreateSessionType}
+          onCreated={setSession}
+          onShowMessage={toastCreateResult}
+        />
         <Button
           variant="ghost"
           size="sm"
@@ -174,65 +164,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
         </div>
       )}
 
-      <div className="space-y-3">
-        {rows.map((row, index) => (
-          <div
-            key={`${section}-${index}`}
-            className="grid grid-cols-[auto_1fr_auto] gap-2 sm:grid-cols-[auto_2fr_1fr_auto] sm:items-center"
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={() => {
-              if (isCoarsePointer) {
-                return;
-              }
-              if (dragIndex !== null) {
-                reorderRows(dragIndex, index);
-              }
-              setDragIndex(null);
-            }}
-          >
-            <button
-              type="button"
-              draggable={!isCoarsePointer}
-              onDragStart={() => {
-                if (!isCoarsePointer) {
-                  setDragIndex(index);
-                }
-              }}
-              onDragEnd={() => setDragIndex(null)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-background/40 text-slate-500 cursor-default sm:cursor-grab sm:active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-              title="Drag to reorder"
-              aria-label="Reorder row"
-            >
-              <GripVertical size={14} />
-            </button>
-            <input
-              type="text"
-              value={row.text}
-              onChange={(event) => handleRowChange(index, "text", event.target.value)}
-              placeholder="Exercise"
-              maxLength={TEMPLATE_TEXT_MAX_LENGTH}
-              className="col-span-3 bg-background/60 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-primary/50 sm:col-span-1"
-            />
-            <input
-              type="text"
-              value={row.target ?? ""}
-              onChange={(event) => handleRowChange(index, "target", event.target.value)}
-              placeholder="Target (e.g. 3x8-12)"
-              maxLength={TEMPLATE_TARGET_MAX_LENGTH}
-              className="col-span-3 bg-background/60 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-primary/50 sm:col-span-1"
-            />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 p-0 col-start-3 row-start-1 justify-self-end rounded-lg sm:col-start-auto sm:row-start-auto sm:justify-self-auto"
-              title="Remove row"
-              onClick={() => setRows((previous) => previous.filter((_, rowIndex) => rowIndex !== index))}
-            >
-              <Trash2 size={13} />
-            </Button>
-          </div>
-        ))}
-      </div>
+      <TemplateRowList section={section} rows={rows} onRowsChange={setRows} />
     </Card>
   );
 };

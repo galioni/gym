@@ -4,6 +4,7 @@ import { sanitizeDayDataRecord } from "../../../application/workout/data/dayData
 import { TEMPLATES } from "../../../constants";
 import { WorkoutDataSnapshot } from "../../../application/sync/syncTypes";
 import { AuthTokenProvider } from "../../../interfaces/auth/AuthTokenProvider";
+import { toCloudApiError } from "./cloudApiError";
 
 interface CloudRecordEnvelope {
   version: number;
@@ -39,7 +40,7 @@ export class CloudWorkoutDataRepository implements WorkoutDataRepository {
       return null;
     }
     if (!response.ok) {
-      throw new Error(`Cloud workout read failed: ${response.status}`);
+      throw await toCloudApiError(response, "Cloud workout read");
     }
 
     const payload = (await response.json()) as CloudRecordEnvelope | Record<string, unknown>;
@@ -49,9 +50,10 @@ export class CloudWorkoutDataRepository implements WorkoutDataRepository {
         : (payload as Record<string, unknown>);
     const sanitized = sanitizeDayDataRecord(rawData, TEMPLATES);
     return {
-      version: payload && typeof payload === "object" && "version" in payload
-        ? Number((payload as CloudRecordEnvelope).version) || 1
-        : 1,
+      version:
+        payload && typeof payload === "object" && "version" in payload
+          ? Number((payload as CloudRecordEnvelope).version) || 1
+          : 1,
       updatedAt:
         payload && typeof payload === "object" && "updatedAt" in payload
           ? String((payload as CloudRecordEnvelope).updatedAt)
@@ -79,7 +81,7 @@ export class CloudWorkoutDataRepository implements WorkoutDataRepository {
       }),
     });
     if (!response.ok) {
-      throw new Error(`Cloud workout write failed: ${response.status}`);
+      throw await toCloudApiError(response, "Cloud workout write");
     }
   }
 

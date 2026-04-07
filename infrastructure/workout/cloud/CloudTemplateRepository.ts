@@ -3,6 +3,7 @@ import { Templates } from "../../../types";
 import { sanitizeTemplates } from "../../../application/workout/templates/templateRules";
 import { TemplateSnapshot } from "../../../application/sync/syncTypes";
 import { AuthTokenProvider } from "../../../interfaces/auth/AuthTokenProvider";
+import { toCloudApiError } from "./cloudApiError";
 
 interface CloudTemplateEnvelope {
   version: number;
@@ -38,7 +39,7 @@ export class CloudTemplateRepository implements TemplateRepository {
       return null;
     }
     if (!response.ok) {
-      throw new Error(`Cloud template read failed: ${response.status}`);
+      throw await toCloudApiError(response, "Cloud template read");
     }
 
     const payload = (await response.json()) as CloudTemplateEnvelope | Partial<Templates>;
@@ -78,7 +79,7 @@ export class CloudTemplateRepository implements TemplateRepository {
       }),
     });
     if (!response.ok) {
-      throw new Error(`Cloud template write failed: ${response.status}`);
+      throw await toCloudApiError(response, "Cloud template write");
     }
   }
 

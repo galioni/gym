@@ -20,5 +20,16 @@ describe("templateRules", () => {
     expect(result.gym.main.length).toBeGreaterThan(0);
     expect(result.tennis.main.length).toBeGreaterThan(0);
   });
-});
 
+  it("preserves custom session types while sanitizing their sections", () => {
+    const result = sanitizeTemplates({
+      mobility: {
+        warmup: [{ text: "Band work", target: "5 min" }],
+        main: [{ text: "" }],
+      },
+    });
+
+    expect(result.mobility.warmup[0].text).toBe("Band work");
+    expect(result.mobility.main).toEqual([]);
+  });
+});
