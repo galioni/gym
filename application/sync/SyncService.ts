@@ -4,8 +4,10 @@ import {
 } from "../../interfaces/sync/SyncSettingsRepository";
 import { WorkoutDataRepository } from "../../interfaces/workout/WorkoutDataRepository";
 import { TemplateRepository } from "../../interfaces/workout/TemplateRepository";
+import { PlansRepository } from "../../interfaces/workout/PlansRepository";
 import {
   ConflictResolution,
+  PlansSnapshot,
   SyncConflict,
   SyncRestorePoint,
   SyncEntity,
@@ -13,6 +15,7 @@ import {
   TemplateSnapshot,
   WorkoutDataSnapshot,
 } from "./syncTypes";
+import { CloudApiPaymentRequiredError } from "../../infrastructure/workout/cloud/cloudApiError";
 
 type ConflictResolutionMap = Partial<Record<SyncEntity, ConflictResolution>>;
 
@@ -38,12 +41,23 @@ function isTemplateSnapshot(value: unknown): value is TemplateSnapshot {
   );
 }
 
+function isPlansSnapshot(value: unknown): value is PlansSnapshot {
+  return (
+    isRecord(value) &&
+    typeof value["version"] === "number" &&
+    typeof value["updatedAt"] === "string" &&
+    Array.isArray(value["data"])
+  );
+}
+
 interface SyncServiceDeps {
   settingsRepository: SyncSettingsRepository;
   localWorkoutRepository: WorkoutDataRepository;
   localTemplateRepository: TemplateRepository;
   cloudWorkoutRepository: WorkoutDataRepository | null;
   cloudTemplateRepository: TemplateRepository | null;
+  localPlansRepository?: PlansRepository | null;
+  cloudPlansRepository?: PlansRepository | null;
 }
 
 function stableSerialize(value: unknown): string {
@@ -150,13 +164,9 @@ export class SyncService {
 
   public async rollbackToRestorePoint(id: string): Promise<SyncNowResult> {
     const points = await this.getRestorePoints();
-    const target = points.find((point) => point.id === id);
+    const target = points.find((point) => point.id === id) as SyncRestorePoint | undefined;
     if (!target) {
-      return {
-        status: "error",
-        conflicts: [],
-        message: "Restore point not found.",
-      };
+      return { status: "error", conflicts: [], message: "Restore point not found." };
     }
 
     if (target.workoutData) {
@@ -171,12 +181,14 @@ export class SyncService {
       }
       await this.deps.localTemplateRepository.writeSnapshot(target.templates);
     }
+    if (target.plans && this.deps.localPlansRepository) {
+      if (!isPlansSnapshot(target.plans)) {
+        return { status: "error", conflicts: [], message: "Restore point plans data is corrupted." };
+      }
+      await this.deps.localPlansRepository.writeSnapshot(target.plans);
+    }
 
-    return {
-      status: "success",
-      conflicts: [],
-      message: "Rollback completed from restore point.",
-    };
+    return { status: "success", conflicts: [], message: "Rollback completed from restore point." };
   }
 
   public async syncNow(
@@ -197,10 +209,12 @@ export class SyncService {
     try {
       const localWorkout = await this.deps.localWorkoutRepository.readSnapshot();
       const localTemplates = await this.deps.localTemplateRepository.readSnapshot();
+      const localPlans = this.deps.localPlansRepository ? await this.deps.localPlansRepository.readSnapshot() : null;
       const cloudWorkout = await this.deps.cloudWorkoutRepository.readSnapshot();
       const cloudTemplates = await this.deps.cloudTemplateRepository.readSnapshot();
+      const cloudPlans = this.deps.cloudPlansRepository ? await this.deps.cloudPlansRepository.readSnapshot() : null;
 
-      await this.createRestorePoint(localWorkout, localTemplates);
+      await this.createRestorePoint(localWorkout, localTemplates, localPlans);
 
       const conflicts: SyncConflict[] = [];
       if (hasConflict(localWorkout, cloudWorkout)) {
@@ -219,6 +233,14 @@ export class SyncService {
           previewPaths: collectDiffPaths(localTemplates?.data, cloudTemplates?.data).slice(0, 12),
         });
       }
+      if (this.deps.localPlansRepository && this.deps.cloudPlansRepository && hasConflict(localPlans, cloudPlans)) {
+        conflicts.push({
+          entity: "plans",
+          localUpdatedAt: localPlans!.updatedAt,
+          cloudUpdatedAt: cloudPlans!.updatedAt,
+          previewPaths: collectDiffPaths(localPlans?.data, cloudPlans?.data).slice(0, 12),
+        });
+      }
 
       const unresolved = conflicts.filter((conflict) => !resolution[conflict.entity]);
       if (unresolved.length > 0) {
@@ -231,6 +253,7 @@ export class SyncService {
 
       await this.syncWorkoutData(localWorkout, cloudWorkout, resolution.workoutData);
       await this.syncTemplates(localTemplates, cloudTemplates, resolution.templates);
+      await this.syncPlans(localPlans, cloudPlans, resolution.plans);
 
       const syncedAt = new Date().toISOString();
       await this.deps.settingsRepository.writeSettings({
@@ -245,6 +268,13 @@ export class SyncService {
         message: "Sync completed.",
       };
     } catch (error) {
+      if (error instanceof CloudApiPaymentRequiredError) {
+        return {
+          status: "upgradeRequired",
+          conflicts: [],
+          message: "Cloud sync requires a Pro subscription.",
+        };
+      }
       const message =
         error instanceof Error ? error.message : "Unknown sync error";
       await this.deps.settingsRepository.writeSettings({
@@ -257,7 +287,8 @@ export class SyncService {
 
   private async createRestorePoint(
     workoutData: WorkoutDataSnapshot | null,
-    templates: TemplateSnapshot | null
+    templates: TemplateSnapshot | null,
+    plans: PlansSnapshot | null
   ): Promise<void> {
     const existing = await this.getRestorePoints();
     const next: SyncRestorePoint = {
@@ -265,16 +296,10 @@ export class SyncService {
       createdAt: new Date().toISOString(),
       workoutData,
       templates,
+      plans,
     };
     const updated = [next, ...existing].slice(0, 10);
-    await this.deps.settingsRepository.writeRestorePoints(
-      updated as Array<{
-        id: string;
-        createdAt: string;
-        workoutData: unknown;
-        templates: unknown;
-      }>
-    );
+    await this.deps.settingsRepository.writeRestorePoints(updated);
   }
 
   private async syncWorkoutData(
@@ -348,6 +373,43 @@ export class SyncService {
       await this.deps.cloudTemplateRepository.writeSnapshot(local);
     } else if (resolution === "keepCloud") {
       await this.deps.localTemplateRepository.writeSnapshot(cloud);
+    }
+  }
+
+  private async syncPlans(
+    local: PlansSnapshot | null,
+    cloud: PlansSnapshot | null,
+    resolution: ConflictResolution | undefined
+  ): Promise<void> {
+    if (!this.deps.localPlansRepository || !this.deps.cloudPlansRepository) {
+      return;
+    }
+
+    if (local && !cloud) {
+      await this.deps.cloudPlansRepository.writeSnapshot(local);
+      return;
+    }
+    if (!local && cloud) {
+      await this.deps.localPlansRepository.writeSnapshot(cloud);
+      return;
+    }
+    if (!local || !cloud) {
+      return;
+    }
+
+    if (stableSerialize(local.data) === stableSerialize(cloud.data)) {
+      if (local.updatedAt >= cloud.updatedAt) {
+        await this.deps.cloudPlansRepository.writeSnapshot(local);
+      } else {
+        await this.deps.localPlansRepository.writeSnapshot(cloud);
+      }
+      return;
+    }
+
+    if (resolution === "keepLocal") {
+      await this.deps.cloudPlansRepository.writeSnapshot(local);
+    } else if (resolution === "keepCloud") {
+      await this.deps.localPlansRepository.writeSnapshot(cloud);
     }
   }
 }

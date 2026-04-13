@@ -4,7 +4,7 @@ import { sanitizeDayDataRecord } from "../../../application/workout/data/dayData
 import { TEMPLATES } from "../../../constants";
 import { WorkoutDataSnapshot } from "../../../application/sync/syncTypes";
 import { AuthTokenProvider } from "../../../interfaces/auth/AuthTokenProvider";
-import { fetchWithTimeout, toCloudApiError } from "./cloudApiError";
+import { fetchWithTimeout, toCloudApiError, CloudApiPaymentRequiredError } from "./cloudApiError";
 
 interface CloudRecordEnvelope {
   version: number;
@@ -36,12 +36,9 @@ export class CloudWorkoutDataRepository implements WorkoutDataRepository {
       method: "GET",
       headers: await this.getAuthHeader(),
     });
-    if (response.status === 404) {
-      return null;
-    }
-    if (!response.ok) {
-      throw await toCloudApiError(response, "Cloud workout read");
-    }
+    if (response.status === 404) return null;
+    if (response.status === 402) throw new CloudApiPaymentRequiredError();
+    if (!response.ok) throw await toCloudApiError(response, "Cloud workout read");
 
     const payload = (await response.json()) as CloudRecordEnvelope | Record<string, unknown>;
     const rawData =
@@ -80,9 +77,8 @@ export class CloudWorkoutDataRepository implements WorkoutDataRepository {
         data: snapshot.data,
       }),
     });
-    if (!response.ok) {
-      throw await toCloudApiError(response, "Cloud workout write");
-    }
+    if (response.status === 402) throw new CloudApiPaymentRequiredError();
+    if (!response.ok) throw await toCloudApiError(response, "Cloud workout write");
   }
 
   public async writeAll(data: Record<string, DayData>): Promise<void> {

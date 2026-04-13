@@ -41,6 +41,42 @@ export class SupabaseAuthSessionRepository implements AuthSessionRepository {
     return toAuthSession(data.session);
   }
 
+  public async signInWithEmail(email: string, password: string): Promise<void> {
+    const client = createSupabaseClient();
+    const { error } = await client.auth.signInWithPassword({ email, password });
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  public async signUpWithEmail(email: string, password: string): Promise<{ needsConfirmation: boolean }> {
+    const client = createSupabaseClient();
+    const { data, error } = await client.auth.signUp({ email, password });
+    if (error) {
+      throw new Error(error.message);
+    }
+    // If identities is empty the email already exists (Supabase returns 200 but creates no identity).
+    const needsConfirmation = !data.session;
+    return { needsConfirmation };
+  }
+
+  public async updatePassword(newPassword: string): Promise<void> {
+    const client = createSupabaseClient();
+    const { error } = await client.auth.updateUser({ password: newPassword });
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  public async resetPassword(email: string): Promise<void> {
+    const client = createSupabaseClient();
+    const redirectTo = getRequiredSupabaseClientEnv().redirectUrl;
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+
   public async signInWithGoogle(): Promise<void> {
     const client = createSupabaseClient();
     const redirectTo = getRequiredSupabaseClientEnv().redirectUrl;
@@ -65,8 +101,8 @@ export class SupabaseAuthSessionRepository implements AuthSessionRepository {
 
   public subscribe(listener: AuthSessionListener): () => void {
     const client = createSupabaseClient();
-    const { data } = client.auth.onAuthStateChange((_event, session) => {
-      listener(toAuthSession(session));
+    const { data } = client.auth.onAuthStateChange((event, session) => {
+      listener(toAuthSession(session), event);
     });
     return () => {
       data.subscription.unsubscribe();

@@ -1,4 +1,4 @@
-import { DayData, Templates } from "../../types";
+import { DayData, Plan, Templates } from "../../types";
 
 export interface WorkoutDataSnapshot {
   version: number;
@@ -12,7 +12,13 @@ export interface TemplateSnapshot {
   data: Templates;
 }
 
-export type SyncEntity = "workoutData" | "templates";
+export interface PlansSnapshot {
+  version: number;
+  updatedAt: string;
+  data: Plan[];
+}
+
+export type SyncEntity = "workoutData" | "templates" | "plans";
 export type ConflictResolution = "keepLocal" | "keepCloud";
 
 export interface SyncConflict {
@@ -27,10 +33,11 @@ export interface SyncRestorePoint {
   createdAt: string;
   workoutData: WorkoutDataSnapshot | null;
   templates: TemplateSnapshot | null;
+  plans: PlansSnapshot | null;
 }
 
 export interface SyncNowResult {
-  status: "idle" | "success" | "error" | "conflict";
+  status: "idle" | "success" | "error" | "conflict" | "upgradeRequired";
   conflicts: SyncConflict[];
   message: string;
 }

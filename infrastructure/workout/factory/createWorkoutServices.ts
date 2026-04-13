@@ -1,17 +1,21 @@
 import { WorkoutDataService } from "../../../application/workout/WorkoutDataService";
 import { TemplateService } from "../../../application/workout/TemplateService";
 import { SyncService } from "../../../application/sync/SyncService";
+import { PlanService } from "../../../application/workout/PlanService";
 import { CloudTemplateRepository } from "../cloud/CloudTemplateRepository";
 import { CloudWorkoutDataRepository } from "../cloud/CloudWorkoutDataRepository";
+import { CloudPlansRepository } from "../cloud/CloudPlansRepository";
 import { LocalStorageTemplateRepository } from "../LocalStorageTemplateRepository";
 import { LocalStorageWorkoutDataRepository } from "../LocalStorageWorkoutDataRepository";
 import { LocalStorageSyncSettingsRepository } from "../../sync/LocalStorageSyncSettingsRepository";
+import { LocalStoragePlansRepository } from "../LocalStoragePlansRepository";
 import { SupabaseTokenProvider } from "../../auth/supabase/SupabaseTokenProvider";
 
 interface WorkoutServices {
   workoutDataService: WorkoutDataService;
   templateService: TemplateService;
   syncService: SyncService;
+  planService: PlanService;
 }
 
 function toSyncApiBaseUrl(rawValue: string | undefined): string | null {
@@ -38,21 +42,26 @@ export function createWorkoutServices(): WorkoutServices {
   const localWorkoutRepository = new LocalStorageWorkoutDataRepository();
   const localTemplateRepository = new LocalStorageTemplateRepository();
   const syncSettingsRepository = new LocalStorageSyncSettingsRepository();
+  const plansRepository = new LocalStoragePlansRepository();
 
   const baseUrl = getRequiredSyncApiBaseUrl();
   const tokenProvider = new SupabaseTokenProvider();
   const cloudWorkoutRepository = new CloudWorkoutDataRepository(baseUrl, tokenProvider);
   const cloudTemplateRepository = new CloudTemplateRepository(baseUrl, tokenProvider);
+  const cloudPlansRepository = new CloudPlansRepository(baseUrl, tokenProvider);
 
   return {
     workoutDataService: new WorkoutDataService(localWorkoutRepository),
     templateService: new TemplateService(localTemplateRepository),
+    planService: new PlanService(plansRepository),
     syncService: new SyncService({
       settingsRepository: syncSettingsRepository,
       localWorkoutRepository,
       localTemplateRepository,
       cloudWorkoutRepository,
       cloudTemplateRepository,
+      localPlansRepository: plansRepository,
+      cloudPlansRepository,
     }),
   };
 }

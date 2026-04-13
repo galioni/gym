@@ -31,3 +31,10 @@ export interface TemplateData {
 }
 
 export type Templates = Record<SessionType, TemplateData>;
+
+export interface Plan {
+  id: string;
+  label: string;
+  /** References session types from the shared templates pool */
+  sessionIds: SessionType[];
+}

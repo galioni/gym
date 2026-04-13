@@ -21,6 +21,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isWorking, setIsWorking] = useState(false);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,10 +45,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     };
 
     void loadSession();
-    const unsubscribe = service.subscribe((nextSession) => {
+    const unsubscribe = service.subscribe((nextSession, event) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setIsPasswordRecovery(true);
+        return;
+      }
       setSession(nextSession);
       setError(null);
       setIsLoading(false);
+      if (event === "SIGNED_IN") {
+        setIsPasswordRecovery(false);
+      }
     });
 
     return () => {
@@ -63,6 +71,61 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       await service.signInWithGoogle();
     } catch (signInError) {
       setError(signInError instanceof Error ? signInError.message : "Google sign-in failed.");
+    } finally {
+      setIsWorking(false);
+    }
+  }, [service]);
+
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    setIsWorking(true);
+    setError(null);
+    try {
+      await service.signInWithEmail(email, password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sign-in failed.");
+      throw err;
+    } finally {
+      setIsWorking(false);
+    }
+  }, [service]);
+
+  const signUpWithEmail = useCallback(async (email: string, password: string) => {
+    setIsWorking(true);
+    setError(null);
+    try {
+      return await service.signUpWithEmail(email, password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sign-up failed.");
+      throw err;
+    } finally {
+      setIsWorking(false);
+    }
+  }, [service]);
+
+  const updatePassword = useCallback(async (newPassword: string) => {
+    setIsWorking(true);
+    setError(null);
+    try {
+      await service.updatePassword(newPassword);
+      setIsPasswordRecovery(false);
+      return { success: true };
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Password update failed.");
+      return { success: false };
+    } finally {
+      setIsWorking(false);
+    }
+  }, [service]);
+
+  const resetPassword = useCallback(async (email: string) => {
+    setIsWorking(true);
+    setError(null);
+    try {
+      await service.resetPassword(email);
+      return { sent: true };
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Password reset failed.");
+      return { sent: false };
     } finally {
       setIsWorking(false);
     }
@@ -84,12 +147,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     () => ({
       isLoading,
       isWorking,
+      isPasswordRecovery,
       session,
       error,
       signInWithGoogle,
+      signInWithEmail,
+      signUpWithEmail,
+      resetPassword,
+      updatePassword,
       signOut,
     }),
-    [error, isLoading, isWorking, session, signInWithGoogle, signOut]
+    [error, isLoading, isWorking, isPasswordRecovery, session, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, updatePassword, signOut]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

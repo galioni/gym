@@ -6,7 +6,11 @@
       "mcp__claude_ai_Vercel__list_deployments",
       "mcp__claude_ai_Vercel__get_deployment_build_logs",
       "Bash(npm test:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(xargs grep:*)",
+      "Bash(cat)",
+      "Bash(node /tmp/test_sig.js)"
     ]
   }
 }

@@ -1,4 +1,4 @@
-const ALLOWED_METHODS = new Set(["GET", "PUT", "OPTIONS"]);
+const ALLOWED_METHODS = new Set(["GET", "PUT", "POST", "OPTIONS"]);
 const DEFAULT_ALLOWED_CORS_ORIGINS = new Set([
   "http://localhost:5173",
   "https://gym-galioni.vercel.app",
@@ -82,7 +82,7 @@ export function setCorsHeaders(req: ApiRequest, res: ApiResponse): void {
     res.setHeader("Vary", "Origin");
   }
   res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
-  res.setHeader("Access-Control-Allow-Methods", "GET, PUT, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, PUT, POST, OPTIONS");
   res.setHeader("Access-Control-Expose-Headers", "x-request-id");
 }
 

@@ -41,6 +41,7 @@ export class LocalStorageSyncSettingsRepository
       createdAt: string;
       workoutData: unknown;
       templates: unknown;
+      plans?: unknown;
     }>
   > {
     const raw = localStorage.getItem(SYNC_RESTORE_POINTS_STORAGE_KEY);
@@ -53,6 +54,7 @@ export class LocalStorageSyncSettingsRepository
         createdAt: string;
         workoutData: unknown;
         templates: unknown;
+        plans?: unknown;
       }>;
       return Array.isArray(parsed) ? parsed : [];
     } catch {
@@ -66,6 +68,7 @@ export class LocalStorageSyncSettingsRepository
       createdAt: string;
       workoutData: unknown;
       templates: unknown;
+      plans?: unknown;
     }>
   ): Promise<void> {
     localStorage.setItem(SYNC_RESTORE_POINTS_STORAGE_KEY, JSON.stringify(points));

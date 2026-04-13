@@ -38,3 +38,23 @@ export function isTemplateSnapshotPayload(value: unknown): boolean {
     hasValidTemplateKeys(value.templates)
   );
 }
+
+export function isPlansSnapshotPayload(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+  if (typeof value.version !== "number" || !isIsoDateString(value.updatedAt)) {
+    return false;
+  }
+  if (!Array.isArray(value.plans)) {
+    return false;
+  }
+  return value.plans.every(
+    (p) =>
+      isRecord(p) &&
+      typeof p.id === "string" &&
+      typeof p.label === "string" &&
+      Array.isArray(p.sessionIds) &&
+      (p.sessionIds as unknown[]).every((s) => typeof s === "string")
+  );
+}

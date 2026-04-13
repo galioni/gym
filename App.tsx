@@ -14,7 +14,10 @@ import { DashboardContent } from "./features/app-shell/components/DashboardConte
 import { SettingsPage } from "./features/settings/components/SettingsPage/SettingsPage";
 import { useFeedback } from "./features/feedback/hooks/useFeedback";
 import { getSessionLabel, getSessionOptions } from "./application/workout/sessionTypes/sessionTypeRules";
+import { usePlans } from "./features/plans/state/usePlans";
 import { useWeightReminder } from "./features/weight-reminder/hooks/useWeightReminder";
+import { OnboardingWizard } from "./features/onboarding/components/OnboardingWizard/OnboardingWizard";
+import { ONBOARDING_STORAGE_KEY } from "./constants";
 
 function App() {
   const { confirm, showToast } = useFeedback();
@@ -33,6 +36,7 @@ function App() {
     saveSectionTemplate,
     undoSectionTemplate,
     resetSectionTemplate,
+    replaceTemplates,
     addSessionType,
     removeSessionType,
     renameSessionType,
@@ -58,6 +62,7 @@ function App() {
   const {
     settings: syncSettings,
     isSyncing,
+    isUpgradeRequired,
     conflicts,
     restorePoints,
     syncMessage,
@@ -66,7 +71,14 @@ function App() {
     pruneRestorePoints,
   } = useSyncSettings(services.syncService);
 
-  const sessionOptions = useMemo(() => getSessionOptions(templates), [templates]);
+  const { plans, activePlanId, createPlan, updatePlan, deletePlan, setActivePlan } = usePlans(services.planService);
+
+  const allSessionOptions = useMemo(() => getSessionOptions(templates), [templates]);
+  const sessionOptions = useMemo(() => {
+    const activePlan = plans.find((p) => p.id === activePlanId);
+    if (!activePlan || activePlan.sessionIds.length === 0) return allSessionOptions;
+    return allSessionOptions.filter((o) => activePlan.sessionIds.includes(o.value));
+  }, [allSessionOptions, plans, activePlanId]);
   const { settings: weightReminder, updateSettings: updateWeightReminder } = useWeightReminder();
   const fridayHint = useMemo(
     () => getFridayHint(weightReminder.enabled, weightReminder.targetTime),
@@ -75,6 +87,9 @@ function App() {
   const [stickyFooterHeight, setStickyFooterHeight] = useState(124);
   const [page, setPage] = useState<"dashboard" | "settings">("dashboard");
   const [activeTimer, setActiveTimer] = useState<{ section: "warmup" | "main"; scrollTo: () => void } | null>(null);
+  const [hasOnboarded, setHasOnboarded] = useState(
+    () => localStorage.getItem(ONBOARDING_STORAGE_KEY) === "true"
+  );
 
   const appShellStyle = useMemo(
     () =>
@@ -189,6 +204,22 @@ function App() {
     return null;
   }
 
+  if (!hasOnboarded) {
+    return (
+      <OnboardingWizard
+        onComplete={async (generatedTemplates) => {
+          await replaceTemplates(generatedTemplates);
+          localStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
+          setHasOnboarded(true);
+        }}
+        onSkip={() => {
+          localStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
+          setHasOnboarded(true);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background text-slate-200" style={appShellStyle}>
       <Header
@@ -229,6 +260,7 @@ function App() {
           conflicts={conflicts}
           restorePoints={restorePoints}
           isSyncing={isSyncing}
+          isUpgradeRequired={isUpgradeRequired}
           onSaveSectionTemplate={saveSectionTemplate}
           onUndoSectionTemplate={undoSectionTemplate}
           onResetSectionTemplate={resetSectionTemplate}
@@ -238,6 +270,17 @@ function App() {
           onSyncNow={syncNow}
           onRollback={rollbackToRestorePoint}
           onPruneRestorePoints={pruneRestorePoints}
+          plans={plans}
+          activePlanId={activePlanId}
+          onCreatePlan={createPlan}
+          onUpdatePlan={updatePlan}
+          onDeletePlan={deletePlan}
+          onSetActivePlan={setActivePlan}
+          onRegeneratePlan={() => {
+            localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+            setHasOnboarded(false);
+            setPage("dashboard");
+          }}
         />
       )}
 
