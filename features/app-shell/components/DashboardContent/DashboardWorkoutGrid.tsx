@@ -2,63 +2,22 @@ import React from "react";
 import { WorkoutSection } from "../../../../components/WorkoutSection";
 import { RpeSelect } from "../../../workout/components/RpeSelect/RpeSelect";
 import { DailyCheckCard } from "../../../workout/components/DailyCheckCard/DailyCheckCard";
-import { TemplateEditor } from "../../../templates/components/TemplateEditor/TemplateEditor";
-import { SyncSettingsPanel } from "../../../sync/components/SyncSettingsPanel/SyncSettingsPanel";
-import { DayData, SessionOption, SessionType, TemplateData, Templates } from "../../../../types";
-import { SyncConflict, SyncNowResult, SyncRestorePoint } from "../../../../application/sync/syncTypes";
-import { TemplateValidationError } from "../../../../application/workout/templates/templateRules";
-import { CreateSessionTypeResult } from "../../../../application/workout/sessionTypes/sessionTypeRules";
+import { DayData } from "../../../../types";
 
 interface DashboardWorkoutGridProps {
   currentDay: DayData;
-  templates: Templates;
-  sessionOptions: SessionOption[];
-  templateSaveError: string | null;
-  lastSyncedAt: string | null;
-  lastSyncError: string | null;
-  syncMessage: string;
-  conflicts: SyncConflict[];
-  restorePoints: SyncRestorePoint[];
-  isSyncing: boolean;
   onToggleItem: (section: "warmup" | "main", id: string, done: boolean) => void;
   onDeleteItem: (section: "warmup" | "main", id: string) => Promise<boolean>;
   onUpdateDay: (updates: Partial<DayData>) => void;
   onUpdateDayDebounced: (updates: Partial<DayData>) => void;
-  onSaveSectionTemplate: (
-    session: SessionType,
-    section: keyof TemplateData,
-    rows: TemplateData[keyof TemplateData]
-  ) => TemplateValidationError[];
-  onUndoSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
-  onResetSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
-  onCreateSessionType: (label: string) => Promise<CreateSessionTypeResult>;
-  onSyncNow: (
-    resolution?: Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
-  ) => Promise<SyncNowResult>;
-  onRollbackSyncPoint: (id: string) => Promise<SyncNowResult>;
 }
 
 export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
   currentDay,
-  templates,
-  sessionOptions,
-  templateSaveError,
-  lastSyncedAt,
-  lastSyncError,
-  syncMessage,
-  conflicts,
-  restorePoints,
-  isSyncing,
   onToggleItem,
   onDeleteItem,
   onUpdateDay,
   onUpdateDayDebounced,
-  onSaveSectionTemplate,
-  onUndoSectionTemplate,
-  onResetSectionTemplate,
-  onCreateSessionType,
-  onSyncNow,
-  onRollbackSyncPoint,
 }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 pb-4">
@@ -97,37 +56,13 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
         <DailyCheckCard
           day={currentDay}
           onUpdateField={(updates) => {
-            if ("checkNotes" in updates && Object.keys(updates).length === 1) {
+            const keys = Object.keys(updates);
+            if (keys.length === 1 && ("checkNotes" in updates || "weight" in updates)) {
               onUpdateDayDebounced(updates);
               return;
             }
             onUpdateDay(updates);
           }}
-        />
-      </div>
-
-      <div className="md:col-span-2 motion-rise">
-        <TemplateEditor
-          templates={templates}
-          sessionOptions={sessionOptions}
-          saveError={templateSaveError}
-          onSaveSection={onSaveSectionTemplate}
-          onUndoSection={onUndoSectionTemplate}
-          onResetSection={onResetSectionTemplate}
-          onCreateSessionType={onCreateSessionType}
-        />
-      </div>
-
-      <div className="md:col-span-2 motion-rise">
-        <SyncSettingsPanel
-          lastSyncedAt={lastSyncedAt}
-          lastError={lastSyncError}
-          syncMessage={syncMessage}
-          conflicts={conflicts}
-          restorePoints={restorePoints}
-          isSyncing={isSyncing}
-          onSyncNow={onSyncNow}
-          onRollback={onRollbackSyncPoint}
         />
       </div>
     </div>

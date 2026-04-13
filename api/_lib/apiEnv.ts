@@ -2,7 +2,7 @@ type RequiredApiEnvName =
   | "KV_REST_API_URL"
   | "KV_REST_API_TOKEN"
   | "SUPABASE_URL"
-  | "SUPABASE_ANON_KEY";
+  | "SUPABASE_JWT_SECRET";
 
 type OptionalKvAliasName = "STORAGE_KV_REST_API_URL" | "STORAGE_KV_REST_API_TOKEN";
 
@@ -11,10 +11,6 @@ export interface RequiredVercelKvEnv {
   kvRestApiToken: string;
 }
 
-export interface RequiredSupabaseJwtEnv {
-  supabaseUrl: string;
-  supabaseAnonKey: string;
-}
 
 function readRequiredEnvValue(name: string): string | null {
   const value = process.env[name];
@@ -61,12 +57,6 @@ export function getRequiredVercelKvEnv(): RequiredVercelKvEnv {
   };
 }
 
-/**
- * Returns the minimum Supabase variables required for JWT user verification.
- */
-export function getRequiredSupabaseJwtEnv(): RequiredSupabaseJwtEnv {
-  return {
-    supabaseUrl: getRequiredApiEnv("SUPABASE_URL"),
-    supabaseAnonKey: getRequiredApiEnv("SUPABASE_ANON_KEY"),
-  };
+export function getSupabaseJwtSecret(): string {
+  return getRequiredApiEnv("SUPABASE_JWT_SECRET");
 }

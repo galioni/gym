@@ -17,6 +17,7 @@ interface UseWorkoutTrackerResult {
   isLoaded: boolean;
   isSaving: boolean;
   currentDay: DayData;
+  usedSessionTypes: Set<SessionType>;
   setCurrentDate: (date: string) => void;
   updateDay: (updates: Partial<DayData>) => void;
   updateDayDebounced: (updates: Partial<DayData>) => void;
@@ -82,6 +83,11 @@ export function useWorkoutTracker(service: WorkoutDataService, templates: Templa
   const currentDay = useMemo(
     () => allData[currentDate] || createEmptyDay(currentDate, "tennis", templates),
     [allData, currentDate, templates]
+  );
+
+  const usedSessionTypes = useMemo(
+    () => new Set(Object.values(allData).map((day) => day.sessionType)),
+    [allData]
   );
 
   const flushPersist = useCallback(async () => {
@@ -177,9 +183,22 @@ export function useWorkoutTracker(service: WorkoutDataService, templates: Templa
     updateDay({ ...freshDay, sessionType: currentDay.sessionType }, 0);
   }, [currentDate, currentDay.sessionType, updateDay, templates]);
 
+  const handleSetCurrentDate = useCallback(
+    (date: string) => {
+      // Flush any pending debounced save before switching days to prevent data loss
+      if (persistTimerRef.current) {
+        clearTimeout(persistTimerRef.current);
+        persistTimerRef.current = null;
+        void flushPersist();
+      }
+      setCurrentDate(date);
+    },
+    [flushPersist]
+  );
+
   const jumpToToday = useCallback(() => {
-    setCurrentDate(toLocalDateKey(new Date()));
-  }, []);
+    handleSetCurrentDate(toLocalDateKey(new Date()));
+  }, [handleSetCurrentDate]);
 
   const duplicatePreviousDayNotesAndWeight = useCallback(() => {
     const current = fromLocalDateKey(currentDate);
@@ -207,7 +226,8 @@ export function useWorkoutTracker(service: WorkoutDataService, templates: Templa
     isLoaded,
     isSaving,
     currentDay,
-    setCurrentDate,
+    usedSessionTypes,
+    setCurrentDate: handleSetCurrentDate,
     updateDay,
     updateDayDebounced,
     toggleItem,

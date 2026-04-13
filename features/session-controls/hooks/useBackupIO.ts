@@ -34,6 +34,18 @@ function isFullBackupEnvelope(value: unknown): value is FullBackupEnvelope {
   return candidate.version === 1 && Boolean(candidate.stores);
 }
 
+function isValidJsonOrNull(value: string | null): boolean {
+  if (value === null) {
+    return true;
+  }
+  try {
+    JSON.parse(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Centralizes backup export/import side effects so header UI stays presentation-focused.
  */
@@ -104,6 +116,19 @@ export function useBackupIO(): UseBackupIOResult {
 
         if (isFullBackupEnvelope(parsed)) {
           const stores = parsed.stores;
+          if (
+            !isValidJsonOrNull(stores.workout) ||
+            !isValidJsonOrNull(stores.templates) ||
+            !isValidJsonOrNull(stores.syncSettings) ||
+            !isValidJsonOrNull(stores.syncRestorePoints)
+          ) {
+            showToast({
+              tone: "error",
+              title: "Invalid backup file",
+              description: "One or more data stores in the backup are corrupted.",
+            });
+            return;
+          }
           const writeStore = (key: string, value: string | null) => {
             if (value === null) {
               localStorage.removeItem(key);
@@ -117,6 +142,10 @@ export function useBackupIO(): UseBackupIOResult {
           writeStore(SYNC_RESTORE_POINTS_STORAGE_KEY, stores.syncRestorePoints);
         } else {
           // Backward compatibility: old backups contained only workout payload.
+          if (!isValidJsonOrNull(json)) {
+            showToast({ tone: "error", title: "Invalid backup file", description: "Please select a valid JSON backup." });
+            return;
+          }
           localStorage.setItem(STORAGE_KEY, json);
         }
         showToast({ tone: "success", title: "Backup imported", description: "Reloading with restored data..." });

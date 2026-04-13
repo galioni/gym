@@ -11,8 +11,9 @@ import { createWorkoutServices } from "./infrastructure/workout/factory/createWo
 import { useSyncSettings } from "./features/sync/state/useSyncSettings";
 import { useWorkoutKeyboardShortcuts } from "./features/app-shell/hooks/useWorkoutKeyboardShortcuts";
 import { DashboardContent } from "./features/app-shell/components/DashboardContent/DashboardContent";
+import { SettingsPage } from "./features/settings/components/SettingsPage/SettingsPage";
 import { useFeedback } from "./features/feedback/hooks/useFeedback";
-import { getSessionOptions } from "./application/workout/sessionTypes/sessionTypeRules";
+import { getSessionLabel, getSessionOptions } from "./application/workout/sessionTypes/sessionTypeRules";
 
 function App() {
   const { confirm, showToast } = useFeedback();
@@ -32,6 +33,8 @@ function App() {
     undoSectionTemplate,
     resetSectionTemplate,
     addSessionType,
+    removeSessionType,
+    renameSessionType,
   } = useTemplates(services.templateService);
 
   const {
@@ -39,6 +42,7 @@ function App() {
     isLoaded,
     isSaving,
     currentDay,
+    usedSessionTypes,
     setCurrentDate,
     updateDay,
     updateDayDebounced,
@@ -58,11 +62,13 @@ function App() {
     syncMessage,
     syncNow,
     rollbackToRestorePoint,
+    pruneRestorePoints,
   } = useSyncSettings(services.syncService);
 
   const sessionOptions = useMemo(() => getSessionOptions(templates), [templates]);
   const fridayHint = useMemo(() => getFridayHint(currentDate), [currentDate]);
   const [stickyFooterHeight, setStickyFooterHeight] = useState(124);
+  const [page, setPage] = useState<"dashboard" | "settings">("dashboard");
 
   const appShellStyle = useMemo(
     () =>
@@ -134,6 +140,39 @@ function App() {
     [confirm, deleteItem, showToast]
   );
 
+  // Warn before unload if a debounced save is still in flight
+  React.useEffect(() => {
+    if (!isSaving) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isSaving]);
+
+  const handleDeleteSessionType = useCallback(
+    async (sessionType: SessionType) => {
+      const isInUse = usedSessionTypes.has(sessionType);
+      const label = getSessionLabel(sessionType);
+      const confirmed = await confirm({
+        title: isInUse
+          ? `"${label}" is used in your workout history`
+          : `Delete "${label}"?`,
+        description: isInUse
+          ? "Those days will keep their data but their session label will show as unknown. Delete anyway?"
+          : "This removes the session type and its template. Existing workout days are not affected.",
+        confirmLabel: "Delete",
+        cancelLabel: "Cancel",
+        tone: "danger",
+      });
+      if (!confirmed) {
+        return { status: "error" as const, message: "Cancelled." };
+      }
+      return removeSessionType(sessionType);
+    },
+    [confirm, removeSessionType, usedSessionTypes]
+  );
+
   useWorkoutKeyboardShortcuts({
     onJumpToday: jumpToToday,
     onLoadTemplate: () => void handleLoadTemplate(),
@@ -156,39 +195,51 @@ function App() {
         onJumpToday={jumpToToday}
         theme={theme}
         onThemeChange={setTheme}
+        onNavigateSettings={() => setPage("settings")}
       />
 
-      <DashboardContent
-        fridayHint={fridayHint}
-        currentDay={currentDay}
-        templates={templates}
-        sessionOptions={sessionOptions}
-        templateSaveError={templateSaveError}
-        lastSyncedAt={syncSettings.lastSyncedAt}
-        lastSyncError={syncSettings.lastError}
-        syncMessage={syncMessage}
-        conflicts={conflicts}
-        restorePoints={restorePoints}
-        isSyncing={isSyncing}
-        onToggleItem={toggleItem}
-        onDeleteItem={handleDeleteItem}
-        onUpdateDay={updateDay}
-        onUpdateDayDebounced={updateDayDebounced}
-        onDuplicatePreviousDayNotesAndWeight={handleDuplicatePreviousDayNotesAndWeight}
-        onSaveSectionTemplate={saveSectionTemplate}
-        onUndoSectionTemplate={undoSectionTemplate}
-        onResetSectionTemplate={resetSectionTemplate}
-        onCreateSessionType={addSessionType}
-        onSyncNow={syncNow}
-        onRollbackSyncPoint={rollbackToRestorePoint}
-      />
+      {page === "dashboard" ? (
+        <DashboardContent
+          fridayHint={fridayHint}
+          currentDay={currentDay}
+          onToggleItem={toggleItem}
+          onDeleteItem={handleDeleteItem}
+          onUpdateDay={updateDay}
+          onUpdateDayDebounced={updateDayDebounced}
+          onDuplicatePreviousDayNotesAndWeight={handleDuplicatePreviousDayNotesAndWeight}
+        />
+      ) : (
+        <SettingsPage
+          onBack={() => setPage("dashboard")}
+          templates={templates}
+          sessionOptions={sessionOptions}
+          templateSaveError={templateSaveError}
+          lastSyncedAt={syncSettings.lastSyncedAt}
+          lastSyncError={syncSettings.lastError}
+          syncMessage={syncMessage}
+          conflicts={conflicts}
+          restorePoints={restorePoints}
+          isSyncing={isSyncing}
+          onSaveSectionTemplate={saveSectionTemplate}
+          onUndoSectionTemplate={undoSectionTemplate}
+          onResetSectionTemplate={resetSectionTemplate}
+          onCreateSessionType={addSessionType}
+          onDeleteSessionType={handleDeleteSessionType}
+          onRenameSessionType={renameSessionType}
+          onSyncNow={syncNow}
+          onRollback={rollbackToRestorePoint}
+          onPruneRestorePoints={pruneRestorePoints}
+        />
+      )}
 
-      <StickyFooter
-        day={currentDay}
-        isSaving={isSaving}
-        onClear={() => void handleClearDay()}
-        onHeightChange={setStickyFooterHeight}
-      />
+      {page === "dashboard" && (
+        <StickyFooter
+          day={currentDay}
+          isSaving={isSaving}
+          onClear={() => void handleClearDay()}
+          onHeightChange={setStickyFooterHeight}
+        />
+      )}
 
       {isQAMode && <QASmokePanel />}
     </div>

@@ -4,7 +4,7 @@ import { sanitizeDayDataRecord } from "../../../application/workout/data/dayData
 import { TEMPLATES } from "../../../constants";
 import { WorkoutDataSnapshot } from "../../../application/sync/syncTypes";
 import { AuthTokenProvider } from "../../../interfaces/auth/AuthTokenProvider";
-import { toCloudApiError } from "./cloudApiError";
+import { fetchWithTimeout, toCloudApiError } from "./cloudApiError";
 
 interface CloudRecordEnvelope {
   version: number;
@@ -32,7 +32,7 @@ export class CloudWorkoutDataRepository implements WorkoutDataRepository {
   }
 
   public async readSnapshot(): Promise<WorkoutDataSnapshot | null> {
-    const response = await fetch(`${this.apiBaseUrl}/workout-data`, {
+    const response = await fetchWithTimeout(`${this.apiBaseUrl}/workout-data`, {
       method: "GET",
       headers: await this.getAuthHeader(),
     });
@@ -68,7 +68,7 @@ export class CloudWorkoutDataRepository implements WorkoutDataRepository {
   }
 
   public async writeSnapshot(snapshot: WorkoutDataSnapshot): Promise<void> {
-    const response = await fetch(`${this.apiBaseUrl}/workout-data`, {
+    const response = await fetchWithTimeout(`${this.apiBaseUrl}/workout-data`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

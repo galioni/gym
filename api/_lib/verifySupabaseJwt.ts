@@ -1,4 +1,5 @@
-import { getRequiredSupabaseJwtEnv } from "./apiEnv.js";
+import { jwtVerify } from "jose";
+import { getSupabaseJwtSecret, getRequiredApiEnv } from "./apiEnv.js";
 
 interface VerifiedSupabaseUser {
   id: string;
@@ -8,28 +9,25 @@ interface VerifiedSupabaseUser {
 export async function verifySupabaseJwt(
   accessToken: string
 ): Promise<VerifiedSupabaseUser | null> {
-  const env = getRequiredSupabaseJwtEnv();
-  const response = await fetch(`${env.supabaseUrl}/auth/v1/user`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      apikey: env.supabaseAnonKey,
-    },
-  });
+  const jwtSecret = getSupabaseJwtSecret();
+  const supabaseUrl = getRequiredApiEnv("SUPABASE_URL");
 
-  if (response.status === 401 || response.status === 403) {
+  try {
+    const secret = new TextEncoder().encode(jwtSecret);
+    const { payload } = await jwtVerify(accessToken, secret, {
+      audience: "authenticated",
+      issuer: `${supabaseUrl}/auth/v1`,
+    });
+
+    if (typeof payload.sub !== "string" || payload.sub.length === 0) {
+      return null;
+    }
+
+    return {
+      id: payload.sub,
+      email: typeof payload.email === "string" ? payload.email : null,
+    };
+  } catch {
     return null;
   }
-  if (!response.ok) {
-    throw new Error(`Supabase JWT verification failed: ${response.status}`);
-  }
-
-  const payload = (await response.json()) as { id?: unknown; email?: unknown };
-  if (typeof payload.id !== "string" || payload.id.length === 0) {
-    return null;
-  }
-
-  return {
-    id: payload.id,
-    email: typeof payload.email === "string" ? payload.email : null,
-  };
 }

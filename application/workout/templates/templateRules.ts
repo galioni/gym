@@ -6,6 +6,7 @@ import {
 } from "../../../constants";
 import { SessionType, TemplateData, Templates } from "../../../types";
 import { cloneTemplateData } from "../sessionTypes/sessionTypeRules";
+import { generateId } from "../../../utils";
 
 export interface TemplateValidationError {
   rowIndex: number;
@@ -17,14 +18,15 @@ function normalizeCell(value: string, maxLength: number): string {
   return value.trim().slice(0, maxLength);
 }
 
-function sanitizeRows(rows: Array<{ text: string; target?: string }>): Array<{ text: string; target?: string }> {
+function sanitizeRows(rows: Array<{ text: string; target?: string; id?: string }>): Array<{ text: string; target?: string; id?: string }> {
   return rows
     .map((row) => ({
+      id: row.id ?? generateId(),
       text: normalizeCell(row.text ?? "", TEMPLATE_TEXT_MAX_LENGTH),
       target: normalizeCell(row.target ?? "", TEMPLATE_TARGET_MAX_LENGTH),
     }))
     .filter((row) => row.text.length > 0)
-    .map((row) => ({ text: row.text, target: row.target || undefined }));
+    .map((row) => ({ id: row.id, text: row.text, target: row.target || undefined }));
 }
 
 function sanitizeSessionTemplate(

@@ -144,6 +144,58 @@ describe("SyncService", () => {
     expect(settingsRepository.restorePoints.length).toBe(1);
   });
 
+  it("returns conflict for templates when only template snapshots differ", async () => {
+    const settingsRepository = new InMemorySyncSettingsRepository();
+    const localTemplateRepository = new InMemoryTemplateRepository({
+      version: 1,
+      updatedAt: "2026-02-18T08:00:00.000Z",
+      data: { ...TEMPLATES, gym: { warmup: [{ text: "Local exercise", target: "" }], main: [] } },
+    });
+    const cloudTemplateRepository = new InMemoryTemplateRepository({
+      version: 1,
+      updatedAt: "2026-02-18T09:00:00.000Z",
+      data: { ...TEMPLATES, gym: { warmup: [{ text: "Cloud exercise", target: "" }], main: [] } },
+    });
+
+    const service = new SyncService({
+      settingsRepository,
+      localWorkoutRepository: new InMemoryWorkoutRepository(null),
+      localTemplateRepository,
+      cloudWorkoutRepository: new InMemoryWorkoutRepository(null),
+      cloudTemplateRepository,
+    });
+
+    const result = await service.syncNow();
+
+    expect(result.status).toBe("conflict");
+    expect(result.conflicts[0].entity).toBe("templates");
+    expect(result.conflicts[0].previewPaths.length).toBeGreaterThan(0);
+  });
+
+  it("pushes local snapshot to cloud when cloud is empty (one-sided local)", async () => {
+    const settingsRepository = new InMemorySyncSettingsRepository();
+    const localSnapshot: TemplateSnapshot = {
+      version: 1,
+      updatedAt: "2026-02-18T10:00:00.000Z",
+      data: TEMPLATES,
+    };
+    const localTemplateRepository = new InMemoryTemplateRepository(localSnapshot);
+    const cloudTemplateRepository = new InMemoryTemplateRepository(null);
+
+    const service = new SyncService({
+      settingsRepository,
+      localWorkoutRepository: new InMemoryWorkoutRepository(null),
+      localTemplateRepository,
+      cloudWorkoutRepository: new InMemoryWorkoutRepository(null),
+      cloudTemplateRepository,
+    });
+
+    const result = await service.syncNow();
+
+    expect(result.status).toBe("success");
+    expect(await cloudTemplateRepository.readSnapshot()).toMatchObject({ data: TEMPLATES });
+  });
+
   it("applies keepLocal resolution and can rollback from restore point", async () => {
     const settingsRepository = new InMemorySyncSettingsRepository();
     const localWorkoutSnapshot: WorkoutDataSnapshot = {

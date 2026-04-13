@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { TemplateService } from "../../../application/workout/TemplateService";
 import { TEMPLATES } from "../../../constants";
 import { SessionType, TemplateData, Templates } from "../../../types";
 import { TemplateValidationError, validateTemplateRows } from "../../../application/workout/templates/templateRules";
-import { CreateSessionTypeResult } from "../../../application/workout/sessionTypes/sessionTypeRules";
+import { CreateSessionTypeResult, DeleteSessionTypeResult, RenameSessionTypeResult } from "../../../application/workout/sessionTypes/sessionTypeRules";
 
 interface UseTemplatesResult {
   templates: Templates;
@@ -17,6 +17,8 @@ interface UseTemplatesResult {
   undoSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
   resetSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
   addSessionType: (label: string) => Promise<CreateSessionTypeResult>;
+  removeSessionType: (sessionType: SessionType) => Promise<DeleteSessionTypeResult>;
+  renameSessionType: (oldType: SessionType, newLabel: string) => Promise<RenameSessionTypeResult>;
 }
 
 /**
@@ -29,6 +31,8 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
   const [history, setHistory] = useState<
     Partial<Record<SessionType, Partial<Record<keyof TemplateData, TemplateData[keyof TemplateData]>>>>
   >({});
+  const historyRef = useRef(history);
+  historyRef.current = history;
 
   useEffect(() => {
     let isCancelled = false;
@@ -78,8 +82,7 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
             [section]: rows,
           },
         };
-        void service.saveTemplates(next).catch((error) => {
-          console.error("Failed to save templates", error);
+        void service.saveTemplates(next).catch(() => {
           setLastError("Failed to save template changes.");
         });
         return next;
@@ -91,7 +94,7 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
 
   const undoSectionTemplate = useCallback(
     (session: SessionType, section: keyof TemplateData) => {
-      const previousValue = history[session]?.[section];
+      const previousValue = historyRef.current[session]?.[section];
       if (!previousValue) {
         return;
       }
@@ -105,8 +108,7 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
             [section]: previousValue.map((row) => ({ ...row })),
           },
         };
-        void service.saveTemplates(next).catch((error) => {
-          console.error("Failed to save templates", error);
+        void service.saveTemplates(next).catch(() => {
           setLastError("Failed to save template changes.");
         });
         return next;
@@ -120,7 +122,7 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
         },
       }));
     },
-    [history, service]
+    [service]
   );
 
   const resetSectionTemplate = useCallback(
@@ -142,8 +144,7 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
             [section]: service.getDefaultSection(session, section),
           },
         };
-        void service.saveTemplates(next).catch((error) => {
-          console.error("Failed to save templates", error);
+        void service.saveTemplates(next).catch(() => {
           setLastError("Failed to save template changes.");
         });
         return next;
@@ -164,13 +165,55 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
       try {
         await service.saveTemplates(result.templates);
         return result;
-      } catch (error) {
-        console.error("Failed to save templates", error);
+      } catch {
         setLastError("Failed to save template changes.");
         return {
           status: "error",
           message: "Failed to save template changes.",
         };
+      }
+    },
+    [service, templates]
+  );
+
+  const removeSessionType = useCallback(
+    async (sessionType: SessionType): Promise<DeleteSessionTypeResult> => {
+      const result = service.deleteSessionType(templates, sessionType);
+      if (result.status === "error" || !result.templates) {
+        return result;
+      }
+
+      setLastError(null);
+      setTemplates(result.templates);
+      try {
+        await service.saveTemplates(result.templates);
+        return result;
+      } catch {
+        setLastError("Failed to save template changes.");
+        return {
+          status: "error",
+          message: "Failed to save template changes.",
+        };
+      }
+    },
+    [service, templates]
+  );
+
+  const renameSessionType = useCallback(
+    async (oldType: SessionType, newLabel: string): Promise<RenameSessionTypeResult> => {
+      const result = service.renameSessionType(templates, oldType, newLabel);
+      if (result.status === "error" || !result.templates || !result.newSessionType) {
+        return result;
+      }
+
+      setLastError(null);
+      setTemplates(result.templates);
+      try {
+        await service.saveTemplates(result.templates);
+        return result;
+      } catch {
+        setLastError("Failed to save template changes.");
+        return { status: "error", message: "Failed to save template changes." };
       }
     },
     [service, templates]
@@ -184,5 +227,7 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
     undoSectionTemplate,
     resetSectionTemplate,
     addSessionType,
+    removeSessionType,
+    renameSessionType,
   };
 }

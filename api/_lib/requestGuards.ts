@@ -1,24 +1,8 @@
 import { ApiRequest, ApiResponse, getHeader } from "./http.js";
-import { FixedWindowRateLimiter } from "./rateLimiter.js";
+import { checkRateLimit, RateLimitDecision } from "./rateLimiter.js";
+import { RequiredVercelKvEnv } from "./apiEnv.js";
 
 const DEFAULT_MAX_SYNC_BODY_BYTES = 256 * 1024;
-const DEFAULT_RATE_LIMIT_WINDOW_MS = 60_000;
-const DEFAULT_MAX_REQUESTS_PER_WINDOW = 30;
-
-function toClientIdentifier(req: ApiRequest): string {
-  const forwardedFor = getHeader(req, "x-forwarded-for");
-  if (forwardedFor) {
-    const firstIp = forwardedFor.split(",")[0]?.trim();
-    if (firstIp) {
-      return `ip:${firstIp}`;
-    }
-  }
-  const realIp = getHeader(req, "x-real-ip");
-  if (realIp) {
-    return `ip:${realIp.trim()}`;
-  }
-  return "ip:unknown";
-}
 
 function isJsonContentType(value: string | null): boolean {
   if (!value) {
@@ -51,13 +35,31 @@ function readRequestBodySize(req: ApiRequest): number {
  */
 export class SyncRequestGuards {
   public constructor(
-    private readonly rateLimiter: FixedWindowRateLimiter,
+    private readonly kvEnv: RequiredVercelKvEnv,
     private readonly maxSyncBodyBytes: number = DEFAULT_MAX_SYNC_BODY_BYTES
   ) {}
 
-  public enforceRateLimit(req: ApiRequest, res: ApiResponse, routeKey: string): boolean {
-    const clientIdentifier = toClientIdentifier(req);
-    const decision = this.rateLimiter.consume(`${routeKey}:${clientIdentifier}`);
+  /**
+   * Redis-backed per-user rate limit. Must be called after auth is established.
+   */
+  public async enforceRateLimit(
+    res: ApiResponse,
+    userId: string,
+    routeKey: string
+  ): Promise<boolean> {
+    let decision: RateLimitDecision;
+    try {
+      decision = await checkRateLimit(
+        userId,
+        routeKey,
+        this.kvEnv.kvRestApiUrl,
+        this.kvEnv.kvRestApiToken
+      );
+    } catch {
+      // Fail open if rate limiter throws unexpectedly.
+      return true;
+    }
+
     if (decision.allowed) {
       return true;
     }
@@ -98,13 +100,3 @@ export class SyncRequestGuards {
     return false;
   }
 }
-
-/**
- * Default singleton for stateless route handlers.
- */
-export const syncRequestGuards = new SyncRequestGuards(
-  new FixedWindowRateLimiter({
-    windowMs: DEFAULT_RATE_LIMIT_WINDOW_MS,
-    maxRequests: DEFAULT_MAX_REQUESTS_PER_WINDOW,
-  })
-);

@@ -16,6 +16,28 @@ import {
 
 type ConflictResolutionMap = Partial<Record<SyncEntity, ConflictResolution>>;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isWorkoutDataSnapshot(value: unknown): value is WorkoutDataSnapshot {
+  return (
+    isRecord(value) &&
+    typeof value["version"] === "number" &&
+    typeof value["updatedAt"] === "string" &&
+    isRecord(value["data"])
+  );
+}
+
+function isTemplateSnapshot(value: unknown): value is TemplateSnapshot {
+  return (
+    isRecord(value) &&
+    typeof value["version"] === "number" &&
+    typeof value["updatedAt"] === "string" &&
+    isRecord(value["data"])
+  );
+}
+
 interface SyncServiceDeps {
   settingsRepository: SyncSettingsRepository;
   localWorkoutRepository: WorkoutDataRepository;
@@ -108,6 +130,24 @@ export class SyncService {
     return raw as SyncRestorePoint[];
   }
 
+  public async pruneRestorePoints(): Promise<void> {
+    const points = await this.getRestorePoints();
+    if (points.length <= 1) {
+      return;
+    }
+    const newest = points.reduce((latest, point) =>
+      point.createdAt > latest.createdAt ? point : latest
+    );
+    await this.deps.settingsRepository.writeRestorePoints([
+      newest as {
+        id: string;
+        createdAt: string;
+        workoutData: unknown;
+        templates: unknown;
+      },
+    ]);
+  }
+
   public async rollbackToRestorePoint(id: string): Promise<SyncNowResult> {
     const points = await this.getRestorePoints();
     const target = points.find((point) => point.id === id);
@@ -120,14 +160,16 @@ export class SyncService {
     }
 
     if (target.workoutData) {
-      await this.deps.localWorkoutRepository.writeSnapshot(
-        target.workoutData as WorkoutDataSnapshot
-      );
+      if (!isWorkoutDataSnapshot(target.workoutData)) {
+        return { status: "error", conflicts: [], message: "Restore point workout data is corrupted." };
+      }
+      await this.deps.localWorkoutRepository.writeSnapshot(target.workoutData);
     }
     if (target.templates) {
-      await this.deps.localTemplateRepository.writeSnapshot(
-        target.templates as TemplateSnapshot
-      );
+      if (!isTemplateSnapshot(target.templates)) {
+        return { status: "error", conflicts: [], message: "Restore point template data is corrupted." };
+      }
+      await this.deps.localTemplateRepository.writeSnapshot(target.templates);
     }
 
     return {

@@ -27,8 +27,8 @@ export interface DayData {
 }
 
 export interface TemplateData {
-  warmup: { text: string; target?: string }[];
-  main: { text: string; target?: string }[];
+  warmup: { text: string; target?: string; id?: string }[];
+  main: { text: string; target?: string; id?: string }[];
 }
 
 export type Templates = Record<SessionType, TemplateData>;

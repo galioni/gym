@@ -20,6 +20,7 @@ interface UseSyncSettingsResult {
     resolution?: Partial<Record<"workoutData" | "templates", ConflictResolution>>
   ) => Promise<SyncNowResult>;
   rollbackToRestorePoint: (id: string) => Promise<SyncNowResult>;
+  pruneRestorePoints: () => Promise<void>;
 }
 
 export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
@@ -98,6 +99,15 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
     [service]
   );
 
+  const pruneRestorePoints = useCallback(async () => {
+    await service.pruneRestorePoints();
+    const loadedRestorePoints = await service.getRestorePoints();
+    if (!mountedRef.current) {
+      return;
+    }
+    setRestorePoints(loadedRestorePoints);
+  }, [service]);
+
   return {
     settings,
     isSyncing,
@@ -106,5 +116,6 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
     syncMessage,
     syncNow,
     rollbackToRestorePoint,
+    pruneRestorePoints,
   };
 }

@@ -6,8 +6,19 @@ Local-first workout tracker built with React + TypeScript (Vite), with cloud syn
 
 ```bash
 npm install
+```
+
+**Terminal 1 — API (Vercel serverless, port 3000):**
+```bash
+npx vercel dev --listen 3000
+```
+
+**Terminal 2 — Frontend (Vite, port 5173):**
+```bash
 npm run dev
 ```
+
+Open the app at `http://localhost:5173`.
 
 ## Scripts
 

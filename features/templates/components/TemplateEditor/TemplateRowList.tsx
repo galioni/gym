@@ -55,7 +55,7 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
     <div className="space-y-3">
       {rows.map((row, index) => (
         <div
-          key={`${section}-${index}`}
+          key={row.id ?? `${section}-${index}`}
           className="grid grid-cols-[auto_1fr_auto] gap-2 sm:grid-cols-[auto_2fr_1fr_auto] sm:items-center"
           onDragOver={(event) => event.preventDefault()}
           onDrop={() => {

@@ -8,6 +8,7 @@ import {
   SyncRestorePoint,
 } from "../../../../application/sync/syncTypes";
 import { useFeedback } from "../../../feedback/hooks/useFeedback";
+import { useAuthSession } from "../../../auth/hooks/useAuthSession";
 
 interface SyncSettingsPanelProps {
   lastSyncedAt: string | null;
@@ -20,6 +21,7 @@ interface SyncSettingsPanelProps {
     resolution?: Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
   ) => Promise<SyncNowResult>;
   onRollback: (id: string) => Promise<SyncNowResult>;
+  onPruneRestorePoints: () => Promise<void>;
 }
 
 export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
@@ -31,8 +33,11 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
   isSyncing,
   onSyncNow,
   onRollback,
+  onPruneRestorePoints,
 }) => {
   const { showToast } = useFeedback();
+  const { session } = useAuthSession();
+  const isAuthenticated = Boolean(session);
   const [resolutions, setResolutions] = useState<
     Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
   >({});
@@ -95,7 +100,7 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
           size="sm"
           className="w-full sm:w-auto min-h-11 gap-2 justify-center"
           onClick={() => void handleSyncNow()}
-          disabled={isSyncing || (hasConflicts && !canResolve)}
+          disabled={isSyncing || !isAuthenticated || (hasConflicts && !canResolve)}
         >
           <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} />
           {isSyncing ? "Syncing..." : "Sync Now"}
@@ -109,7 +114,13 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
         <div className="text-xs text-slate-400 flex items-center break-words">
           Last sync: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : "Never"}
         </div>
-        <div className="text-xs text-slate-400 flex items-center break-words">Auth: Google OAuth</div>
+        <div className="text-xs flex items-center break-words">
+          {isAuthenticated ? (
+            <span className="text-slate-400">Auth: {session?.user.email ?? "Google OAuth"}</span>
+          ) : (
+            <span className="text-amber-400">Not signed in — sync disabled</span>
+          )}
+        </div>
       </div>
 
       {syncMessage && (
@@ -175,7 +186,19 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
 
       {restorePoints.length > 0 && (
         <div className="mt-4 rounded-xl border border-white/10 p-3">
-          <div className="text-sm text-white font-semibold mb-2">Pre-sync Restore Points</div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-sm text-white font-semibold">Pre-sync Restore Points</div>
+            {restorePoints.length > 1 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-xs text-slate-400 hover:text-red-400"
+                onClick={() => void onPruneRestorePoints()}
+              >
+                Keep newest only
+              </Button>
+            )}
+          </div>
           <div className="space-y-2">
             {restorePoints.map((point) => (
               <div key={point.id} className="flex flex-col items-start gap-2 rounded-lg border border-white/10 p-2 sm:flex-row sm:items-center sm:justify-between">

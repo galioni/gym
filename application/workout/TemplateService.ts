@@ -5,7 +5,11 @@ import { sanitizeTemplates } from "./templates/templateRules";
 import {
   createSessionType,
   CreateSessionTypeResult,
+  deleteSessionType,
+  DeleteSessionTypeResult,
   getDefaultTemplate,
+  renameSessionType,
+  RenameSessionTypeResult,
 } from "./sessionTypes/sessionTypeRules";
 
 /**
@@ -31,5 +35,13 @@ export class TemplateService {
 
   public createSessionType(templates: Templates, label: string): CreateSessionTypeResult {
     return createSessionType(templates, label);
+  }
+
+  public deleteSessionType(templates: Templates, sessionType: SessionType): DeleteSessionTypeResult {
+    return deleteSessionType(templates, sessionType);
+  }
+
+  public renameSessionType(templates: Templates, oldType: SessionType, newLabel: string): RenameSessionTypeResult {
+    return renameSessionType(templates, oldType, newLabel);
   }
 }

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Menu, X, Calendar, Activity, RefreshCw, Download, Upload, Crosshair } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Menu, X, Calendar, Activity, RefreshCw, Download, Upload, Crosshair, Settings } from 'lucide-react';
 import { SessionOption, SessionType } from '../types';
 import { Button } from './ui/Button';
 import { cn, fromLocalDateKey } from '../utils';
@@ -16,6 +16,7 @@ interface HeaderProps {
   onJumpToday: () => void;
   theme: AppTheme;
   onThemeChange: (theme: AppTheme) => void;
+  onNavigateSettings: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -27,10 +28,23 @@ export const Header: React.FC<HeaderProps> = ({
   onLoadTemplate,
   onJumpToday,
   theme,
-  onThemeChange
+  onThemeChange,
+  onNavigateSettings,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const { fileInputRef, exportBackup, openImportPicker, handleImportFileChange } = useBackupIO();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [isOpen]);
 
   const formattedDate = fromLocalDateKey(currentDate).toLocaleDateString('en-GB', {
     weekday: 'short', 
@@ -39,7 +53,7 @@ export const Header: React.FC<HeaderProps> = ({
   });
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-background/80 backdrop-blur-xl motion-sweep">
+    <header ref={menuRef} className="sticky top-0 z-40 border-b border-white/10 bg-background/80 backdrop-blur-xl motion-sweep">
       <div className="max-w-4xl mx-auto px-4 py-3 md:py-4">
         <div className="flex items-center justify-between">
             <div className="flex flex-col">
@@ -105,6 +119,9 @@ export const Header: React.FC<HeaderProps> = ({
                     </Button>
                     <Button onClick={openImportPicker} size="icon" variant="ghost" title="Import Data" className="h-11 w-11">
                         <Upload size={14} />
+                    </Button>
+                    <Button onClick={onNavigateSettings} size="icon" variant="ghost" title="Settings" className="h-11 w-11">
+                        <Settings size={14} />
                     </Button>
                  </div>
 
@@ -193,6 +210,11 @@ export const Header: React.FC<HeaderProps> = ({
                  <Button onClick={() => { openImportPicker(); setIsOpen(false); }} variant="ghost" className="w-full min-h-11 gap-2 text-xs text-slate-400">
                     <Upload size={14} />
                     Restore from Backup
+                 </Button>
+
+                 <Button onClick={() => { onNavigateSettings(); setIsOpen(false); }} variant="secondary" className="w-full min-h-11 gap-2 text-xs">
+                    <Settings size={14} />
+                    Settings
                  </Button>
             </div>
         </div>

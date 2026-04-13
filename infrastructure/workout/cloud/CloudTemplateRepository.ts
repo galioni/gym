@@ -3,7 +3,7 @@ import { Templates } from "../../../types";
 import { sanitizeTemplates } from "../../../application/workout/templates/templateRules";
 import { TemplateSnapshot } from "../../../application/sync/syncTypes";
 import { AuthTokenProvider } from "../../../interfaces/auth/AuthTokenProvider";
-import { toCloudApiError } from "./cloudApiError";
+import { fetchWithTimeout, toCloudApiError } from "./cloudApiError";
 
 interface CloudTemplateEnvelope {
   version: number;
@@ -31,7 +31,7 @@ export class CloudTemplateRepository implements TemplateRepository {
   }
 
   public async readSnapshot(): Promise<TemplateSnapshot | null> {
-    const response = await fetch(`${this.apiBaseUrl}/templates`, {
+    const response = await fetchWithTimeout(`${this.apiBaseUrl}/templates`, {
       method: "GET",
       headers: await this.getAuthHeader(),
     });
@@ -66,7 +66,7 @@ export class CloudTemplateRepository implements TemplateRepository {
   }
 
   public async writeSnapshot(snapshot: TemplateSnapshot): Promise<void> {
-    const response = await fetch(`${this.apiBaseUrl}/templates`, {
+    const response = await fetchWithTimeout(`${this.apiBaseUrl}/templates`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

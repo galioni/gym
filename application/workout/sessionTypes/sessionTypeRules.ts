@@ -13,6 +13,20 @@ export interface CreateSessionTypeResult {
   templates?: Templates;
 }
 
+export interface DeleteSessionTypeResult {
+  status: "success" | "error";
+  message: string;
+  templates?: Templates;
+}
+
+export interface RenameSessionTypeResult {
+  status: "success" | "error";
+  message: string;
+  oldSessionType?: SessionType;
+  newSessionType?: SessionType;
+  templates?: Templates;
+}
+
 const SESSION_TYPE_ID_MAX_LENGTH = 32;
 const BUILT_IN_LABELS = new Map(DEFAULT_SESSION_OPTIONS.map((option) => [option.value, option.label]));
 const BUILT_IN_ORDER = DEFAULT_SESSION_OPTIONS.map((option) => option.value);
@@ -94,6 +108,73 @@ export function createSessionType(templates: Templates, label: string): CreateSe
       ...templates,
       [sessionType]: cloneTemplateData(EMPTY_TEMPLATE),
     },
+  };
+}
+
+export function isBuiltInSessionType(sessionType: SessionType): boolean {
+  return BUILT_IN_LABELS.has(sessionType);
+}
+
+export function deleteSessionType(
+  templates: Templates,
+  sessionType: SessionType
+): DeleteSessionTypeResult {
+  if (isBuiltInSessionType(sessionType)) {
+    return {
+      status: "error",
+      message: `Cannot delete built-in session type "${getSessionLabel(sessionType)}".`,
+    };
+  }
+  if (!templates[sessionType]) {
+    return {
+      status: "error",
+      message: `Session type "${getSessionLabel(sessionType)}" not found.`,
+    };
+  }
+
+  const { [sessionType]: _removed, ...remaining } = templates;
+  return {
+    status: "success",
+    message: `Session type "${getSessionLabel(sessionType)}" deleted.`,
+    templates: remaining as Templates,
+  };
+}
+
+export function renameSessionType(
+  templates: Templates,
+  oldType: SessionType,
+  newLabel: string
+): RenameSessionTypeResult {
+  if (isBuiltInSessionType(oldType)) {
+    return {
+      status: "error",
+      message: `Cannot rename built-in session type "${getSessionLabel(oldType)}".`,
+    };
+  }
+  const newType = normalizeSessionTypeId(newLabel);
+  if (!newType) {
+    return {
+      status: "error",
+      message: "Enter a session type name using letters or numbers.",
+    };
+  }
+  if (newType === oldType) {
+    return { status: "error", message: "New name is the same as the current name." };
+  }
+  if (templates[newType]) {
+    return {
+      status: "error",
+      message: `Session type "${getSessionLabel(newType)}" already exists.`,
+    };
+  }
+
+  const { [oldType]: data, ...remaining } = templates;
+  return {
+    status: "success",
+    oldSessionType: oldType,
+    newSessionType: newType,
+    message: `Session type renamed to "${getSessionLabel(newType)}".`,
+    templates: { ...remaining, [newType]: data } as Templates,
   };
 }
 

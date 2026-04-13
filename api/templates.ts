@@ -3,7 +3,7 @@ import { isTemplateSnapshotPayload } from "./_lib/cloudApiRules.js";
 import { VercelKvCloudDocumentStore } from "./_lib/vercelKvCloudDocumentStore.js";
 import { requireAuth } from "./_lib/authContext.js";
 import { getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
-import { syncRequestGuards } from "./_lib/requestGuards.js";
+import { SyncRequestGuards } from "./_lib/requestGuards.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
 import {
   enforceMethod,
@@ -23,13 +23,14 @@ export default async function handler(req: any, res: any): Promise<void> {
   if (!enforceMethod(req, res)) {
     return;
   }
-  if (!syncRequestGuards.enforceRateLimit(req, res, TEMPLATES_KEY_SUFFIX)) {
+
+  const kvEnv = getRequiredVercelKvEnv();
+  const guards = new SyncRequestGuards(kvEnv);
+
+  if (!guards.enforcePutJsonContentType(req, res)) {
     return;
   }
-  if (!syncRequestGuards.enforcePutJsonContentType(req, res)) {
-    return;
-  }
-  if (!syncRequestGuards.enforcePutBodySize(req, res)) {
+  if (!guards.enforcePutBodySize(req, res)) {
     return;
   }
 
@@ -40,8 +41,12 @@ export default async function handler(req: any, res: any): Promise<void> {
     }
     observation.setUserId(auth.userId);
 
+    if (!await guards.enforceRateLimit(res, auth.userId, TEMPLATES_KEY_SUFFIX)) {
+      return;
+    }
+
     const service = new CloudSyncApiService(
-      new VercelKvCloudDocumentStore(getRequiredVercelKvEnv())
+      new VercelKvCloudDocumentStore(kvEnv)
     );
     const key = `sync:${auth.userId}:${TEMPLATES_KEY_SUFFIX}`;
 

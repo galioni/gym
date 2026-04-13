@@ -1,66 +1,27 @@
 import React from "react";
 import { Button } from "../../../../components/ui/Button";
 import { InfoBanner } from "../InfoBanner/InfoBanner";
-import { DayData, SessionOption, SessionType, TemplateData, Templates } from "../../../../types";
-import { SyncConflict, SyncNowResult, SyncRestorePoint } from "../../../../application/sync/syncTypes";
-import { TemplateValidationError } from "../../../../application/workout/templates/templateRules";
+import { DayData } from "../../../../types";
 import { DashboardWorkoutGrid } from "./DashboardWorkoutGrid";
-import { CreateSessionTypeResult } from "../../../../application/workout/sessionTypes/sessionTypeRules";
 
 interface DashboardContentProps {
   fridayHint: string;
   currentDay: DayData;
-  templates: Templates;
-  sessionOptions: SessionOption[];
-  templateSaveError: string | null;
-  lastSyncedAt: string | null;
-  lastSyncError: string | null;
-  syncMessage: string;
-  conflicts: SyncConflict[];
-  restorePoints: SyncRestorePoint[];
-  isSyncing: boolean;
   onToggleItem: (section: "warmup" | "main", id: string, done: boolean) => void;
   onDeleteItem: (section: "warmup" | "main", id: string) => Promise<boolean>;
   onUpdateDay: (updates: Partial<DayData>) => void;
   onUpdateDayDebounced: (updates: Partial<DayData>) => void;
   onDuplicatePreviousDayNotesAndWeight: () => void;
-  onSaveSectionTemplate: (
-    session: SessionType,
-    section: keyof TemplateData,
-    rows: TemplateData[keyof TemplateData]
-  ) => TemplateValidationError[];
-  onUndoSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
-  onResetSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
-  onCreateSessionType: (label: string) => Promise<CreateSessionTypeResult>;
-  onSyncNow: (
-    resolution?: Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
-  ) => Promise<SyncNowResult>;
-  onRollbackSyncPoint: (id: string) => Promise<SyncNowResult>;
 }
 
 export const DashboardContent: React.FC<DashboardContentProps> = ({
   fridayHint,
   currentDay,
-  templates,
-  sessionOptions,
-  templateSaveError,
-  lastSyncedAt,
-  lastSyncError,
-  syncMessage,
-  conflicts,
-  restorePoints,
-  isSyncing,
   onToggleItem,
   onDeleteItem,
   onUpdateDay,
   onUpdateDayDebounced,
   onDuplicatePreviousDayNotesAndWeight,
-  onSaveSectionTemplate,
-  onUndoSectionTemplate,
-  onResetSectionTemplate,
-  onCreateSessionType,
-  onSyncNow,
-  onRollbackSyncPoint,
 }) => {
   return (
     <main
@@ -74,9 +35,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
           variant="secondary"
           size="sm"
           className="min-h-11"
-          onClick={() => {
-            onDuplicatePreviousDayNotesAndWeight();
-          }}
+          onClick={onDuplicatePreviousDayNotesAndWeight}
         >
           Duplicate Prev Notes/Weight
         </Button>
@@ -84,25 +43,10 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
 
       <DashboardWorkoutGrid
         currentDay={currentDay}
-        templates={templates}
-        sessionOptions={sessionOptions}
-        templateSaveError={templateSaveError}
-        lastSyncedAt={lastSyncedAt}
-        lastSyncError={lastSyncError}
-        syncMessage={syncMessage}
-        conflicts={conflicts}
-        restorePoints={restorePoints}
-        isSyncing={isSyncing}
         onToggleItem={onToggleItem}
         onDeleteItem={onDeleteItem}
         onUpdateDay={onUpdateDay}
         onUpdateDayDebounced={onUpdateDayDebounced}
-        onSaveSectionTemplate={onSaveSectionTemplate}
-        onUndoSectionTemplate={onUndoSectionTemplate}
-        onResetSectionTemplate={onResetSectionTemplate}
-        onCreateSessionType={onCreateSessionType}
-        onSyncNow={onSyncNow}
-        onRollbackSyncPoint={onRollbackSyncPoint}
       />
     </main>
   );

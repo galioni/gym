@@ -21,6 +21,21 @@ async function readPayload(response: Response): Promise<CloudApiErrorPayload | n
 }
 
 /**
+ * Wraps fetch with an AbortController timeout. Throws a DOMException on timeout.
+ */
+export function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs = 10000
+): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...init, signal: controller.signal }).finally(() =>
+    clearTimeout(id)
+  );
+}
+
+/**
  * Builds a durable client-facing sync error using the API payload plus request id.
  */
 export async function toCloudApiError(

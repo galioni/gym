@@ -25,9 +25,9 @@ export const SessionTypeCreateForm: React.FC<SessionTypeCreateFormProps> = ({
     setIsSubmitting(true);
     const result = await onCreateSessionType(label);
     onShowMessage(result);
+    setLabel("");
     if (result.status === "success" && result.sessionType) {
       onCreated(result.sessionType);
-      setLabel("");
     }
     setIsSubmitting(false);
   };
@@ -46,7 +46,7 @@ export const SessionTypeCreateForm: React.FC<SessionTypeCreateFormProps> = ({
         size="sm"
         className="min-h-11 gap-2"
         onClick={() => void handleSubmit()}
-        disabled={isSubmitting}
+        disabled={isSubmitting || label.trim().length === 0}
       >
         <Plus size={14} />
         Add Session Type
