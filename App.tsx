@@ -14,6 +14,7 @@ import { DashboardContent } from "./features/app-shell/components/DashboardConte
 import { SettingsPage } from "./features/settings/components/SettingsPage/SettingsPage";
 import { useFeedback } from "./features/feedback/hooks/useFeedback";
 import { getSessionLabel, getSessionOptions } from "./application/workout/sessionTypes/sessionTypeRules";
+import { useWeightReminder } from "./features/weight-reminder/hooks/useWeightReminder";
 
 function App() {
   const { confirm, showToast } = useFeedback();
@@ -66,9 +67,14 @@ function App() {
   } = useSyncSettings(services.syncService);
 
   const sessionOptions = useMemo(() => getSessionOptions(templates), [templates]);
-  const fridayHint = useMemo(() => getFridayHint(currentDate), [currentDate]);
+  const { settings: weightReminder, updateSettings: updateWeightReminder } = useWeightReminder();
+  const fridayHint = useMemo(
+    () => getFridayHint(weightReminder.enabled, weightReminder.targetTime),
+    [weightReminder.enabled, weightReminder.targetTime]
+  );
   const [stickyFooterHeight, setStickyFooterHeight] = useState(124);
   const [page, setPage] = useState<"dashboard" | "settings">("dashboard");
+  const [activeTimer, setActiveTimer] = useState<{ section: "warmup" | "main"; scrollTo: () => void } | null>(null);
 
   const appShellStyle = useMemo(
     () =>
@@ -193,8 +199,6 @@ function App() {
         onSessionTypeChange={(event) => changeSessionType(event.target.value as SessionType)}
         onLoadTemplate={() => void handleLoadTemplate()}
         onJumpToday={jumpToToday}
-        theme={theme}
-        onThemeChange={setTheme}
         onNavigateSettings={() => setPage("settings")}
       />
 
@@ -207,10 +211,15 @@ function App() {
           onUpdateDay={updateDay}
           onUpdateDayDebounced={updateDayDebounced}
           onDuplicatePreviousDayNotesAndWeight={handleDuplicatePreviousDayNotesAndWeight}
+          onActiveTimerChange={setActiveTimer}
         />
       ) : (
         <SettingsPage
           onBack={() => setPage("dashboard")}
+          theme={theme}
+          onThemeChange={setTheme}
+          weightReminder={weightReminder}
+          onUpdateWeightReminder={updateWeightReminder}
           templates={templates}
           sessionOptions={sessionOptions}
           templateSaveError={templateSaveError}
@@ -238,6 +247,7 @@ function App() {
           isSaving={isSaving}
           onClear={() => void handleClearDay()}
           onHeightChange={setStickyFooterHeight}
+          activeTimer={activeTimer}
         />
       )}
 

@@ -14,6 +14,7 @@ interface WorkoutSectionProps {
   onDeleteItem: (id: string) => Promise<boolean>;
   onUpdateTimer: (ms: number) => void;
   onUpdateNotes: (text: string) => void;
+  onTimerRunningChange?: (isRunning: boolean) => void;
   headerExtra?: React.ReactNode;
 }
 
@@ -144,6 +145,7 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
   onDeleteItem,
   onUpdateTimer,
   onUpdateNotes,
+  onTimerRunningChange,
   headerExtra
 }) => {
   return (
@@ -152,7 +154,7 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
       headerAction={
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap sm:justify-end">
           {headerExtra}
-          <Timer initialMs={timerMs} onSave={onUpdateTimer} />
+          <Timer initialMs={timerMs} onSave={onUpdateTimer} onRunningChange={onTimerRunningChange} />
         </div>
       }
       className="h-full flex flex-col motion-rise"

@@ -5,13 +5,14 @@ import { DayData } from "../../../../types";
 import { DashboardWorkoutGrid } from "./DashboardWorkoutGrid";
 
 interface DashboardContentProps {
-  fridayHint: string;
+  fridayHint: string | null;
   currentDay: DayData;
   onToggleItem: (section: "warmup" | "main", id: string, done: boolean) => void;
   onDeleteItem: (section: "warmup" | "main", id: string) => Promise<boolean>;
   onUpdateDay: (updates: Partial<DayData>) => void;
   onUpdateDayDebounced: (updates: Partial<DayData>) => void;
   onDuplicatePreviousDayNotesAndWeight: () => void;
+  onActiveTimerChange?: (info: { section: "warmup" | "main"; scrollTo: () => void } | null) => void;
 }
 
 export const DashboardContent: React.FC<DashboardContentProps> = ({
@@ -22,6 +23,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   onUpdateDay,
   onUpdateDayDebounced,
   onDuplicatePreviousDayNotesAndWeight,
+  onActiveTimerChange,
 }) => {
   return (
     <main
@@ -47,6 +49,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
         onDeleteItem={onDeleteItem}
         onUpdateDay={onUpdateDay}
         onUpdateDayDebounced={onUpdateDayDebounced}
+        onActiveTimerChange={onActiveTimerChange}
       />
     </main>
   );

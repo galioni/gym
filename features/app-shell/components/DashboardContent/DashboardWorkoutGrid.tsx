@@ -1,6 +1,5 @@
-import React from "react";
+import React, { useRef, useCallback } from "react";
 import { WorkoutSection } from "../../../../components/WorkoutSection";
-import { RpeSelect } from "../../../workout/components/RpeSelect/RpeSelect";
 import { DailyCheckCard } from "../../../workout/components/DailyCheckCard/DailyCheckCard";
 import { DayData } from "../../../../types";
 
@@ -10,6 +9,7 @@ interface DashboardWorkoutGridProps {
   onDeleteItem: (section: "warmup" | "main", id: string) => Promise<boolean>;
   onUpdateDay: (updates: Partial<DayData>) => void;
   onUpdateDayDebounced: (updates: Partial<DayData>) => void;
+  onActiveTimerChange?: (info: { section: "warmup" | "main"; scrollTo: () => void } | null) => void;
 }
 
 export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
@@ -18,10 +18,36 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
   onDeleteItem,
   onUpdateDay,
   onUpdateDayDebounced,
+  onActiveTimerChange,
 }) => {
+  const warmupRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
+
+  const scrollTo = useCallback((ref: React.RefObject<HTMLDivElement | null>) => {
+    ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  const handleWarmupRunningChange = useCallback((isRunning: boolean) => {
+    if (isRunning) {
+      scrollTo(warmupRef);
+      onActiveTimerChange?.({ section: "warmup", scrollTo: () => scrollTo(warmupRef) });
+    } else {
+      onActiveTimerChange?.(null);
+    }
+  }, [onActiveTimerChange, scrollTo]);
+
+  const handleMainRunningChange = useCallback((isRunning: boolean) => {
+    if (isRunning) {
+      scrollTo(mainRef);
+      onActiveTimerChange?.({ section: "main", scrollTo: () => scrollTo(mainRef) });
+    } else {
+      onActiveTimerChange?.(null);
+    }
+  }, [onActiveTimerChange, scrollTo]);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 pb-4">
-      <div className="motion-rise motion-delay-1">
+      <div ref={warmupRef} className="motion-rise motion-delay-1">
         <WorkoutSection
           title="Warm-up"
           items={currentDay.warmup}
@@ -31,10 +57,11 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
           onDeleteItem={(id) => onDeleteItem("warmup", id)}
           onUpdateTimer={(ms) => onUpdateDay({ warmupTimerMs: ms })}
           onUpdateNotes={(txt) => onUpdateDayDebounced({ warmupNotes: txt })}
+          onTimerRunningChange={handleWarmupRunningChange}
         />
       </div>
 
-      <div className="motion-rise motion-delay-2">
+      <div ref={mainRef} className="motion-rise motion-delay-2">
         <WorkoutSection
           title="Main Session"
           items={currentDay.main}
@@ -44,12 +71,8 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
           onDeleteItem={(id) => onDeleteItem("main", id)}
           onUpdateTimer={(ms) => onUpdateDay({ mainTimerMs: ms })}
           onUpdateNotes={(txt) => onUpdateDayDebounced({ mainNotes: txt })}
-          headerExtra={<RpeSelect value={currentDay.rpe} onChange={(value) => onUpdateDay({ rpe: value })} />}
+          onTimerRunningChange={handleMainRunningChange}
         />
-      </div>
-
-      <div className="md:hidden -mt-2 mb-1 flex justify-end">
-        <RpeSelect mobile value={currentDay.rpe} onChange={(value) => onUpdateDay({ rpe: value })} />
       </div>
 
       <div className="md:col-span-2 motion-rise motion-delay-3">

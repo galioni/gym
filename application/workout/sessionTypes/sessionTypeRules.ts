@@ -56,21 +56,12 @@ export function getSessionLabel(sessionType: SessionType): string {
 }
 
 export function getSessionOptions(templates: Templates): SessionOption[] {
-  const customOptions = Object.keys(templates)
-    .filter((sessionType) => !BUILT_IN_LABELS.has(sessionType))
-    .sort((a, b) => getSessionLabel(a).localeCompare(getSessionLabel(b)))
+  return Object.keys(templates)
     .map((sessionType) => ({
       value: sessionType,
       label: getSessionLabel(sessionType),
-    }));
-
-  return [
-    ...BUILT_IN_ORDER.map((sessionType) => ({
-      value: sessionType,
-      label: BUILT_IN_LABELS.get(sessionType) ?? getSessionLabel(sessionType),
-    })),
-    ...customOptions,
-  ];
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 }
 
 export function normalizeSessionTypeId(value: string): SessionType | null {

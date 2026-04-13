@@ -57,7 +57,6 @@ export function createEmptyDay(date: string, sessionType: SessionType, templates
     main: template.main.map((row) => ({ ...row, id: generateId(), done: false })),
     warmupNotes: "",
     mainNotes: "",
-    rpe: "",
     warmupTimerMs: 0,
     mainTimerMs: 0,
     weight: "",
@@ -65,12 +64,21 @@ export function createEmptyDay(date: string, sessionType: SessionType, templates
   };
 }
 
-export function getFridayHint(dateStr: string): string {
-  const d = fromLocalDateKey(dateStr);
-  const isFri = d.getDay() === 5;
-  return isFri
-    ? "Friday: weight check day ✅"
-    : "Friday weight check: aim ~08:00";
+export function getFridayHint(
+  enabled: boolean,
+  targetTime: string,
+  now: Date = new Date()
+): string | null {
+  if (!enabled) return null;
+  if (now.getDay() !== 5) return null;
+
+  const [hourStr, minuteStr] = targetTime.split(":");
+  const targetMinutes = Number(hourStr) * 60 + Number(minuteStr);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  if (nowMinutes > targetMinutes) return null;
+
+  return `Friday weight check: aim ~${targetTime}`;
 }
 
 export function getProgress(day: DayData) {

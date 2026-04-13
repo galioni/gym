@@ -35,7 +35,6 @@ export function sanitizeDayData(raw: unknown, date: string, templates: Templates
     main: normalizeItems(record.main, baseline.main),
     warmupNotes: typeof record.warmupNotes === "string" ? record.warmupNotes : baseline.warmupNotes,
     mainNotes: typeof record.mainNotes === "string" ? record.mainNotes : baseline.mainNotes,
-    rpe: typeof record.rpe === "string" ? record.rpe : baseline.rpe,
     warmupTimerMs: typeof record.warmupTimerMs === "number" ? Math.max(0, record.warmupTimerMs) : baseline.warmupTimerMs,
     mainTimerMs: typeof record.mainTimerMs === "number" ? Math.max(0, record.mainTimerMs) : baseline.mainTimerMs,
     weight: typeof record.weight === "string" ? record.weight : baseline.weight,

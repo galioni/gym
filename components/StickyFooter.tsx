@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import { DayData } from '../types';
 import { getProgress } from '../utils';
 import { Button } from './ui/Button';
-import { Save, Trash2 } from 'lucide-react';
+import { Save, Trash2, Timer } from 'lucide-react';
 import { cn } from '../utils';
 
 interface StickyFooterProps {
@@ -10,9 +10,10 @@ interface StickyFooterProps {
   isSaving: boolean;
   onClear: () => void;
   onHeightChange?: (height: number) => void;
+  activeTimer?: { section: "warmup" | "main"; scrollTo: () => void } | null;
 }
 
-export const StickyFooter: React.FC<StickyFooterProps> = ({ day, isSaving, onClear, onHeightChange }) => {
+export const StickyFooter: React.FC<StickyFooterProps> = ({ day, isSaving, onClear, onHeightChange, activeTimer }) => {
   const progress = useMemo(() => getProgress(day), [day]);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -40,12 +41,24 @@ export const StickyFooter: React.FC<StickyFooterProps> = ({ day, isSaving, onCle
         <div className="flex-1 flex flex-col gap-2">
           <div className="flex justify-between items-end px-0.5">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.16em]">Daily Progress</span>
-            <span className={cn("text-xs font-bold", progress === 100 ? "text-accent" : "text-white")}>{progress}% Complete</span>
+            <div className="flex items-center gap-3">
+              {activeTimer && (
+                <button
+                  type="button"
+                  onClick={activeTimer.scrollTo}
+                  className="flex items-center gap-1 text-[10px] font-bold text-primary uppercase tracking-[0.16em] animate-pulse hover:opacity-80 transition-opacity"
+                >
+                  <Timer size={11} />
+                  {activeTimer.section === "warmup" ? "Warm-up" : "Main Session"}
+                </button>
+              )}
+              <span className={cn("text-xs font-bold", progress === 100 ? "text-accent" : "text-white")}>{progress}% Complete</span>
+            </div>
           </div>
           <div className="h-2.5 w-full bg-black/50 rounded-full overflow-hidden">
-            <div 
-              className={cn("h-full transition-all duration-700 ease-out shadow-[0_0_18px_rgba(255,122,26,0.6)]", progress === 100 ? "bg-accent" : "bg-primary")} 
-              style={{ width: `${progress}%` }} 
+            <div
+              className={cn("h-full transition-all duration-700 ease-out shadow-[0_0_18px_rgba(255,122,26,0.6)]", progress === 100 ? "bg-accent" : "bg-primary")}
+              style={{ width: `${progress}%` }}
             />
           </div>
         </div>

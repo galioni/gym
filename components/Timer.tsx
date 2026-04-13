@@ -6,9 +6,10 @@ import { formatTimer } from '../utils';
 interface TimerProps {
   initialMs: number;
   onSave: (ms: number) => void;
+  onRunningChange?: (isRunning: boolean) => void;
 }
 
-export const Timer: React.FC<TimerProps> = ({ initialMs, onSave }) => {
+export const Timer: React.FC<TimerProps> = ({ initialMs, onSave, onRunningChange }) => {
   const [ms, setMs] = useState(initialMs);
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<number | null>(null);
@@ -46,12 +47,14 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, onSave }) => {
         intervalRef.current = null;
       }
       setIsRunning(false);
+      onRunningChange?.(false);
       onSave(msRef.current);
     } else {
       // Start
       lastTimeRef.current = Date.now();
       intervalRef.current = window.setInterval(tick, 100);
       setIsRunning(true);
+      onRunningChange?.(true);
     }
   };
 

@@ -19,7 +19,6 @@ export interface DayData {
   main: WorkoutItem[];
   warmupNotes: string;
   mainNotes: string;
-  rpe: string;
   warmupTimerMs: number;
   mainTimerMs: number;
   weight: string;

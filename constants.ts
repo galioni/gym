@@ -1,6 +1,7 @@
 import { SessionOption, SessionType, TemplateData, Templates } from './types';
 
 export const STORAGE_KEY = "daily-workout-tracker:v2";
+export const WEIGHT_REMINDER_STORAGE_KEY = "daily-workout-tracker:weight-reminder";
 export const TEMPLATE_STORAGE_KEY = "daily-workout-tracker:templates:v1";
 export const SYNC_SETTINGS_STORAGE_KEY = "daily-workout-tracker:sync-settings:v1";
 export const SYNC_RESTORE_POINTS_STORAGE_KEY = "daily-workout-tracker:sync-restore-points:v1";
