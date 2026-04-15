@@ -1,0 +1,3 @@
+api/**/*.test.ts
+api/_lib/testHelpers.ts
+coverage/

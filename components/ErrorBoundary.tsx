@@ -24,8 +24,9 @@ export class ErrorBoundary extends React.Component<
 
   override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     this.setState({ errorInfo });
-    // Log to console for local debugging; swap for a real error reporter in production.
-    console.error("[ErrorBoundary] Unhandled render error", { error, componentStack: errorInfo.componentStack });
+    if (import.meta.env.DEV) {
+      console.error("[ErrorBoundary] Unhandled render error", { error, componentStack: errorInfo.componentStack });
+    }
   }
 
   private handleCopy = () => {

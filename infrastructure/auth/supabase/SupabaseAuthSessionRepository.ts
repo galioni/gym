@@ -51,7 +51,12 @@ export class SupabaseAuthSessionRepository implements AuthSessionRepository {
 
   public async signUpWithEmail(email: string, password: string): Promise<{ needsConfirmation: boolean }> {
     const client = createSupabaseClient();
-    const { data, error } = await client.auth.signUp({ email, password });
+    const { redirectUrl } = getRequiredSupabaseClientEnv();
+    const { data, error } = await client.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: redirectUrl },
+    });
     if (error) {
       throw new Error(error.message);
     }

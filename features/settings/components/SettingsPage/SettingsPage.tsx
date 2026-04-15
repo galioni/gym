@@ -104,7 +104,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   const { fileInputRef, exportBackup, openImportPicker, handleImportFileChange } = useBackupIO();
   const { signOut, session } = useAuthSession();
   const { confirm, showToast } = useFeedback();
-  const { subscription, isLoading: isSubscriptionLoading, startCheckout, openBillingPortal } = useSubscription();
+  const { subscription, isLoading: isSubscriptionLoading, fetchError: subscriptionFetchError, startCheckout, openBillingPortal } = useSubscription();
 
   const handleDeleteAllData = async () => {
     const confirmed = await confirm({
@@ -194,6 +194,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       <Card title="Plan">
         {isSubscriptionLoading ? (
           <div className="text-sm text-slate-400">Loading...</div>
+        ) : subscriptionFetchError ? (
+          <div className="text-sm text-slate-400">Could not load subscription status. Please refresh and try again.</div>
         ) : subscription.plan === "pro" ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between">

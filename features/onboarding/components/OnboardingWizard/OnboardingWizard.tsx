@@ -174,7 +174,16 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({})) as { error?: string };
+        const body = await res.json().catch(() => ({})) as { error?: string; retryAfter?: number };
+        if (res.status === 429) {
+          const wait = body.retryAfter && body.retryAfter > 0
+            ? ` Try again in ${Math.ceil(body.retryAfter / 60)} minute${Math.ceil(body.retryAfter / 60) === 1 ? "" : "s"}.`
+            : " Try again later.";
+          throw new Error(`You've hit the plan generation limit.${wait}`);
+        }
+        if (res.status >= 500) {
+          throw new Error("Plan generation failed due to a server error. Please try again in a moment.");
+        }
         throw new Error(body.error ?? "Plan generation failed. Please try again.");
       }
 
@@ -310,7 +319,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             Skip — I'll set up my plan manually
           </button>
           <p className="text-[11px] text-slate-600 leading-relaxed">
-            You can build templates in <span className="text-slate-500">Settings → Templates</span> and come back to generate a plan any time from <span className="text-slate-500">Settings → AI Plan</span>.
+            Skipping leaves you with an empty template list. You can build templates in <span className="text-slate-500">Settings → Templates</span> or generate a plan any time from <span className="text-slate-500">Settings → AI Plan</span>.
           </p>
         </div>
       </div>

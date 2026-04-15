@@ -97,6 +97,15 @@ export function createSessionType(templates: Templates, label: string): CreateSe
     };
   }
 
+  const derivedLabel = getSessionLabel(sessionType);
+  const existingLabels = getSessionOptions(templates).map((o) => o.label.toLowerCase());
+  if (existingLabels.includes(derivedLabel.toLowerCase())) {
+    return {
+      status: "error",
+      message: `Session type "${derivedLabel}" already exists.`,
+    };
+  }
+
   return {
     status: "success",
     sessionType,
@@ -162,6 +171,17 @@ export function renameSessionType(
     return {
       status: "error",
       message: `Session type "${getSessionLabel(newType)}" already exists.`,
+    };
+  }
+
+  const derivedLabel = getSessionLabel(newType);
+  const existingLabels = getSessionOptions(templates)
+    .filter((o) => o.value !== oldType)
+    .map((o) => o.label.toLowerCase());
+  if (existingLabels.includes(derivedLabel.toLowerCase())) {
+    return {
+      status: "error",
+      message: `Session type "${derivedLabel}" already exists.`,
     };
   }
 

@@ -5,7 +5,7 @@ import { getRequiredVercelKvEnv, getStripeWebhookSecret } from "./_lib/apiEnv.js
 import {
   getStripeCustomerUserId,
   setSubscription,
-  setStripeCustomerMapping,
+  setStripeCustomerMappingAndSubscription,
 } from "./_lib/subscriptionGuard.js";
 
 // Disable Vercel's body parser so we get the raw body for signature verification
@@ -104,20 +104,26 @@ export default async function handler(req: IncomingMessage, res: ApiResponse): P
       const customerId = obj["customer"] as string | null;
       const _subscriptionId = obj["subscription"] as string | null;
 
-      if (userId && customerId) {
-        // Ensure reverse mapping exists
-        await setStripeCustomerMapping(customerId, userId, kvEnv);
-        await setSubscription(
-          userId,
-          {
-            plan: "pro",
-            status: "active",
-            stripeCustomerId: customerId,
-            currentPeriodEnd: null, // will be updated by subscription.updated event
-          },
-          kvEnv
-        );
+      if (!userId || !customerId) {
+        console.warn("[stripe-webhook] checkout.session.completed missing userId or customerId", {
+          hasUserId: Boolean(userId),
+          hasCustomerId: Boolean(customerId),
+        });
+        res.status(200).json({ received: true });
+        return;
       }
+
+      await setStripeCustomerMappingAndSubscription(
+        customerId,
+        userId,
+        {
+          plan: "pro",
+          status: "active",
+          stripeCustomerId: customerId,
+          currentPeriodEnd: null, // will be updated by subscription.updated event
+        },
+        kvEnv
+      );
     }
 
     if (

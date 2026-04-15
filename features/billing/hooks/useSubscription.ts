@@ -15,9 +15,24 @@ const FREE: SubscriptionInfo = {
   currentPeriodEnd: null,
 };
 
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const cache = new Map<string, { data: SubscriptionInfo; expiresAt: number }>();
+
+function getCached(userId: string): SubscriptionInfo | null {
+  const entry = cache.get(userId);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) { cache.delete(userId); return null; }
+  return entry.data;
+}
+
+function setCached(userId: string, data: SubscriptionInfo): void {
+  cache.set(userId, { data, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
 interface UseSubscriptionResult {
   subscription: SubscriptionInfo;
   isLoading: boolean;
+  fetchError: boolean;
   startCheckout: () => Promise<void>;
   openBillingPortal: () => Promise<void>;
 }
@@ -26,22 +41,43 @@ export function useSubscription(): UseSubscriptionResult {
   const { session } = useAuthSession();
   const [subscription, setSubscription] = useState<SubscriptionInfo>(FREE);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     if (!session) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
       return;
     }
 
     let cancelled = false;
+    setFetchError(false);
+
+    const cached = getCached(session.user.id);
+    if (cached) {
+      setSubscription(cached);
+      setIsLoading(false);
+      return;
+    }
+
     fetch("/api/subscription", {
       headers: { Authorization: `Bearer ${session.accessToken}` },
     })
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled) setSubscription(data as SubscriptionInfo);
+      .then((r) => {
+        if (!r.ok) throw new Error(`Subscription fetch failed: ${r.status}`);
+        return r.json();
       })
-      .catch(() => {})
+      .then((data) => {
+        if (!cancelled) {
+          const info = data as SubscriptionInfo;
+          setCached(session.user.id, info);
+          setSubscription(info);
+        }
+      })
+      .catch((error) => {
+        console.error("[useSubscription] Failed to fetch subscription status", error);
+        if (!cancelled) setFetchError(true);
+      })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
       });
@@ -84,5 +120,5 @@ export function useSubscription(): UseSubscriptionResult {
     window.location.href = url;
   }, [session]);
 
-  return { subscription, isLoading, startCheckout, openBillingPortal };
+  return { subscription, isLoading, fetchError, startCheckout, openBillingPortal };
 }

@@ -91,6 +91,10 @@ export async function checkRateLimit(
 
     if (!response.ok) {
       // If Redis is unavailable, fail open rather than blocking all users.
+      console.error("[rateLimiter] KV returned non-OK status, failing open", {
+        status: response.status,
+        routeKey,
+      });
       return { allowed: true, retryAfterSeconds: 0 };
     }
 
@@ -104,8 +108,9 @@ export async function checkRateLimit(
     const windowEndMs = (windowSlot + 1) * windowSeconds * 1000;
     const retryAfterSeconds = Math.ceil((windowEndMs - Date.now()) / 1000);
     return { allowed: false, retryAfterSeconds };
-  } catch {
+  } catch (error) {
     // Network failure — fail open.
+    console.error("[rateLimiter] KV request threw, failing open", { routeKey, error });
     return { allowed: true, retryAfterSeconds: 0 };
   }
 }

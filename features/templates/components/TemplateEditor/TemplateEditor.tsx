@@ -64,6 +64,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
       return;
     }
     if (sessionOptions[0]?.value) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSession(sessionOptions[0].value);
     }
   }, [session, sessionOptions]);
@@ -74,7 +75,9 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
   );
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRows(sectionRows.map((row) => ({ ...row })));
+     
     setErrors([]);
   }, [sectionRows]);
 
@@ -154,6 +157,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
               ref={renameLabelRef}
               type="text"
               value={renameLabel}
+              maxLength={50}
               onChange={(e) => setRenameLabel(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") void handleRenameSubmit();
@@ -240,6 +244,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
             ref={newLabelRef}
             type="text"
             value={newLabel}
+            maxLength={50}
             onChange={(e) => setNewLabel(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") void handleCreateSubmit();

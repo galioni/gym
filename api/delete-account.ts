@@ -4,6 +4,7 @@ import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight } from "./_lib
 import { attachApiRequestObservability } from "./_lib/observability.js";
 import { getRequiredApiEnv, getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
 import { getSubscription } from "./_lib/subscriptionGuard.js";
+import { deleteStripeCustomer } from "./_lib/stripeClient.js";
 
 async function deleteKvKeys(
   keys: string[],
@@ -62,6 +63,15 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     }
 
     await deleteKvKeys(keysToDelete, kvEnv.kvRestApiUrl, kvEnv.kvRestApiToken);
+
+    // Best-effort: delete the Stripe customer record. Non-fatal if it fails.
+    if (stripeCustomerId) {
+      try {
+        await deleteStripeCustomer(stripeCustomerId);
+      } catch (err) {
+        console.error("[delete-account] Failed to delete Stripe customer (non-fatal)", { stripeCustomerId, err });
+      }
+    }
 
     // Delete the Supabase auth account last — this invalidates all active tokens.
     const supabaseAdmin = createClient(

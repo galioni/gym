@@ -30,6 +30,27 @@ async function kvPipeline(
   return response.json() as Promise<unknown[]>;
 }
 
+const GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+/** Full Pro access: active or trialing subscription. */
+export function hasProAccess(subscription: SubscriptionInfo): boolean {
+  return (
+    subscription.plan === "pro" &&
+    (subscription.status === "active" || subscription.status === "trialing")
+  );
+}
+
+/**
+ * Read-only grace period access: allows GET requests for 7 days after
+ * currentPeriodEnd so recently-lapsed users can still retrieve their data.
+ */
+export function hasProReadAccess(subscription: SubscriptionInfo): boolean {
+  if (hasProAccess(subscription)) return true;
+  if (!subscription.currentPeriodEnd) return false;
+  const periodEnd = new Date(subscription.currentPeriodEnd).getTime();
+  return Date.now() <= periodEnd + GRACE_PERIOD_MS;
+}
+
 export async function getSubscription(
   userId: string,
   kvEnv: RequiredVercelKvEnv
@@ -89,4 +110,22 @@ export async function setStripeCustomerMapping(
   kvEnv: RequiredVercelKvEnv
 ): Promise<void> {
   await kvPipeline(kvEnv, [["SET", `stripe_customer:${stripeCustomerId}`, userId]]);
+}
+
+/**
+ * Atomically writes both the customer→user mapping and the subscription record
+ * in a single KV pipeline round-trip. Use this on checkout.session.completed
+ * instead of calling setStripeCustomerMapping + setSubscription separately.
+ */
+export async function setStripeCustomerMappingAndSubscription(
+  stripeCustomerId: string,
+  userId: string,
+  info: SubscriptionInfo,
+  kvEnv: RequiredVercelKvEnv
+): Promise<void> {
+  const ttl = subscriptionTtlSeconds(info);
+  await kvPipeline(kvEnv, [
+    ["SET", `stripe_customer:${stripeCustomerId}`, userId],
+    ["SET", `subscription:${userId}`, JSON.stringify(info), "EX", ttl],
+  ]);
 }

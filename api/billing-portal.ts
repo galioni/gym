@@ -1,21 +1,9 @@
 import { requireAuth } from "./_lib/authContext.js";
-import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight, parseJsonBody } from "./_lib/http.js";
+import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight, parseJsonBody, isAllowedReturnUrl } from "./_lib/http.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
 import { getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
 import { getSubscription } from "./_lib/subscriptionGuard.js";
 import { createBillingPortalSession } from "./_lib/stripeClient.js";
-
-function isValidUrl(raw: unknown): raw is string {
-  if (typeof raw !== "string") return false;
-  try {
-    const parsed = new URL(raw);
-    if (parsed.protocol === "https:") return true;
-    // Allow http://localhost in local development only
-    return process.env.VERCEL_ENV !== "production" && parsed.hostname === "localhost";
-  } catch {
-    return false;
-  }
-}
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   const observation = attachApiRequestObservability(req, res, "/api/billing-portal");
@@ -35,7 +23,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const body = parseJsonBody<Record<string, unknown>>(req, {});
     const { returnUrl } = body;
 
-    if (!isValidUrl(returnUrl)) {
+    if (!isAllowedReturnUrl(returnUrl)) {
       res.status(400).json({ error: "Invalid returnUrl." });
       return;
     }
