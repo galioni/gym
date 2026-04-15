@@ -36,6 +36,7 @@ Open the app at `http://localhost:5173`.
 - `npm run dev`: start Vite dev server
 - `npm run build`: type-check and build
 - `npm run test`: run Vitest suites
+- `npm run test:watch`: run Vitest in watch mode
 - `npm run qa:check`: run TypeScript type-check only
 - `npm run lint`: run ESLint across the codebase
 
@@ -45,11 +46,15 @@ Open the app at `http://localhost:5173`.
 - `interfaces/`: repository contracts (ports)
 - `infrastructure/`: localStorage/cloud repository adapters
 - `features/`: UI feature modules (state hooks + components)
+  - `app-shell/`: Dashboard layout, workout grid, keyboard shortcuts
   - `auth/`: Supabase auth — Google OAuth + email/password (sign-in, sign-up, password reset)
   - `billing/`: Stripe subscription hook (`useSubscription`)
+  - `feedback/`: Toast notifications and confirm dialogs
   - `landing/`: Marketing landing page (shown when not signed in) — email/password form + Google OAuth
   - `onboarding/`: AI plan generation wizard (shown on first login)
   - `plans/`: Plans state and editor (group sessions into named plans)
+  - `qa/`: Smoke panel (accessible at `/?qa=1` in dev)
+  - `session-controls/`: Backup import/export logic
   - `settings/`: Settings page (templates, sync, plan/billing, reminders, appearance, data)
   - `sync/`: Cloud sync state and UI
   - `templates/`: Template editor
@@ -235,6 +240,8 @@ Config: `.github/workflows/ci.yml`
 Dependabot is configured (`.github/dependabot.yml`) to open weekly PRs for npm and GitHub Actions dependency updates (minor + patch, batched).
 
 Pre-commit hooks (Husky + lint-staged) run ESLint on staged `.ts` / `.tsx` files before every commit.
+
+`.npmrc` sets `legacy-peer-deps=true` to resolve a peer dependency conflict between `eslint@10` and `eslint-plugin-react-hooks@7` — required for Vercel installs and consistent with the `--legacy-peer-deps` flag used in CI.
 
 ## Backup Format
 
