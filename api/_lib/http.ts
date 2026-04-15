@@ -75,6 +75,21 @@ function isOriginAllowed(origin: string): boolean {
   return getAllowedCorsOrigins().has(origin);
 }
 
+/**
+ * Returns true if the URL's origin matches one of the known allowed origins.
+ * Used to validate Stripe return URLs so they can only point back to this app.
+ */
+export function isAllowedReturnUrl(raw: unknown): raw is string {
+  if (typeof raw !== "string") return false;
+  try {
+    const parsed = new URL(raw);
+    const origin = normalizeOrigin(`${parsed.protocol}//${parsed.host}`);
+    return getAllowedCorsOrigins().has(origin);
+  } catch {
+    return false;
+  }
+}
+
 export function toBearerToken(header: string | string[] | undefined): string | null {
   const normalized = readHeaderValue(header);
   if (!normalized) {

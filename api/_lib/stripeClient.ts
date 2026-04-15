@@ -5,7 +5,7 @@ import { getStripeSecretKey } from "./apiEnv.js";
  */
 async function stripeRequest(
   path: string,
-  method: "GET" | "POST",
+  method: "GET" | "POST" | "DELETE",
   params?: Record<string, string>
 ): Promise<unknown> {
   const secretKey = getStripeSecretKey();
@@ -81,6 +81,10 @@ export async function createCheckoutSession(
     success_url: successUrl,
     cancel_url: cancelUrl,
   }) as Promise<StripeCheckoutSession>;
+}
+
+export async function deleteStripeCustomer(stripeCustomerId: string): Promise<void> {
+  await stripeRequest(`/customers/${stripeCustomerId}`, "DELETE");
 }
 
 export async function createBillingPortalSession(

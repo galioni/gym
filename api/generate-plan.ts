@@ -131,22 +131,31 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 - Session duration: ${input.duration} minutes
 ${bodyFocusLine}`;
 
-    const openAiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${getOpenAiApiKey()}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        temperature: 0.7,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
-      }),
-    });
+    const openAiAbort = new AbortController();
+    const openAiTimeout = setTimeout(() => openAiAbort.abort(), 30_000);
+
+    let openAiResponse: Response;
+    try {
+      openAiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${getOpenAiApiKey()}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: userPrompt },
+          ],
+        }),
+        signal: openAiAbort.signal,
+      });
+    } finally {
+      clearTimeout(openAiTimeout);
+    }
 
     if (!openAiResponse.ok) {
       observation.logUnhandledError(new Error(`OpenAI error: ${openAiResponse.status}`));

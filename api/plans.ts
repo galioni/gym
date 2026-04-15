@@ -6,7 +6,7 @@ import { getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
 import { SyncRequestGuards } from "./_lib/requestGuards.js";
 import { FixedWindowRateLimiter, checkRateLimit } from "./_lib/rateLimiter.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
-import { getSubscription } from "./_lib/subscriptionGuard.js";
+import { getSubscription, hasProAccess, hasProReadAccess } from "./_lib/subscriptionGuard.js";
 import {
   ApiRequest,
   ApiResponse,
@@ -52,7 +52,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     }
 
     const subscription = await getSubscription(auth.userId, kvEnv);
-    if (subscription.plan !== "pro" || subscription.status !== "active") {
+    if (req.method === "GET" ? !hasProReadAccess(subscription) : !hasProAccess(subscription)) {
       res.status(402).json({ error: "Cloud sync requires a Pro subscription." });
       return;
     }

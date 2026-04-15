@@ -52,6 +52,15 @@ export async function toCloudApiError(
   response: Response,
   operationLabel: string
 ): Promise<Error> {
+  if (response.status === 429) {
+    const retryAfter = readHeader(response, "retry-after");
+    const seconds = retryAfter ? parseInt(retryAfter, 10) : NaN;
+    const waitMsg = !isNaN(seconds) && seconds > 0
+      ? `Try again in ${Math.ceil(seconds / 60)} minute${Math.ceil(seconds / 60) === 1 ? "" : "s"}.`
+      : "Try again later.";
+    return new Error(`${operationLabel} rate limited. ${waitMsg}`);
+  }
+
   const payload = await readPayload(response);
   const requestId =
     readHeader(response, "x-request-id") ??
