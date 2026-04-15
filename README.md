@@ -338,6 +338,53 @@ If you want the app on the App Store, use Capacitor:
 
 ---
 
+## Backlog
+
+Findings from a full security, performance, code quality, and product audit. Grouped by area and sorted by priority within each section.
+
+### Security
+
+| Priority | Issue | Location | Action |
+|----------|-------|----------|--------|
+| High | **Rate limiting fails open** — when Upstash is unavailable `checkRateLimit()` returns `allowed: true`, bypassing limits during outages | `api/_lib/rateLimiter.ts` | Log the fail-open; consider rejecting requests or alerting during KV outages |
+| High | **Unvalidated `client_reference_id` from Stripe webhook** — userId accepted without verifying the user exists | `api/stripe-webhook.ts` | Log a warning when the field is missing or invalid; don't silently drop |
+| High | **Return URLs not whitelisted** — `isValidUrl()` accepts any HTTPS URL on checkout session creation | `api/create-checkout-session.ts` | Validate against an allowlist of your own domains |
+| Medium | **Account deletion leaks internal error messages** — full Supabase error bubbled to client | `api/delete-account.ts` | Log internally, return a generic message to the client |
+| Medium | **Stripe customer ID not verified to belong to authenticated user** on billing portal request | `api/billing-portal.ts` | Cross-reference customer ID ownership via KV before creating the portal session |
+| Medium | **Error stack logged to console in production** | `components/ErrorBoundary.tsx` | Only log stack in development (`import.meta.env.DEV`) |
+
+### Performance
+
+| Priority | Issue | Location | Action |
+|----------|-------|----------|--------|
+| High | **No timeout on OpenAI API call** — network stall hangs the serverless function indefinitely | `api/generate-plan.ts` | Add `AbortController` with a 30s timeout |
+| Medium | **Subscription status fetched with no caching** — hits `/api/subscription` on every relevant render | `features/billing/hooks/useSubscription.ts` | Cache response for 5–10 minutes in localStorage or memory |
+| Low | **Stripe webhook KV writes not batched** — multiple sequential KV calls per event | `api/stripe-webhook.ts` | Accumulate writes and execute via a single KV pipeline call |
+
+### Code Quality
+
+| Priority | Issue | Location | Action |
+|----------|-------|----------|--------|
+| High | **Silent `.catch(() => {})` in `useSubscription`** — user stuck on loading spinner if API fails | `features/billing/hooks/useSubscription.ts` | Set error state and surface a message to the user |
+| Medium | **No input validation on session type labels** — no max length, no control character check | `features/templates/components/TemplateEditor/` | Validate max 50 chars, trim whitespace, reject control characters |
+| Medium | **No integration test for Stripe webhook → KV → subscription status flow** | `api/` | Add end-to-end test simulating webhook and verifying KV state |
+| Medium | **No `npm audit` in CI** | `.github/workflows/ci.yml` | Add `npm audit --production` step; fail on high/critical |
+
+### Product / Enhancements
+
+| Priority | Issue | Location | Action |
+|----------|-------|----------|--------|
+| High | **No loading state or feedback during AI plan generation** — 3–5s wait with no spinner | `features/onboarding/components/OnboardingWizard/` | Show spinner + estimated time during generation |
+| High | **No error differentiation on plan generation** — timeout, 429, and 5xx all look the same to the user | `features/onboarding/components/OnboardingWizard/` | Map error type to specific message; show retry time for 429 |
+| High | **No grace period when Pro subscription expires** — sync access cut off immediately | `api/plans.ts`, `api/templates.ts`, `api/workout-data.ts` | Allow read-only cloud access for 7 days after expiry |
+| Medium | **Rate limit not surfaced to user** — `Retry-After` not returned; user doesn't know when to retry | `api/generate-plan.ts` | Return `Retry-After` header and show "Try again in X minutes" in UI |
+| Medium | **Stripe customer record orphaned on account deletion** — mapping deleted but customer not removed from Stripe | `api/delete-account.ts` | Call Stripe `customers.del()` or tag customer for ops cleanup |
+| Medium | **No duplicate session type name validation** — two types with the same name can coexist | `features/templates/components/TemplateEditor/` | Reject save if name already exists |
+| Medium | **Timer has no accessibility labels** — no `aria-label` for running/paused state | `components/Timer.tsx` | Add dynamic `aria-label` reflecting current timer state |
+| Low | **Onboarding skip leaves empty dashboard with no warning** | `features/onboarding/components/OnboardingWizard/` | Show: "You'll have an empty template list. You can generate one later in Settings." |
+
+---
+
 ### Marketing (optional)
 
 Organic channels (zero budget):
