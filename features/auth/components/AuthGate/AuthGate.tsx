@@ -1,6 +1,7 @@
 import React from "react";
-import { GoogleSignInCard } from "../GoogleSignInCard/GoogleSignInCard";
 import { UserMenu } from "../UserMenu/UserMenu";
+import { LandingPage } from "../../../landing/components/LandingPage/LandingPage";
+import { PasswordResetScreen } from "../PasswordResetScreen/PasswordResetScreen";
 import { useAuthSession } from "../../hooks/useAuthSession";
 
 interface AuthGateProps {
@@ -8,7 +9,7 @@ interface AuthGateProps {
 }
 
 export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
-  const { isLoading, isWorking, session, error, signInWithGoogle, signOut } = useAuthSession();
+  const { isLoading, isWorking, isPasswordRecovery, session, error, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, updatePassword, signOut } = useAuthSession();
 
   if (isLoading) {
     return (
@@ -20,12 +21,20 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
     );
   }
 
+  if (isPasswordRecovery) {
+    return <PasswordResetScreen isWorking={isWorking} onUpdatePassword={updatePassword} />;
+  }
+
   if (!session) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-5 py-10">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgb(72_213_151_/_0.2),transparent_36%),radial-gradient(circle_at_78%_10%,rgb(255_122_26_/_0.28),transparent_30%),linear-gradient(160deg,rgb(10_13_19),rgb(6_10_17))]" />
-        <GoogleSignInCard isWorking={isWorking} error={error} onSignIn={signInWithGoogle} />
-      </div>
+      <LandingPage
+        isWorking={isWorking}
+        error={error}
+        onSignIn={signInWithGoogle}
+        onSignInWithEmail={signInWithEmail}
+        onSignUpWithEmail={signUpWithEmail}
+        onResetPassword={resetPassword}
+      />
     );
   }
 

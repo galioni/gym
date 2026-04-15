@@ -27,7 +27,9 @@ export async function verifySupabaseJwt(
       id: payload.sub,
       email: typeof payload.email === "string" ? payload.email : null,
     };
-  } catch {
+  } catch (err) {
+    // Log the failure reason for debugging without exposing details in the response
+    console.error("[auth] JWT verification failed:", err instanceof Error ? err.message : String(err));
     return null;
   }
 }

@@ -18,6 +18,7 @@ export interface SyncSettingsRepository {
       createdAt: string;
       workoutData: unknown;
       templates: unknown;
+      plans?: unknown;
     }>
   >;
   writeRestorePoints(
@@ -26,6 +27,7 @@ export interface SyncSettingsRepository {
       createdAt: string;
       workoutData: unknown;
       templates: unknown;
+      plans?: unknown;
     }>
   ): Promise<void>;
 }

@@ -18,6 +18,22 @@ export class AuthService {
     await this.repository.signInWithGoogle();
   }
 
+  public async signInWithEmail(email: string, password: string): Promise<void> {
+    await this.repository.signInWithEmail(email, password);
+  }
+
+  public async signUpWithEmail(email: string, password: string): Promise<{ needsConfirmation: boolean }> {
+    return this.repository.signUpWithEmail(email, password);
+  }
+
+  public async resetPassword(email: string): Promise<void> {
+    await this.repository.resetPassword(email);
+  }
+
+  public async updatePassword(newPassword: string): Promise<void> {
+    await this.repository.updatePassword(newPassword);
+  }
+
   public async signOut(): Promise<void> {
     await this.repository.signOut();
   }

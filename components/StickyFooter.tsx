@@ -75,15 +75,18 @@ export const StickyFooter: React.FC<StickyFooterProps> = ({ day, isSaving, onCle
                <span className="uppercase tracking-[0.18em]">Saving</span>
             </div>
 
-            <Button 
-                variant="danger" 
-                size="icon" 
+            <Button
+                variant="danger"
+                size="icon"
                 onClick={onClear}
                 className="shrink-0 w-11 h-11 rounded-2xl"
                 title="Clear Day"
             >
                 <Trash2 size={18} />
             </Button>
+            <span className="hidden md:inline-flex items-center text-[10px] text-slate-600 select-none" title="Press ? to see all keyboard shortcuts">
+              <kbd className="font-mono bg-white/5 border border-white/10 rounded px-1.5 py-0.5 text-slate-500">?</kbd>
+            </span>
         </div>
       </div>
     </div>

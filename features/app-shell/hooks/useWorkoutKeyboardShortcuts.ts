@@ -4,6 +4,7 @@ interface UseWorkoutKeyboardShortcutsParams {
   onJumpToday: () => void;
   onLoadTemplate: () => void;
   onDuplicatePreviousDayNotesAndWeight: () => void;
+  onShowShortcuts?: () => void;
 }
 
 /**
@@ -13,6 +14,7 @@ export function useWorkoutKeyboardShortcuts({
   onJumpToday,
   onLoadTemplate,
   onDuplicatePreviousDayNotesAndWeight,
+  onShowShortcuts,
 }: UseWorkoutKeyboardShortcutsParams): void {
   useEffect(() => {
     const isTypingTarget = (eventTarget: EventTarget | null) => {
@@ -43,10 +45,13 @@ export function useWorkoutKeyboardShortcuts({
       } else if (key === "d") {
         event.preventDefault();
         onDuplicatePreviousDayNotesAndWeight();
+      } else if (event.key === "?" && onShowShortcuts) {
+        event.preventDefault();
+        onShowShortcuts();
       }
     };
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onJumpToday, onLoadTemplate, onDuplicatePreviousDayNotesAndWeight]);
+  }, [onJumpToday, onLoadTemplate, onDuplicatePreviousDayNotesAndWeight, onShowShortcuts]);
 }

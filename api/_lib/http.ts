@@ -1,8 +1,17 @@
-const ALLOWED_METHODS = new Set(["GET", "PUT", "OPTIONS"]);
-const DEFAULT_ALLOWED_CORS_ORIGINS = new Set([
-  "http://localhost:5173",
-  "https://gym-galioni.vercel.app",
-]);
+const ALLOWED_METHODS = new Set(["GET", "PUT", "POST", "DELETE", "OPTIONS"]);
+
+function buildDefaultAllowedCorsOrigins(): Set<string> {
+  const origins = new Set(["http://localhost:5173"]);
+  // VERCEL_PROJECT_PRODUCTION_URL is the stable production domain (no protocol prefix)
+  const prodUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  // VERCEL_URL is the deployment-specific domain (preview + production)
+  const deployUrl = process.env.VERCEL_URL;
+  if (prodUrl) origins.add(`https://${prodUrl}`);
+  if (deployUrl) origins.add(`https://${deployUrl}`);
+  return origins;
+}
+
+const DEFAULT_ALLOWED_CORS_ORIGINS = buildDefaultAllowedCorsOrigins();
 
 export interface ApiRequest {
   method?: string;
@@ -82,7 +91,7 @@ export function setCorsHeaders(req: ApiRequest, res: ApiResponse): void {
     res.setHeader("Vary", "Origin");
   }
   res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
-  res.setHeader("Access-Control-Allow-Methods", "GET, PUT, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS");
   res.setHeader("Access-Control-Expose-Headers", "x-request-id");
 }
 

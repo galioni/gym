@@ -3,7 +3,9 @@ import { RefreshCw } from "lucide-react";
 import { Card } from "../../../../components/ui/Card";
 import { Button } from "../../../../components/ui/Button";
 import {
+  ConflictResolution,
   SyncConflict,
+  SyncEntity,
   SyncNowResult,
   SyncRestorePoint,
 } from "../../../../application/sync/syncTypes";
@@ -17,11 +19,13 @@ interface SyncSettingsPanelProps {
   conflicts: SyncConflict[];
   restorePoints: SyncRestorePoint[];
   isSyncing: boolean;
+  isUpgradeRequired: boolean;
   onSyncNow: (
-    resolution?: Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
+    resolution?: Partial<Record<SyncEntity, ConflictResolution>>
   ) => Promise<SyncNowResult>;
   onRollback: (id: string) => Promise<SyncNowResult>;
   onPruneRestorePoints: () => Promise<void>;
+  onUpgrade: () => Promise<void>;
 }
 
 export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
@@ -31,16 +35,16 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
   conflicts,
   restorePoints,
   isSyncing,
+  isUpgradeRequired,
   onSyncNow,
   onRollback,
   onPruneRestorePoints,
+  onUpgrade,
 }) => {
   const { showToast } = useFeedback();
   const { session } = useAuthSession();
   const isAuthenticated = Boolean(session);
-  const [resolutions, setResolutions] = useState<
-    Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
-  >({});
+  const [resolutions, setResolutions] = useState<Partial<Record<SyncEntity, ConflictResolution>>>({});
 
   const hasConflicts = conflicts.length > 0;
   const canResolve = useMemo(
@@ -123,12 +127,20 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
         </div>
       </div>
 
-      {syncMessage && (
+      {isUpgradeRequired && (
+        <div className="mb-3 rounded-xl border border-primary/30 bg-primary/10 p-3 flex items-center justify-between gap-3">
+          <p className="text-xs text-orange-100">Cloud sync requires a Pro subscription.</p>
+          <Button size="sm" variant="primary" className="shrink-0" onClick={() => void onUpgrade()}>
+            Upgrade
+          </Button>
+        </div>
+      )}
+      {!isUpgradeRequired && syncMessage && (
         <div className="mb-3 rounded-xl border border-white/10 bg-background/40 p-3 text-xs text-slate-300">
           {syncMessage}
         </div>
       )}
-      {lastError && (
+      {!isUpgradeRequired && lastError && (
         <div className="mb-3 rounded-xl border border-danger/40 bg-danger/10 p-3 text-xs text-red-200">
           {lastError}
         </div>
@@ -139,7 +151,11 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
           {conflicts.map((conflict) => (
             <div key={conflict.entity} className="rounded-xl border border-white/10 p-3">
               <div className="text-sm text-white font-semibold capitalize">
-                {conflict.entity === "workoutData" ? "Workout Data Conflict" : "Template Conflict"}
+                {conflict.entity === "workoutData"
+                  ? "Workout Data Conflict"
+                  : conflict.entity === "templates"
+                    ? "Template Conflict"
+                    : "Plans Conflict"}
               </div>
               <div className="text-xs text-slate-400 mt-1">
                 Local: {new Date(conflict.localUpdatedAt).toLocaleString()} | Cloud:{" "}
@@ -166,6 +182,7 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
                   onClick={() =>
                     setResolutions((current) => ({ ...current, [conflict.entity]: "keepLocal" }))
                   }
+                  title="Use this device's data — the cloud version will be overwritten"
                 >
                   Keep Local
                 </Button>
@@ -175,10 +192,18 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
                   onClick={() =>
                     setResolutions((current) => ({ ...current, [conflict.entity]: "keepCloud" }))
                   }
+                  title="Use the cloud data — this device's version will be overwritten"
                 >
                   Keep Cloud
                 </Button>
               </div>
+              {resolutions[conflict.entity] && (
+                <p className="mt-1.5 text-[11px] text-slate-500">
+                  {resolutions[conflict.entity] === "keepLocal"
+                    ? "The cloud copy will be replaced with your local data."
+                    : "Your local data will be replaced with the cloud copy."}
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -187,7 +212,10 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
       {restorePoints.length > 0 && (
         <div className="mt-4 rounded-xl border border-white/10 p-3">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-sm text-white font-semibold">Pre-sync Restore Points</div>
+            <div>
+              <div className="text-sm text-white font-semibold">Pre-sync Restore Points</div>
+              <div className="text-xs text-slate-500 mt-0.5">Snapshots saved automatically before each sync. Roll back if a sync overwrote something you wanted to keep.</div>
+            </div>
             {restorePoints.length > 1 && (
               <Button
                 size="sm"

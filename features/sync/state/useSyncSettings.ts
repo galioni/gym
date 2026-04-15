@@ -3,6 +3,7 @@ import { SyncService } from "../../../application/sync/SyncService";
 import {
   ConflictResolution,
   SyncConflict,
+  SyncEntity,
   SyncNowResult,
   SyncRestorePoint,
 } from "../../../application/sync/syncTypes";
@@ -13,11 +14,12 @@ import {
 interface UseSyncSettingsResult {
   settings: SyncSettings;
   isSyncing: boolean;
+  isUpgradeRequired: boolean;
   conflicts: SyncConflict[];
   restorePoints: SyncRestorePoint[];
   syncMessage: string;
   syncNow: (
-    resolution?: Partial<Record<"workoutData" | "templates", ConflictResolution>>
+    resolution?: Partial<Record<SyncEntity, ConflictResolution>>
   ) => Promise<SyncNowResult>;
   rollbackToRestorePoint: (id: string) => Promise<SyncNowResult>;
   pruneRestorePoints: () => Promise<void>;
@@ -30,6 +32,7 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
     lastError: null,
   });
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isUpgradeRequired, setIsUpgradeRequired] = useState(false);
   const [conflicts, setConflicts] = useState<SyncConflict[]>([]);
   const [restorePoints, setRestorePoints] = useState<SyncRestorePoint[]>([]);
   const [syncMessage, setSyncMessage] = useState("");
@@ -64,7 +67,7 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
   const syncNow = useCallback(
     async (
       resolution: Partial<
-        Record<"workoutData" | "templates", ConflictResolution>
+        Record<SyncEntity, ConflictResolution>
       > = {}
     ) => {
       setIsSyncing(true);
@@ -76,6 +79,7 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
       }
       setSyncMessage(result.message);
       setConflicts(result.conflicts);
+      setIsUpgradeRequired(result.status === "upgradeRequired");
       setSettings(loadedSettings);
       setRestorePoints(loadedRestorePoints);
       setIsSyncing(false);
@@ -111,6 +115,7 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
   return {
     settings,
     isSyncing,
+    isUpgradeRequired,
     conflicts,
     restorePoints,
     syncMessage,

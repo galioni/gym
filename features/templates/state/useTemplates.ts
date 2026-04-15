@@ -16,6 +16,7 @@ interface UseTemplatesResult {
   ) => TemplateValidationError[];
   undoSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
   resetSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
+  replaceTemplates: (templates: Templates) => Promise<void>;
   addSessionType: (label: string) => Promise<CreateSessionTypeResult>;
   removeSessionType: (sessionType: SessionType) => Promise<DeleteSessionTypeResult>;
   renameSessionType: (oldType: SessionType, newLabel: string) => Promise<RenameSessionTypeResult>;
@@ -153,6 +154,14 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
     [service]
   );
 
+  const replaceTemplates = useCallback(
+    async (newTemplates: Templates): Promise<void> => {
+      setTemplates(newTemplates);
+      await service.saveTemplates(newTemplates);
+    },
+    [service]
+  );
+
   const addSessionType = useCallback(
     async (label: string): Promise<CreateSessionTypeResult> => {
       const result = service.createSessionType(templates, label);
@@ -226,6 +235,7 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
     saveSectionTemplate,
     undoSectionTemplate,
     resetSectionTemplate,
+    replaceTemplates,
     addSessionType,
     removeSessionType,
     renameSessionType,

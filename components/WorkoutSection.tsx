@@ -9,6 +9,7 @@ interface WorkoutSectionProps {
   title: string;
   items: WorkoutItem[];
   timerMs: number;
+  initialTimerRunning?: boolean;
   notes: string;
   onToggleItem: (id: string, isDone: boolean) => void;
   onDeleteItem: (id: string) => Promise<boolean>;
@@ -88,18 +89,27 @@ const SwipeableWorkoutItem: React.FC<{
         </button>
       </div>
 
-      <label 
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => void handleDeleteClick()}
+          aria-label={`Delete ${item.text}`}
+          className="absolute top-2 right-2 hidden md:group-hover:flex items-center justify-center h-7 w-7 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-400/10 transition-colors z-20"
+        >
+          <Trash2 size={13} />
+        </button>
+      <label
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{ 
+        style={{
           transform: `translateX(${translateX}px)`,
-          transition: isDragging.current ? 'none' : 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' 
+          transition: isDragging.current ? 'none' : 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
         }}
         className={cn(
-          "relative flex items-start gap-4 p-4 rounded-2xl border transition-all duration-300 cursor-pointer select-none z-10",
-          item.done 
-            ? "bg-surface/35 border-transparent opacity-60 backdrop-blur-sm" 
+          "relative flex items-start gap-4 p-4 pr-10 rounded-2xl border transition-all duration-300 cursor-pointer select-none z-10",
+          item.done
+            ? "bg-surface/35 border-transparent opacity-60 backdrop-blur-sm"
             : "bg-surfaceHighlight/45 border-white/10 hover:border-primary/40 hover:bg-surfaceHighlight/75 backdrop-blur-md shadow-md shadow-black/20"
         )}
       >
@@ -132,6 +142,7 @@ const SwipeableWorkoutItem: React.FC<{
           )}
         </div>
       </label>
+      </div>
     </div>
   );
 });
@@ -140,6 +151,7 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
   title,
   items,
   timerMs,
+  initialTimerRunning,
   notes,
   onToggleItem,
   onDeleteItem,
@@ -149,12 +161,12 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
   headerExtra
 }) => {
   return (
-    <Card 
+    <Card
       title={title}
       headerAction={
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap sm:justify-end">
           {headerExtra}
-          <Timer initialMs={timerMs} onSave={onUpdateTimer} onRunningChange={onTimerRunningChange} />
+          <Timer initialMs={timerMs} initialIsRunning={initialTimerRunning} onSave={onUpdateTimer} onRunningChange={onTimerRunningChange} />
         </div>
       }
       className="h-full flex flex-col motion-rise"
@@ -162,8 +174,8 @@ export const WorkoutSection: React.FC<WorkoutSectionProps> = ({
       <div className="flex-1 mb-6">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-slate-500 border-2 border-dashed border-white/10 rounded-2xl bg-background/35">
-            <div className="text-sm font-medium">No items yet</div>
-            <div className="text-xs opacity-60 mt-1">Load a template to get started</div>
+            <div className="text-sm font-medium">No exercises yet</div>
+            <div className="text-xs opacity-60 mt-1.5 text-center px-4">Use <span className="font-semibold text-slate-400">Load</span> to apply a template, or go to <span className="font-semibold text-slate-400">Settings → Templates</span> to build one</div>
           </div>
         ) : (
           items.map((item) => (

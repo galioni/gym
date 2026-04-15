@@ -4,8 +4,12 @@ import { VercelKvCloudDocumentStore } from "./_lib/vercelKvCloudDocumentStore.js
 import { requireAuth } from "./_lib/authContext.js";
 import { getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
 import { SyncRequestGuards } from "./_lib/requestGuards.js";
+import { FixedWindowRateLimiter, checkRateLimit } from "./_lib/rateLimiter.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
+import { getSubscription } from "./_lib/subscriptionGuard.js";
 import {
+  ApiRequest,
+  ApiResponse,
   enforceMethod,
   handlePreflight,
   parseJsonBody,
@@ -14,7 +18,11 @@ import {
 
 const TEMPLATES_KEY_SUFFIX = "templates";
 
-export default async function handler(req: any, res: any): Promise<void> {
+const guards = new SyncRequestGuards(
+  new FixedWindowRateLimiter({ maxRequests: 30, windowMs: 60_000 })
+);
+
+export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   const observation = attachApiRequestObservability(req, res, "/api/templates");
   setCorsHeaders(req, res);
   if (handlePreflight(req, res)) {
@@ -24,9 +32,9 @@ export default async function handler(req: any, res: any): Promise<void> {
     return;
   }
 
-  const kvEnv = getRequiredVercelKvEnv();
-  const guards = new SyncRequestGuards(kvEnv);
-
+  if (!guards.enforceRateLimit(req, res, TEMPLATES_KEY_SUFFIX)) {
+    return;
+  }
   if (!guards.enforcePutJsonContentType(req, res)) {
     return;
   }
@@ -41,7 +49,23 @@ export default async function handler(req: any, res: any): Promise<void> {
     }
     observation.setUserId(auth.userId);
 
-    if (!await guards.enforceRateLimit(res, auth.userId, TEMPLATES_KEY_SUFFIX)) {
+    const kvEnv = getRequiredVercelKvEnv();
+
+    const rateLimit = await checkRateLimit(
+      auth.userId,
+      TEMPLATES_KEY_SUFFIX,
+      kvEnv.kvRestApiUrl,
+      kvEnv.kvRestApiToken
+    );
+    if (!rateLimit.allowed) {
+      res.setHeader("Retry-After", String(rateLimit.retryAfterSeconds));
+      res.status(429).json({ error: "Too many requests" });
+      return;
+    }
+
+    const subscription = await getSubscription(auth.userId, kvEnv);
+    if (subscription.plan !== "pro" || subscription.status !== "active") {
+      res.status(402).json({ error: "Cloud sync requires a Pro subscription." });
       return;
     }
 

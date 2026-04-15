@@ -38,3 +38,28 @@ export function isTemplateSnapshotPayload(value: unknown): boolean {
     hasValidTemplateKeys(value.templates)
   );
 }
+
+export function isPlansSnapshotPayload(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+  if (typeof value.version !== "number" || !isIsoDateString(value.updatedAt)) {
+    return false;
+  }
+  if (!Array.isArray(value.plans)) {
+    return false;
+  }
+  return value.plans.every(
+    (p) =>
+      isRecord(p) &&
+      typeof p.id === "string" &&
+      p.id.length > 0 &&
+      typeof p.label === "string" &&
+      p.label.length > 0 &&
+      Array.isArray(p.sessionIds) &&
+      // sessionIds reference session type keys — enforce the same format as template keys
+      (p.sessionIds as unknown[]).every(
+        (s) => typeof s === "string" && SESSION_TYPE_KEY_RE.test(s)
+      )
+  );
+}

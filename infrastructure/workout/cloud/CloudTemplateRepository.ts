@@ -3,7 +3,7 @@ import { Templates } from "../../../types";
 import { sanitizeTemplates } from "../../../application/workout/templates/templateRules";
 import { TemplateSnapshot } from "../../../application/sync/syncTypes";
 import { AuthTokenProvider } from "../../../interfaces/auth/AuthTokenProvider";
-import { fetchWithTimeout, toCloudApiError } from "./cloudApiError";
+import { fetchWithTimeout, toCloudApiError, CloudApiPaymentRequiredError } from "./cloudApiError";
 
 interface CloudTemplateEnvelope {
   version: number;
@@ -35,12 +35,9 @@ export class CloudTemplateRepository implements TemplateRepository {
       method: "GET",
       headers: await this.getAuthHeader(),
     });
-    if (response.status === 404) {
-      return null;
-    }
-    if (!response.ok) {
-      throw await toCloudApiError(response, "Cloud template read");
-    }
+    if (response.status === 404) return null;
+    if (response.status === 402) throw new CloudApiPaymentRequiredError();
+    if (!response.ok) throw await toCloudApiError(response, "Cloud template read");
 
     const payload = (await response.json()) as CloudTemplateEnvelope | Partial<Templates>;
     const rawTemplates =
@@ -78,9 +75,8 @@ export class CloudTemplateRepository implements TemplateRepository {
         templates: snapshot.data,
       }),
     });
-    if (!response.ok) {
-      throw await toCloudApiError(response, "Cloud template write");
-    }
+    if (response.status === 402) throw new CloudApiPaymentRequiredError();
+    if (!response.ok) throw await toCloudApiError(response, "Cloud template write");
   }
 
   public async writeTemplates(templates: Templates): Promise<void> {

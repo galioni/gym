@@ -56,12 +56,18 @@ export function getSessionLabel(sessionType: SessionType): string {
 }
 
 export function getSessionOptions(templates: Templates): SessionOption[] {
-  return Object.keys(templates)
-    .map((sessionType) => ({
-      value: sessionType,
-      label: getSessionLabel(sessionType),
-    }))
+  const builtInSet = new Set(BUILT_IN_ORDER);
+  const all = Object.keys(templates).map((sessionType) => ({
+    value: sessionType,
+    label: getSessionLabel(sessionType),
+  }));
+  const builtIns = BUILT_IN_ORDER
+    .filter((v) => templates[v] !== undefined)
+    .map((v) => ({ value: v, label: getSessionLabel(v) }));
+  const custom = all
+    .filter((o) => !builtInSet.has(o.value))
     .sort((a, b) => a.label.localeCompare(b.label));
+  return [...builtIns, ...custom];
 }
 
 export function normalizeSessionTypeId(value: string): SessionType | null {

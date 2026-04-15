@@ -39,6 +39,9 @@ export const Header: React.FC<HeaderProps> = ({
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [isOpen]);
 
+  const todayKey = new Date().toLocaleDateString('en-CA');
+  const isToday = currentDate === todayKey;
+
   const formattedDate = fromLocalDateKey(currentDate).toLocaleDateString('en-GB', {
     weekday: 'short',
     day: 'numeric',
@@ -70,12 +73,17 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Desktop nav */}
           <div className="hidden md:flex items-end gap-3 bg-surface/60 border border-white/10 rounded-2xl px-3 py-2">
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.14em]">Date</label>
+              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.14em] flex items-center gap-1.5">
+                Date
+                {isToday && (
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-primary border border-primary/30 bg-primary/10 px-1 py-0 rounded">Today</span>
+                )}
+              </label>
               <input
                 type="date"
                 value={currentDate}
                 onChange={onDateChange}
-                className="bg-background/70 border border-white/10 rounded-lg px-2 py-1 text-xs text-slate-200 focus:ring-1 focus:ring-primary outline-none hover:border-primary/60 transition-colors"
+                className={`bg-background/70 border rounded-lg px-2 py-1 text-xs text-slate-200 focus:ring-1 focus:ring-primary outline-none hover:border-primary/60 transition-colors ${isToday ? "border-primary/40" : "border-white/10"}`}
               />
             </div>
 
@@ -87,7 +95,7 @@ export const Header: React.FC<HeaderProps> = ({
                 className="bg-background/70 border border-white/10 rounded-lg px-2 py-1 text-xs text-slate-200 focus:ring-1 focus:ring-primary outline-none w-40 hover:border-primary/60 transition-colors"
               >
                 {sessionOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label.split('(')[0].trim()}</option>
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
             </div>

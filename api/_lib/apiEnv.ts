@@ -2,7 +2,12 @@ type RequiredApiEnvName =
   | "KV_REST_API_URL"
   | "KV_REST_API_TOKEN"
   | "SUPABASE_URL"
-  | "SUPABASE_JWT_SECRET";
+  | "SUPABASE_JWT_SECRET"
+  | "SUPABASE_SERVICE_ROLE_KEY"
+  | "OPENAI_API_KEY"
+  | "STRIPE_SECRET_KEY"
+  | "STRIPE_WEBHOOK_SECRET"
+  | "STRIPE_PRO_PRICE_ID";
 
 type OptionalKvAliasName = "STORAGE_KV_REST_API_URL" | "STORAGE_KV_REST_API_TOKEN";
 
@@ -59,4 +64,20 @@ export function getRequiredVercelKvEnv(): RequiredVercelKvEnv {
 
 export function getSupabaseJwtSecret(): string {
   return getRequiredApiEnv("SUPABASE_JWT_SECRET");
+}
+
+export function getOpenAiApiKey(): string {
+  return getRequiredApiEnv("OPENAI_API_KEY");
+}
+
+export function getStripeSecretKey(): string {
+  return getRequiredApiEnv("STRIPE_SECRET_KEY");
+}
+
+export function getStripeWebhookSecret(): string {
+  return getRequiredApiEnv("STRIPE_WEBHOOK_SECRET");
+}
+
+export function getStripeProPriceId(): string {
+  return getRequiredApiEnv("STRIPE_PRO_PRICE_ID");
 }

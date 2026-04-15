@@ -1,3 +1,13 @@
+/**
+ * Thrown when the API returns 402 Payment Required — user needs a Pro subscription.
+ */
+export class CloudApiPaymentRequiredError extends Error {
+  constructor() {
+    super("upgrade_required");
+    this.name = "CloudApiPaymentRequiredError";
+  }
+}
+
 interface CloudApiErrorPayload {
   error?: unknown;
   requestId?: unknown;

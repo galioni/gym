@@ -7,6 +7,8 @@ import { DashboardWorkoutGrid } from "./DashboardWorkoutGrid";
 interface DashboardContentProps {
   fridayHint: string | null;
   currentDay: DayData;
+  timerRunning?: { warmup: boolean; main: boolean };
+  onTimerRunningChange?: (section: "warmup" | "main", isRunning: boolean) => void;
   onToggleItem: (section: "warmup" | "main", id: string, done: boolean) => void;
   onDeleteItem: (section: "warmup" | "main", id: string) => Promise<boolean>;
   onUpdateDay: (updates: Partial<DayData>) => void;
@@ -18,6 +20,8 @@ interface DashboardContentProps {
 export const DashboardContent: React.FC<DashboardContentProps> = ({
   fridayHint,
   currentDay,
+  timerRunning,
+  onTimerRunningChange,
   onToggleItem,
   onDeleteItem,
   onUpdateDay,
@@ -38,13 +42,16 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
           size="sm"
           className="min-h-11"
           onClick={onDuplicatePreviousDayNotesAndWeight}
+          title="Copy check-in weight and session notes from the previous day"
         >
-          Duplicate Prev Notes/Weight
+          Copy Yesterday's Notes
         </Button>
       </div>
 
       <DashboardWorkoutGrid
         currentDay={currentDay}
+        timerRunning={timerRunning}
+        onTimerRunningChange={onTimerRunningChange}
         onToggleItem={onToggleItem}
         onDeleteItem={onDeleteItem}
         onUpdateDay={onUpdateDay}

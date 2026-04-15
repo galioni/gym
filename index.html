@@ -3,42 +3,45 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    
-    <!-- Modern Mobile Web App Capable -->
+
+    <!-- Primary meta -->
+    <meta name="description" content="Daily Grind — AI-powered workout tracker. Tell the AI your goals and get a personalised training plan built around your schedule, equipment, and experience." />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Mobile / PWA -->
     <meta name="mobile-web-app-capable" content="yes" />
-    <!-- Legacy iOS Support -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Daily Grind" />
     <meta name="theme-color" content="#0f172a" />
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json" />
-    
-    <title>Daily Warm-up & Workout Tracker</title>
-    
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <!-- manifest injected by vite-plugin-pwa -->
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Daily Grind — AI Workout Tracker" />
+    <meta property="og:description" content="AI-powered workout tracker. Tell the AI your goals and get a personalised training plan built around your schedule, equipment, and experience." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:url" content="https://gym-galioni.vercel.app" />
+    <meta property="og:site_name" content="Daily Grind" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Daily Grind — AI Workout Tracker" />
+    <meta name="twitter:description" content="AI-powered workout tracker. Tell the AI your goals and get a personalised training plan." />
+    <meta name="twitter:image" content="/og-image.png" />
+
+    <title>Daily Grind — AI Workout Tracker</title>
+
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "clsx": "https://esm.sh/clsx@^2.1.1",
-    "tailwind-merge": "https://esm.sh/tailwind-merge@^3.4.1",
-    "lucide-react": "https://esm.sh/lucide-react@^0.574.0",
-    "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4"
-  }
-}
-</script>
-<link rel="stylesheet" href="./index.css">
-</head>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="./index.css" />
+  </head>
   <body class="text-slate-200 antialiased selection:bg-primary selection:text-white">
     <div id="root"></div>
-    <!-- Entry Point for Vite -->
     <script type="module" src="./index.tsx"></script>
-</body>
+  </body>
 </html>

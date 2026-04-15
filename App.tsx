@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Header } from "./components/Header";
 import { StickyFooter } from "./components/StickyFooter";
 import { useWorkoutTracker } from "./features/workout/state/useWorkoutTracker";
@@ -11,10 +11,18 @@ import { createWorkoutServices } from "./infrastructure/workout/factory/createWo
 import { useSyncSettings } from "./features/sync/state/useSyncSettings";
 import { useWorkoutKeyboardShortcuts } from "./features/app-shell/hooks/useWorkoutKeyboardShortcuts";
 import { DashboardContent } from "./features/app-shell/components/DashboardContent/DashboardContent";
-import { SettingsPage } from "./features/settings/components/SettingsPage/SettingsPage";
 import { useFeedback } from "./features/feedback/hooks/useFeedback";
 import { getSessionLabel, getSessionOptions } from "./application/workout/sessionTypes/sessionTypeRules";
+import { usePlans } from "./features/plans/state/usePlans";
 import { useWeightReminder } from "./features/weight-reminder/hooks/useWeightReminder";
+import { ONBOARDING_STORAGE_KEY } from "./constants";
+
+const SettingsPage = React.lazy(() =>
+  import("./features/settings/components/SettingsPage/SettingsPage").then((m) => ({ default: m.SettingsPage }))
+);
+const OnboardingWizard = React.lazy(() =>
+  import("./features/onboarding/components/OnboardingWizard/OnboardingWizard").then((m) => ({ default: m.OnboardingWizard }))
+);
 
 function App() {
   const { confirm, showToast } = useFeedback();
@@ -33,6 +41,7 @@ function App() {
     saveSectionTemplate,
     undoSectionTemplate,
     resetSectionTemplate,
+    replaceTemplates,
     addSessionType,
     removeSessionType,
     renameSessionType,
@@ -58,6 +67,7 @@ function App() {
   const {
     settings: syncSettings,
     isSyncing,
+    isUpgradeRequired,
     conflicts,
     restorePoints,
     syncMessage,
@@ -66,7 +76,14 @@ function App() {
     pruneRestorePoints,
   } = useSyncSettings(services.syncService);
 
-  const sessionOptions = useMemo(() => getSessionOptions(templates), [templates]);
+  const { plans, activePlanId, createPlan, updatePlan, deletePlan, setActivePlan } = usePlans(services.planService);
+
+  const allSessionOptions = useMemo(() => getSessionOptions(templates), [templates]);
+  const sessionOptions = useMemo(() => {
+    const activePlan = plans.find((p) => p.id === activePlanId);
+    if (!activePlan || activePlan.sessionIds.length === 0) return allSessionOptions;
+    return allSessionOptions.filter((o) => activePlan.sessionIds.includes(o.value));
+  }, [allSessionOptions, plans, activePlanId]);
   const { settings: weightReminder, updateSettings: updateWeightReminder } = useWeightReminder();
   const fridayHint = useMemo(
     () => getFridayHint(weightReminder.enabled, weightReminder.targetTime),
@@ -75,6 +92,22 @@ function App() {
   const [stickyFooterHeight, setStickyFooterHeight] = useState(124);
   const [page, setPage] = useState<"dashboard" | "settings">("dashboard");
   const [activeTimer, setActiveTimer] = useState<{ section: "warmup" | "main"; scrollTo: () => void } | null>(null);
+  const [timerRunning, setTimerRunning] = useState({ warmup: false, main: false });
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+
+  // Reset timer running state when the date changes (timers don't carry across days)
+  const [prevDate, setPrevDate] = useState(currentDate);
+  if (prevDate !== currentDate) {
+    setPrevDate(currentDate);
+    setTimerRunning({ warmup: false, main: false });
+  }
+
+  const handleTimerRunningChange = useCallback((section: "warmup" | "main", isRunning: boolean) => {
+    setTimerRunning((prev) => ({ ...prev, [section]: isRunning }));
+  }, []);
+  const [hasOnboarded, setHasOnboarded] = useState(
+    () => localStorage.getItem(ONBOARDING_STORAGE_KEY) === "true"
+  );
 
   const appShellStyle = useMemo(
     () =>
@@ -183,10 +216,29 @@ function App() {
     onJumpToday: jumpToToday,
     onLoadTemplate: () => void handleLoadTemplate(),
     onDuplicatePreviousDayNotesAndWeight: handleDuplicatePreviousDayNotesAndWeight,
+    onShowShortcuts: () => setShowShortcutsModal(true),
   });
 
   if (!isLoaded || !areTemplatesLoaded) {
     return null;
+  }
+
+  if (!hasOnboarded) {
+    return (
+      <React.Suspense fallback={null}>
+        <OnboardingWizard
+          onComplete={async (generatedTemplates) => {
+            await replaceTemplates(generatedTemplates);
+            localStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
+            setHasOnboarded(true);
+          }}
+          onSkip={() => {
+            localStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
+            setHasOnboarded(true);
+          }}
+        />
+      </React.Suspense>
+    );
   }
 
   return (
@@ -206,6 +258,8 @@ function App() {
         <DashboardContent
           fridayHint={fridayHint}
           currentDay={currentDay}
+          timerRunning={timerRunning}
+          onTimerRunningChange={handleTimerRunningChange}
           onToggleItem={toggleItem}
           onDeleteItem={handleDeleteItem}
           onUpdateDay={updateDay}
@@ -214,31 +268,45 @@ function App() {
           onActiveTimerChange={setActiveTimer}
         />
       ) : (
-        <SettingsPage
-          onBack={() => setPage("dashboard")}
-          theme={theme}
-          onThemeChange={setTheme}
-          weightReminder={weightReminder}
-          onUpdateWeightReminder={updateWeightReminder}
-          templates={templates}
-          sessionOptions={sessionOptions}
-          templateSaveError={templateSaveError}
-          lastSyncedAt={syncSettings.lastSyncedAt}
-          lastSyncError={syncSettings.lastError}
-          syncMessage={syncMessage}
-          conflicts={conflicts}
-          restorePoints={restorePoints}
-          isSyncing={isSyncing}
-          onSaveSectionTemplate={saveSectionTemplate}
-          onUndoSectionTemplate={undoSectionTemplate}
-          onResetSectionTemplate={resetSectionTemplate}
-          onCreateSessionType={addSessionType}
-          onDeleteSessionType={handleDeleteSessionType}
-          onRenameSessionType={renameSessionType}
-          onSyncNow={syncNow}
-          onRollback={rollbackToRestorePoint}
-          onPruneRestorePoints={pruneRestorePoints}
-        />
+        <React.Suspense fallback={null}>
+          <SettingsPage
+            onBack={() => setPage("dashboard")}
+            theme={theme}
+            onThemeChange={setTheme}
+            weightReminder={weightReminder}
+            onUpdateWeightReminder={updateWeightReminder}
+            templates={templates}
+            sessionOptions={sessionOptions}
+            templateSaveError={templateSaveError}
+            lastSyncedAt={syncSettings.lastSyncedAt}
+            lastSyncError={syncSettings.lastError}
+            syncMessage={syncMessage}
+            conflicts={conflicts}
+            restorePoints={restorePoints}
+            isSyncing={isSyncing}
+            isUpgradeRequired={isUpgradeRequired}
+            onSaveSectionTemplate={saveSectionTemplate}
+            onUndoSectionTemplate={undoSectionTemplate}
+            onResetSectionTemplate={resetSectionTemplate}
+            onCreateSessionType={addSessionType}
+            onDeleteSessionType={handleDeleteSessionType}
+            onRenameSessionType={renameSessionType}
+            onSyncNow={syncNow}
+            onRollback={rollbackToRestorePoint}
+            onPruneRestorePoints={pruneRestorePoints}
+            plans={plans}
+            activePlanId={activePlanId}
+            onCreatePlan={createPlan}
+            onUpdatePlan={updatePlan}
+            onDeletePlan={deletePlan}
+            onSetActivePlan={setActivePlan}
+            onRegeneratePlan={() => {
+              localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+              setHasOnboarded(false);
+              setPage("dashboard");
+            }}
+          />
+        </React.Suspense>
       )}
 
       {page === "dashboard" && (
@@ -252,6 +320,47 @@ function App() {
       )}
 
       {isQAMode && <QASmokePanel />}
+
+      {showShortcutsModal && (
+        <div
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Keyboard shortcuts"
+          onClick={() => setShowShortcutsModal(false)}
+        >
+          <div
+            className="glass-panel rounded-2xl border border-white/15 p-6 w-full max-w-sm shadow-[0_24px_48px_rgba(0,0,0,0.5)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-white">Keyboard Shortcuts</h2>
+              <button
+                type="button"
+                onClick={() => setShowShortcutsModal(false)}
+                className="text-slate-400 hover:text-white transition-colors text-xs"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-2">
+              {([
+                ["T", "Jump to today"],
+                ["L", "Load template for current session"],
+                ["D", "Copy yesterday's notes & weight"],
+                ["?", "Show this help"],
+              ] as [string, string][]).map(([key, label]) => (
+                <div key={key} className="flex items-center justify-between gap-4">
+                  <span className="text-sm text-slate-300">{label}</span>
+                  <kbd className="text-xs font-mono bg-white/10 border border-white/15 rounded px-2 py-0.5 text-slate-300 shrink-0">{key}</kbd>
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-[11px] text-slate-500">Shortcuts are disabled when typing in a field.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

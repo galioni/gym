@@ -70,7 +70,8 @@ export function attachApiRequestObservability(
 ): ApiRequestObservation {
   const now = options.now ?? (() => Date.now());
   const logger = options.logger ?? console;
-  const requestId = (options.requestIdFactory ?? randomUUID)();
+  const incomingRequestId = getHeader(req, "x-request-id");
+  const requestId = incomingRequestId ?? (options.requestIdFactory ?? randomUUID)();
   const method = req.method ?? "UNKNOWN";
   const startTimeMs = now();
   let responseLogged = false;

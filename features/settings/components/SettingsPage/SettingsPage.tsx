@@ -1,10 +1,11 @@
 import React from "react";
-import { ArrowLeft, Download, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, Download, Sparkles, Trash2, Upload } from "lucide-react";
 import { TemplateEditor } from "../../../templates/components/TemplateEditor/TemplateEditor";
 import { SyncSettingsPanel } from "../../../sync/components/SyncSettingsPanel/SyncSettingsPanel";
+import { PlansEditor } from "../../../plans/components/PlansEditor/PlansEditor";
 import { Card } from "../../../../components/ui/Card";
 import { Button } from "../../../../components/ui/Button";
-import { SessionOption, SessionType, TemplateData, Templates } from "../../../../types";
+import { Plan, SessionOption, SessionType, TemplateData, Templates } from "../../../../types";
 import { SyncConflict, SyncNowResult, SyncRestorePoint } from "../../../../application/sync/syncTypes";
 import { TemplateValidationError } from "../../../../application/workout/templates/templateRules";
 import {
@@ -15,6 +16,7 @@ import {
 import { useBackupIO } from "../../../session-controls/hooks/useBackupIO";
 import { useAuthSession } from "../../../auth/hooks/useAuthSession";
 import { useFeedback } from "../../../feedback/hooks/useFeedback";
+import { useSubscription } from "../../../billing/hooks/useSubscription";
 import { APP_THEME_OPTIONS, AppTheme } from "../../../theme/constants/themeOptions";
 import { WeightReminderSettings } from "../../../weight-reminder/hooks/useWeightReminder";
 import {
@@ -22,6 +24,8 @@ import {
   SYNC_RESTORE_POINTS_STORAGE_KEY,
   SYNC_SETTINGS_STORAGE_KEY,
   TEMPLATE_STORAGE_KEY,
+  PLANS_STORAGE_KEY,
+  ACTIVE_PLAN_STORAGE_KEY,
 } from "../../../../constants";
 
 interface SettingsPageProps {
@@ -49,11 +53,19 @@ interface SettingsPageProps {
   onCreateSessionType: (label: string) => Promise<CreateSessionTypeResult>;
   onDeleteSessionType: (sessionType: SessionType) => Promise<DeleteSessionTypeResult>;
   onRenameSessionType: (oldType: SessionType, newLabel: string) => Promise<RenameSessionTypeResult>;
+  isUpgradeRequired: boolean;
   onSyncNow: (
-    resolution?: Partial<Record<"workoutData" | "templates", "keepLocal" | "keepCloud">>
+    resolution?: Partial<Record<string, "keepLocal" | "keepCloud">>
   ) => Promise<SyncNowResult>;
   onRollback: (id: string) => Promise<SyncNowResult>;
   onPruneRestorePoints: () => Promise<void>;
+  onRegeneratePlan: () => void;
+  plans: Plan[];
+  activePlanId: string | null;
+  onCreatePlan: (label: string, sessionIds: string[]) => Promise<Plan>;
+  onUpdatePlan: (id: string, updates: Partial<Pick<Plan, "label" | "sessionIds">>) => Promise<void>;
+  onDeletePlan: (id: string) => Promise<void>;
+  onSetActivePlan: (id: string | null) => Promise<void>;
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({
@@ -77,31 +89,64 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   onCreateSessionType,
   onDeleteSessionType,
   onRenameSessionType,
+  isUpgradeRequired,
   onSyncNow,
   onRollback,
   onPruneRestorePoints,
+  onRegeneratePlan,
+  plans,
+  activePlanId,
+  onCreatePlan,
+  onUpdatePlan,
+  onDeletePlan,
+  onSetActivePlan,
 }) => {
   const { fileInputRef, exportBackup, openImportPicker, handleImportFileChange } = useBackupIO();
-  const { signOut } = useAuthSession();
+  const { signOut, session } = useAuthSession();
   const { confirm, showToast } = useFeedback();
+  const { subscription, isLoading: isSubscriptionLoading, startCheckout, openBillingPortal } = useSubscription();
 
   const handleDeleteAllData = async () => {
     const confirmed = await confirm({
-      title: "Delete all data?",
+      title: "Delete account and all data?",
       description:
-        "This permanently removes all your workout history, templates, and sync settings from this device. You will be signed out. This cannot be undone.",
+        "This permanently removes your account, all workout history, templates, and cloud sync data. You will be signed out. This cannot be undone.",
       confirmLabel: "Delete everything",
       cancelLabel: "Cancel",
       tone: "danger",
     });
     if (!confirmed) return;
 
+    // Clear local storage first so data is gone even if the API call fails.
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(TEMPLATE_STORAGE_KEY);
     localStorage.removeItem(SYNC_SETTINGS_STORAGE_KEY);
     localStorage.removeItem(SYNC_RESTORE_POINTS_STORAGE_KEY);
+    localStorage.removeItem(PLANS_STORAGE_KEY);
+    localStorage.removeItem(ACTIVE_PLAN_STORAGE_KEY);
 
-    showToast({ tone: "info", title: "All local data deleted" });
+    // Delete server-side data and the auth account.
+    // Sign out locally regardless of whether the API call succeeds.
+    if (session?.accessToken) {
+      try {
+        const response = await fetch("/api/delete-account", {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${session.accessToken}` },
+        });
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({})) as { error?: string };
+          throw new Error(body.error ?? "Server deletion failed");
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        showToast({
+          tone: "error",
+          title: "Server data deletion failed",
+          description: `Local data cleared. Server error: ${message}. Contact support if cloud data persists.`,
+        });
+      }
+    }
+
     await signOut();
   };
 
@@ -128,6 +173,55 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         onRenameSessionType={onRenameSessionType}
       />
 
+      {/* Plans */}
+      <Card title="Plans">
+        <div className="text-xs text-slate-500 mb-3">
+          Group sessions into named plans. Activate a plan to filter the session dropdown in the header.
+          Sessions are shared — the same session can belong to multiple plans.
+        </div>
+        <PlansEditor
+          plans={plans}
+          activePlanId={activePlanId}
+          sessionOptions={sessionOptions}
+          onCreatePlan={onCreatePlan}
+          onUpdatePlan={onUpdatePlan}
+          onDeletePlan={onDeletePlan}
+          onSetActivePlan={onSetActivePlan}
+        />
+      </Card>
+
+      {/* Plan */}
+      <Card title="Plan">
+        {isSubscriptionLoading ? (
+          <div className="text-sm text-slate-400">Loading...</div>
+        ) : subscription.plan === "pro" ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold text-white">Pro</div>
+                {subscription.currentPeriodEnd && (
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    Renews {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                  </div>
+                )}
+              </div>
+              <Button variant="secondary" size="sm" onClick={() => void openBillingPortal()}>
+                Manage subscription
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="text-sm text-slate-300">
+              You're on the <span className="font-semibold text-white">free plan</span>. Upgrade to Pro to enable cloud sync across devices.
+            </div>
+            <Button variant="primary" size="sm" className="gap-2" onClick={() => void startCheckout()}>
+              Upgrade to Pro
+            </Button>
+          </div>
+        )}
+      </Card>
+
       <SyncSettingsPanel
         lastSyncedAt={lastSyncedAt}
         lastError={lastSyncError}
@@ -135,9 +229,11 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         conflicts={conflicts}
         restorePoints={restorePoints}
         isSyncing={isSyncing}
+        isUpgradeRequired={isUpgradeRequired}
         onSyncNow={onSyncNow}
         onRollback={onRollback}
         onPruneRestorePoints={onPruneRestorePoints}
+        onUpgrade={startCheckout}
       />
 
       {/* Reminders */}
@@ -197,6 +293,20 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         </div>
       </Card>
 
+      {/* AI Plan */}
+      <Card title="AI Plan">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <div className="text-sm text-slate-300">Regenerate your AI workout plan</div>
+            <div className="text-xs text-slate-500 mt-0.5">Answer a few questions and Claude will build a personalised set of session templates from scratch. This replaces your existing templates.</div>
+          </div>
+          <Button variant="secondary" size="sm" className="gap-2 shrink-0" onClick={onRegeneratePlan}>
+            <Sparkles size={14} />
+            Regenerate
+          </Button>
+        </div>
+      </Card>
+
       {/* Data */}
       <Card title="Data">
         <div className="space-y-3">
@@ -219,10 +329,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               onClick={() => void handleDeleteAllData()}
             >
               <Trash2 size={14} />
-              Delete all data
+              Delete account and all data
             </Button>
             <p className="mt-2 text-xs text-slate-500 text-center">
-              Removes all local workout history, templates, and sync settings. You will be signed out.
+              Permanently deletes your account, all workout history, templates, and cloud data. Cannot be undone.
             </p>
           </div>
         </div>
