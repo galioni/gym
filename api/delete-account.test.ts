@@ -112,7 +112,7 @@ describe("DELETE /api/delete-account", () => {
     const supabaseAdmin = {
       auth: { admin: { deleteUser: vi.fn().mockResolvedValue({ error: { message: "User not found" } }) } },
     };
-    mockCreateClient.mockReturnValueOnce(supabaseAdmin as ReturnType<typeof createClient>);
+    mockCreateClient.mockReturnValueOnce(supabaseAdmin as unknown as ReturnType<typeof createClient>);
 
     const req = createMockRequest({ method: "DELETE" });
     const { res, state } = createMockResponse();
