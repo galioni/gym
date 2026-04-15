@@ -63,7 +63,10 @@ export function useSubscription(): UseSubscriptionResult {
     fetch("/api/subscription", {
       headers: { Authorization: `Bearer ${session.accessToken}` },
     })
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Subscription fetch failed: ${r.status}`);
+        return r.json();
+      })
       .then((data) => {
         if (!cancelled) {
           const info = data as SubscriptionInfo;
