@@ -79,7 +79,7 @@ Application logic depends on repository interfaces; storage details stay in infr
 - **Backup** — export and import full JSON backup (workout data + templates)
 - **Landing page** — marketing page shown to unauthenticated visitors; supports Google OAuth and email/password sign-in, sign-up (with email confirmation flow), and password reset (with in-app set-password screen)
 - **Subscription** — Stripe-backed Pro plan; free users get local-only access
-- **Account deletion** — permanently deletes auth account, all KV data, and Stripe customer key
+- **Account deletion** — permanently deletes auth account, all KV data, the Stripe customer→user mapping key, and the Stripe customer record
 
 ## User Flow
 
@@ -124,6 +124,7 @@ Upstash KV keys:
 
 - **Free**: local workout tracking, templates, AI plan generation
 - **Pro**: cloud sync across devices (gated at API level — 402 for free users)
+- **Grace period**: read-only cloud access continues for 7 days after a Pro subscription lapses, so recently-expired users can still retrieve their data
 
 Subscription state is stored in Upstash KV (not Supabase). The Stripe webhook writes to KV on payment events. Sync routes read from KV on every request.
 
@@ -231,9 +232,10 @@ In the Supabase dashboard → Authentication → Providers:
 
 GitHub Actions runs on every push and pull request to `main`:
 
-1. `tsc --noEmit` — type-check
-2. `vitest run` — test suite
-3. `vite build` — production build (with stub `VITE_*` env vars)
+1. `npm audit --production --audit-level=high` — dependency vulnerability check
+2. `tsc --noEmit` — type-check
+3. `vitest run` — test suite
+4. `vite build` — production build (with stub `VITE_*` env vars)
 
 Config: `.github/workflows/ci.yml`
 
