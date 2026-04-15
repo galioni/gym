@@ -112,6 +112,42 @@ export async function setStripeCustomerMapping(
   await kvPipeline(kvEnv, [["SET", `stripe_customer:${stripeCustomerId}`, userId]]);
 }
 
+const STRIPE_EVENT_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
+
+/**
+ * Returns true if this Stripe event ID has already been processed.
+ * Fails open (returns false) if KV is unreachable — prefer double-processing
+ * over silently dropping events.
+ */
+export async function isStripeEventProcessed(
+  eventId: string,
+  kvEnv: RequiredVercelKvEnv
+): Promise<boolean> {
+  try {
+    const results = await kvPipeline(kvEnv, [["GET", `stripe_event:${eventId}`]]);
+    return (results[0] as { result: string | null }).result !== null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Records an event ID so future duplicate deliveries are detected.
+ * Best-effort — failures are logged but do not throw.
+ */
+export async function markStripeEventProcessed(
+  eventId: string,
+  kvEnv: RequiredVercelKvEnv
+): Promise<void> {
+  try {
+    await kvPipeline(kvEnv, [
+      ["SET", `stripe_event:${eventId}`, "1", "EX", String(STRIPE_EVENT_TTL_SECONDS)],
+    ]);
+  } catch (err) {
+    console.warn("[subscriptionGuard] Failed to mark stripe event processed", { eventId, err });
+  }
+}
+
 /**
  * Atomically writes both the customer→user mapping and the subscription record
  * in a single KV pipeline round-trip. Use this on checkout.session.completed

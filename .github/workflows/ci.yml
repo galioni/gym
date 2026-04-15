@@ -25,7 +25,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Audit dependencies
-        run: npm audit --production --audit-level=high
+        run: npm audit --audit-level=high
 
       - name: Type check
         run: npx tsc --noEmit

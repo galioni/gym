@@ -80,6 +80,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
         res.status(404).json({ error: "Not found" });
         return;
       }
+      res.setHeader("Cache-Control", "private, no-store");
       res.status(200).json(payload);
       return;
     }
