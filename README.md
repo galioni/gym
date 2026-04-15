@@ -347,9 +347,7 @@ If you want the app on the App Store, use Capacitor:
 
 ## Backlog
 
-| Priority | Area | Issue | Location |
-|----------|------|-------|----------|
-| Medium | Product | **No duplicate session type name validation** — two session types with the same name can coexist | `features/templates/components/TemplateEditor/` |
+No open items.
 
 ---
 
