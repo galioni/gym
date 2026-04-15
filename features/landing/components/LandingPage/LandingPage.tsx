@@ -23,6 +23,26 @@ function FeatureCard({ icon, title, body }: { icon: React.ReactNode; title: stri
   );
 }
 
+function friendlyAuthError(err: unknown, mode: AuthMode): string {
+  const raw = err instanceof Error ? err.message : "Something went wrong.";
+  const lower = raw.toLowerCase();
+  if (lower.includes("email not confirmed")) {
+    return "Your email isn't confirmed yet. Check your inbox for the confirmation link, then try signing in again.";
+  }
+  if (lower.includes("invalid login credentials") || lower.includes("invalid email or password")) {
+    return "Incorrect email or password. Please try again.";
+  }
+  if (lower.includes("user already registered") || lower.includes("already been registered")) {
+    return mode === "signup"
+      ? "An account with this email already exists. Try signing in instead."
+      : raw;
+  }
+  if (lower.includes("password should be at least")) {
+    return "Password must be at least 8 characters.";
+  }
+  return raw;
+}
+
 export const LandingPage: React.FC<LandingPageProps> = ({
   isWorking,
   error,
@@ -76,7 +96,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         await onSignInWithEmail(email.trim(), password);
       }
     } catch (err) {
-      setLocalError(err instanceof Error ? err.message : "Something went wrong.");
+      setLocalError(friendlyAuthError(err, authMode));
     } finally {
       setIsSubmitting(false);
     }
