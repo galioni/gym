@@ -347,48 +347,9 @@ If you want the app on the App Store, use Capacitor:
 
 ## Backlog
 
-Findings from a full security, performance, code quality, and product audit. Grouped by area and sorted by priority within each section.
-
-### Security
-
-| Priority | Issue | Location | Status |
-|----------|-------|----------|--------|
-| ~~High~~ | ~~**Rate limiting fails open** — when Upstash is unavailable `checkRateLimit()` returns `allowed: true`, bypassing limits during outages~~ | ~~`api/_lib/rateLimiter.ts`~~ | ✅ Done — fail-open paths now log errors |
-| ~~High~~ | ~~**Unvalidated `client_reference_id` from Stripe webhook** — userId accepted without verifying the user exists~~ | ~~`api/stripe-webhook.ts`~~ | ✅ Done — logs warning and returns 200 on missing fields |
-| ~~High~~ | ~~**Return URLs not whitelisted** — `isValidUrl()` accepts any HTTPS URL on checkout session creation~~ | ~~`api/create-checkout-session.ts`~~ | ✅ Done — `isAllowedReturnUrl()` validates against CORS allowlist |
-| ~~Medium~~ | ~~**Account deletion leaks internal error messages** — full Supabase error bubbled to client~~ | ~~`api/delete-account.ts`~~ | ✅ Done — outer catch returns generic message; internal error only logged server-side |
-| ~~Medium~~ | ~~**Stripe customer ID not verified to belong to authenticated user** on billing portal request~~ | ~~`api/billing-portal.ts`~~ | ✅ Done — customer ID is fetched from KV using `auth.userId`; client never provides it |
-| ~~Medium~~ | ~~**Error stack logged to console in production**~~ | ~~`components/ErrorBoundary.tsx`~~ | ✅ Done — guarded behind `import.meta.env.DEV` |
-
-### Performance
-
-| Priority | Issue | Location | Status |
-|----------|-------|----------|--------|
-| ~~High~~ | ~~**No timeout on OpenAI API call** — network stall hangs the serverless function indefinitely~~ | ~~`api/generate-plan.ts`~~ | ✅ Done — 30s `AbortController` timeout added |
-| ~~Medium~~ | ~~**Subscription status fetched with no caching** — hits `/api/subscription` on every relevant render~~ | ~~`features/billing/hooks/useSubscription.ts`~~ | ✅ Done — 5-min module-level cache keyed by user id |
-| ~~Low~~ | ~~**Stripe webhook KV writes not batched** — multiple sequential KV calls per event~~ | ~~`api/stripe-webhook.ts`~~ | ✅ Done — consolidated into single pipeline call |
-
-### Code Quality
-
-| Priority | Issue | Location | Status |
-|----------|-------|----------|--------|
-| ~~High~~ | ~~**Silent `.catch(() => {})` in `useSubscription`** — user stuck on loading spinner if API fails~~ | ~~`features/billing/hooks/useSubscription.ts`~~ | ✅ Done — `fetchError` state exposed; error message shown in Settings |
-| ~~Medium~~ | ~~**No input validation on session type labels** — no max length, no control character check~~ | ~~`features/templates/components/TemplateEditor/`~~ | ✅ Done — `maxLength=50` on all session name inputs |
-| ~~Medium~~ | ~~**No integration test for Stripe webhook → KV → subscription status flow**~~ | ~~`api/`~~ | ✅ Done — `api/stripe-webhook.test.ts` covers all event types and edge cases (15 tests) |
-| ~~Medium~~ | ~~**No `npm audit` in CI**~~ | ~~`.github/workflows/ci.yml`~~ | ✅ Done — `npm audit --production --audit-level=high` step added |
-
-### Product / Enhancements
-
-| Priority | Issue | Location | Status |
-|----------|-------|----------|--------|
-| High | **No loading state or feedback during AI plan generation** — 3–5s wait with no spinner | `features/onboarding/components/OnboardingWizard/` | ✅ Done (spinner + cycling status text already existed) |
-| ~~High~~ | ~~**No error differentiation on plan generation** — timeout, 429, and 5xx all look the same to the user~~ | ~~`features/onboarding/components/OnboardingWizard/`~~ | ✅ Done — 429 shows retry time; 5xx shows server error message |
-| ~~High~~ | ~~**No grace period when Pro subscription expires** — sync access cut off immediately~~ | ~~`api/plans.ts`, `api/templates.ts`, `api/workout-data.ts`~~ | ✅ Done — 7-day read-only grace period via `hasProReadAccess()` |
-| ~~Medium~~ | ~~**Rate limit not surfaced to user** — `Retry-After` not returned; user doesn't know when to retry~~ | ~~`api/generate-plan.ts`~~ | ✅ Done — `toCloudApiError()` now reads `retry-after` header and formats message |
-| ~~Medium~~ | ~~**Stripe customer record orphaned on account deletion**~~ | ~~`api/delete-account.ts`~~ | ✅ Done — `deleteStripeCustomer()` called best-effort on account delete |
-| Medium | **No duplicate session type name validation** — two types with the same name can coexist | `features/templates/components/TemplateEditor/` | Open |
-| ~~Medium~~ | ~~**Timer has no accessibility labels** — no `aria-label` for running/paused state~~ | ~~`components/Timer.tsx`~~ | ✅ Done — `role="timer"` + dynamic `aria-label` added |
-| ~~Low~~ | ~~**Onboarding skip leaves empty dashboard with no warning**~~ | ~~`features/onboarding/components/OnboardingWizard/`~~ | ✅ Done — skip button now shows warning about empty templates |
+| Priority | Area | Issue | Location |
+|----------|------|-------|----------|
+| Medium | Product | **No duplicate session type name validation** — two session types with the same name can coexist | `features/templates/components/TemplateEditor/` |
 
 ---
 
