@@ -356,8 +356,8 @@ Findings from a full security, performance, code quality, and product audit. Gro
 | ~~High~~ | ~~**Rate limiting fails open** — when Upstash is unavailable `checkRateLimit()` returns `allowed: true`, bypassing limits during outages~~ | ~~`api/_lib/rateLimiter.ts`~~ | ✅ Done — fail-open paths now log errors |
 | ~~High~~ | ~~**Unvalidated `client_reference_id` from Stripe webhook** — userId accepted without verifying the user exists~~ | ~~`api/stripe-webhook.ts`~~ | ✅ Done — logs warning and returns 200 on missing fields |
 | ~~High~~ | ~~**Return URLs not whitelisted** — `isValidUrl()` accepts any HTTPS URL on checkout session creation~~ | ~~`api/create-checkout-session.ts`~~ | ✅ Done — `isAllowedReturnUrl()` validates against CORS allowlist |
-| Medium | **Account deletion leaks internal error messages** — full Supabase error bubbled to client | `api/delete-account.ts` | Open |
-| Medium | **Stripe customer ID not verified to belong to authenticated user** on billing portal request | `api/billing-portal.ts` | Open |
+| ~~Medium~~ | ~~**Account deletion leaks internal error messages** — full Supabase error bubbled to client~~ | ~~`api/delete-account.ts`~~ | ✅ Done — outer catch returns generic message; internal error only logged server-side |
+| ~~Medium~~ | ~~**Stripe customer ID not verified to belong to authenticated user** on billing portal request~~ | ~~`api/billing-portal.ts`~~ | ✅ Done — customer ID is fetched from KV using `auth.userId`; client never provides it |
 | ~~Medium~~ | ~~**Error stack logged to console in production**~~ | ~~`components/ErrorBoundary.tsx`~~ | ✅ Done — guarded behind `import.meta.env.DEV` |
 
 ### Performance
@@ -374,7 +374,7 @@ Findings from a full security, performance, code quality, and product audit. Gro
 |----------|-------|----------|--------|
 | ~~High~~ | ~~**Silent `.catch(() => {})` in `useSubscription`** — user stuck on loading spinner if API fails~~ | ~~`features/billing/hooks/useSubscription.ts`~~ | ✅ Done — `fetchError` state exposed; error message shown in Settings |
 | ~~Medium~~ | ~~**No input validation on session type labels** — no max length, no control character check~~ | ~~`features/templates/components/TemplateEditor/`~~ | ✅ Done — `maxLength=50` on all session name inputs |
-| Medium | **No integration test for Stripe webhook → KV → subscription status flow** | `api/` | Open |
+| ~~Medium~~ | ~~**No integration test for Stripe webhook → KV → subscription status flow**~~ | ~~`api/`~~ | ✅ Done — `api/stripe-webhook.test.ts` covers all event types and edge cases (15 tests) |
 | ~~Medium~~ | ~~**No `npm audit` in CI**~~ | ~~`.github/workflows/ci.yml`~~ | ✅ Done — `npm audit --production --audit-level=high` step added |
 
 ### Product / Enhancements
