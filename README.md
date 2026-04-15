@@ -2,6 +2,15 @@
 
 Local-first workout tracker with AI-generated training plans, cloud sync, and Stripe subscriptions. Built with React + TypeScript (Vite), Vercel serverless API, Supabase auth, Upstash KV.
 
+## Prerequisites
+
+- **Node.js 20+** (CI runs on Node 20; `node -v` to verify)
+- **Vercel account** — for running the API locally and deploying
+- **Supabase project** — auth (Google OAuth + email/password must be enabled in the Supabase dashboard)
+- **Upstash Redis database** — for cloud sync and subscription state
+- **Stripe account** — for subscription billing
+- **OpenAI API key** — for AI plan generation
+
 ## Run
 
 ```bash
@@ -19,6 +28,8 @@ npm run dev
 ```
 
 Open the app at `http://localhost:5173`.
+
+> **First time?** Copy `.env.example` to `.env.local` and fill in all required values before starting. See [Environment Variables](#environment-variables) below.
 
 ## Scripts
 
@@ -130,7 +141,7 @@ Subscription state is stored in Upstash KV (not Supabase). The Stripe webhook wr
 
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
-- `SUPABASE_JWT_SECRET`
+- `SUPABASE_JWT_SECRET` — found in Supabase → Project Settings → API → JWT Secret; used to verify tokens in every API handler
 - `SUPABASE_SERVICE_ROLE_KEY` — required for account deletion (`/api/delete-account`)
 - `KV_REST_API_URL` (or `STORAGE_KV_REST_API_URL`)
 - `KV_REST_API_TOKEN` (or `STORAGE_KV_REST_API_TOKEN`)
@@ -161,6 +172,55 @@ Notes:
 - `npm run dev` only starts Vite — it does not run `/api/*` handlers
 - `vercel dev` requires a valid Vercel login; run `npx vercel login` if it fails
 - Local API requires: `SUPABASE_URL`, `SUPABASE_JWT_SECRET`, KV vars, `OPENAI_API_KEY`, Stripe vars
+
+## Deploy
+
+This project deploys to Vercel. The frontend is built as a static site; the `api/` folder is deployed as serverless functions.
+
+### 1. Link and deploy
+
+```bash
+npx vercel login        # if not already logged in
+npx vercel link         # connect local repo to a Vercel project
+npx vercel --prod       # deploy to production
+```
+
+Or connect the GitHub repo in the Vercel dashboard — every push to `main` will auto-deploy.
+
+### 2. Set environment variables
+
+Set all API runtime variables in the Vercel dashboard or via CLI:
+
+```bash
+vercel env add SUPABASE_URL production
+vercel env add SUPABASE_ANON_KEY production
+vercel env add SUPABASE_JWT_SECRET production
+vercel env add SUPABASE_SERVICE_ROLE_KEY production
+vercel env add KV_REST_API_URL production
+vercel env add KV_REST_API_TOKEN production
+vercel env add OPENAI_API_KEY production
+vercel env add STRIPE_SECRET_KEY production
+vercel env add STRIPE_WEBHOOK_SECRET production
+vercel env add STRIPE_PRO_PRICE_ID production
+```
+
+> `SUPABASE_JWT_SECRET` is found in Supabase → Project Settings → API → JWT Secret.
+
+### 3. Register the Stripe webhook
+
+After deploying, go to the Stripe Dashboard and register:
+
+- **Endpoint URL**: `https://your-domain/api/stripe-webhook`
+- **Events**: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
+
+Copy the signing secret and set it as `STRIPE_WEBHOOK_SECRET` in Vercel.
+
+### 4. Enable Supabase auth providers
+
+In the Supabase dashboard → Authentication → Providers:
+
+- **Email** — enable email/password sign-in and set the redirect URL to your production domain
+- **Google** — enable OAuth and add your Google OAuth client ID and secret
 
 ## CI / CD
 
@@ -209,86 +269,59 @@ Alert thresholds and incident steps:
 
 Everything below requires manual steps that can't be done in code.
 
-### 1. Vercel environment variables
+### 1. Create `og-image.png` for social sharing
 
-Set these in the Vercel dashboard (or via CLI) for the **Production** environment:
+`index.html` references `/og-image.png` for Open Graph and Twitter Card previews. The source file `public/og-image.svg` exists, but **Twitter/Facebook crawlers do not reliably support SVG** — you need a 1200×630 PNG at `public/og-image.png`.
 
-```bash
-vercel env add OPENAI_API_KEY production
-vercel env add STRIPE_SECRET_KEY production
-vercel env add STRIPE_WEBHOOK_SECRET production
-vercel env add STRIPE_PRO_PRICE_ID production
-vercel env add SUPABASE_SERVICE_ROLE_KEY production
-```
+**Option A — Online (no tools needed, easiest):**
 
-`SUPABASE_SERVICE_ROLE_KEY` is needed by `/api/delete-account`. Get it from Supabase → Project Settings → API → `service_role` key. Never expose it client-side.
+1. Go to [squoosh.app](https://squoosh.app) or [cloudconvert.com/svg-to-png](https://cloudconvert.com/svg-to-png)
+2. Upload `public/og-image.svg`
+3. Set output size to 1200×630
+4. Download and save as `public/og-image.png`
 
-Verify the other required vars are already set (they should be if you set up auth/sync previously):
+**Option B — ImageMagick (CLI):**
 
 ```bash
-vercel env ls
-# Should include: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_JWT_SECRET,
-#                 KV_REST_API_URL, KV_REST_API_TOKEN
-```
-
-### 2. Stripe webhook registration
-
-After deploying, register the webhook in the Stripe Dashboard:
-
-- **Endpoint URL**: `https://your-domain/api/stripe-webhook`
-- **Events to listen for**:
-  - `checkout.session.completed`
-  - `customer.subscription.updated`
-  - `customer.subscription.deleted`
-
-Copy the generated **Signing secret** and set it as `STRIPE_WEBHOOK_SECRET` in Vercel.
-
-### 3. Fix hardcoded production URL in `index.html`
-
-`index.html` has two hardcoded references to `gym-galioni.vercel.app` that should match your real production domain:
-
-```html
-<meta property="og:url" content="https://gym-galioni.vercel.app" />   <!-- line 25 -->
-<meta name="twitter:image" content="/og-image.png" />                   <!-- implicit path -->
-```
-
-Update `og:url` to your production URL. While you're there, update `og:image` (see next item).
-
-### 4. Create `og-image.png` for social sharing
-
-`index.html` references `/og-image.png` for Open Graph and Twitter Card previews. The file `public/og-image.svg` exists as a source, but **Twitter/Facebook crawlers do not reliably support SVG** for OG images — you need a PNG.
-
-Convert `public/og-image.svg` to `public/og-image.png` at 1200×630:
-
-```bash
-# Option A: browser (simplest)
-# Open og-image.svg in Chrome → right-click → Save as image / screenshot
-
-# Option B: Inkscape CLI
-inkscape public/og-image.svg --export-type=png --export-filename=public/og-image.png -w 1200 -h 630
-
-# Option C: ImageMagick
+# Install: winget install ImageMagick.ImageMagick
 magick -background none public/og-image.svg -resize 1200x630 public/og-image.png
 ```
 
-### 5. PWA icons (PNG, for Android / Chrome install prompt)
+**Option C — Inkscape (CLI):**
 
-`vite-plugin-pwa` is configured and will generate a manifest automatically. The current icon (`public/icon.svg`) works on modern browsers, but **Android and Chrome install prompts require PNG icons**.
-
-Add these files to `public/`:
-
-- `icon-192.png` — 192×192 PNG (required by Chrome install prompt)
-- `icon-512.png` — 512×512 PNG (used for splash screen and Play Store listing if submitted)
-
-Then update the `icons` array in `vite.config.ts`:
-
-```ts
-icons: [
-  { src: 'icon.svg',    sizes: 'any',       type: 'image/svg+xml', purpose: 'any' },
-  { src: 'icon-192.png', sizes: '192x192',  type: 'image/png' },
-  { src: 'icon-512.png', sizes: '512x512',  type: 'image/png', purpose: 'any maskable' },
-],
+```bash
+# Install: winget install Inkscape.Inkscape
+inkscape public/og-image.svg --export-type=png --export-filename=public/og-image.png -w 1200 -h 630
 ```
+
+After generating, verify the file exists at `public/og-image.png` and commit it.
+
+### 2. PWA icons (PNG, for Android / Chrome install prompt)
+
+The current icon (`public/icon.svg`) works on modern browsers, but **Android and Chrome install prompts require PNG icons**. `vite.config.ts` already has the updated `icons` array — you just need to generate the two PNG files.
+
+**Step 1 — Generate the PNGs** (same tools as above):
+
+```bash
+# ImageMagick
+magick -background none public/icon.svg -resize 192x192 public/icon-192.png
+magick -background none public/icon.svg -resize 512x512 public/icon-512.png
+
+# Inkscape
+inkscape public/icon.svg --export-type=png --export-filename=public/icon-192.png -w 192 -h 192
+inkscape public/icon.svg --export-type=png --export-filename=public/icon-512.png -w 512 -h 512
+```
+
+Or use [squoosh.app](https://squoosh.app) / [cloudconvert.com](https://cloudconvert.com/svg-to-png) — upload `public/icon.svg`, export at 192×192, save as `icon-192.png`, repeat at 512×512.
+
+**Step 2 — Verify** the files exist:
+
+```
+public/icon-192.png
+public/icon-512.png
+```
+
+**Step 3 — Commit** both files and deploy. The manifest will automatically include them (`vite.config.ts` is already updated).
 
 ---
 
