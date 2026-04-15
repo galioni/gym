@@ -124,7 +124,10 @@ function PlanRow({
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-white">{plan.label}</span>
           {isActive && (
-            <span className="text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/30 bg-primary/10 px-1.5 py-0.5 rounded-md">
+            <span
+              className="text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/30 bg-primary/10 px-1.5 py-0.5 rounded-md"
+              title="This plan is active — the session dropdown in the header only shows its sessions"
+            >
               Active
             </span>
           )}
@@ -243,9 +246,10 @@ export const PlansEditor: React.FC<PlansEditorProps> = ({
   return (
     <div className="space-y-3">
       {plans.length === 0 && !isCreating && (
-        <p className="text-xs text-slate-500">
-          No plans yet. Create a plan to group sessions and filter your header dropdown.
-        </p>
+        <div className="text-xs text-slate-500 space-y-1">
+          <p>No plans yet.</p>
+          <p>A plan groups a set of sessions (e.g. "Strength block: Push, Pull, Legs"). When you activate a plan, the session dropdown in the header only shows its sessions.</p>
+        </div>
       )}
 
       {plans.map((plan) => (

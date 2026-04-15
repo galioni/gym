@@ -1,10 +1,10 @@
 import { requireAuth } from "./_lib/authContext.js";
-import { setCorsHeaders, handlePreflight } from "./_lib/http.js";
+import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight } from "./_lib/http.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
 import { getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
 import { getSubscription } from "./_lib/subscriptionGuard.js";
 
-export default async function handler(req: any, res: any): Promise<void> {
+export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   const observation = attachApiRequestObservability(req, res, "/api/subscription");
   setCorsHeaders(req, res);
   if (handlePreflight(req, res)) return;

@@ -1,8 +1,11 @@
 import { requireAuth } from "./_lib/authContext.js";
-import { setCorsHeaders, handlePreflight, parseJsonBody } from "./_lib/http.js";
+import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight, parseJsonBody, getHeader } from "./_lib/http.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
 import { getOpenAiApiKey, getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
-import { checkRateLimit } from "./_lib/rateLimiter.js";
+import { checkRateLimit, FixedWindowRateLimiter } from "./_lib/rateLimiter.js";
+
+// IP-based burst protection — first line of defense before Redis auth check.
+const ipLimiter = new FixedWindowRateLimiter({ maxRequests: 5, windowMs: 60_000 });
 
 const VALID_GOALS = new Set(["strength", "muscle", "weight_loss", "endurance", "active"]);
 const VALID_EXPERIENCE = new Set(["beginner", "intermediate", "advanced"]);
@@ -77,7 +80,7 @@ Rules:
 - Match the equipment constraint strictly — never prescribe equipment the user doesn't have
 - Return ONLY a valid JSON object with a top-level "plan" key containing the sessions`;
 
-export default async function handler(req: any, res: any): Promise<void> {
+export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   const observation = attachApiRequestObservability(req, res, "/api/generate-plan");
   setCorsHeaders(req, res);
 
@@ -85,6 +88,14 @@ export default async function handler(req: any, res: any): Promise<void> {
 
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+
+  // IP-based burst check before touching auth or KV
+  const ip = getHeader(req, "x-forwarded-for") ?? getHeader(req, "x-real-ip") ?? "unknown";
+  const ipCheck = ipLimiter.consume(ip);
+  if (!ipCheck.allowed) {
+    res.status(429).json({ error: "Too many requests. Try again later.", retryAfter: ipCheck.retryAfterSeconds });
     return;
   }
 

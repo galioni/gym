@@ -316,6 +316,9 @@ export class SyncService {
       return;
     }
     if (!local && cloud) {
+      if (!isWorkoutDataSnapshot(cloud)) {
+        throw new Error("Cloud workout data failed integrity check and was not written locally.");
+      }
       await this.deps.localWorkoutRepository.writeSnapshot(cloud);
       return;
     }
@@ -327,6 +330,9 @@ export class SyncService {
       if (local.updatedAt >= cloud.updatedAt) {
         await this.deps.cloudWorkoutRepository.writeSnapshot(local);
       } else {
+        if (!isWorkoutDataSnapshot(cloud)) {
+          throw new Error("Cloud workout data failed integrity check and was not written locally.");
+        }
         await this.deps.localWorkoutRepository.writeSnapshot(cloud);
       }
       return;
@@ -335,6 +341,9 @@ export class SyncService {
     if (resolution === "keepLocal") {
       await this.deps.cloudWorkoutRepository.writeSnapshot(local);
     } else if (resolution === "keepCloud") {
+      if (!isWorkoutDataSnapshot(cloud)) {
+        throw new Error("Cloud workout data failed integrity check and was not written locally.");
+      }
       await this.deps.localWorkoutRepository.writeSnapshot(cloud);
     }
   }
@@ -353,6 +362,9 @@ export class SyncService {
       return;
     }
     if (!local && cloud) {
+      if (!isTemplateSnapshot(cloud)) {
+        throw new Error("Cloud template data failed integrity check and was not written locally.");
+      }
       await this.deps.localTemplateRepository.writeSnapshot(cloud);
       return;
     }
@@ -364,6 +376,9 @@ export class SyncService {
       if (local.updatedAt >= cloud.updatedAt) {
         await this.deps.cloudTemplateRepository.writeSnapshot(local);
       } else {
+        if (!isTemplateSnapshot(cloud)) {
+          throw new Error("Cloud template data failed integrity check and was not written locally.");
+        }
         await this.deps.localTemplateRepository.writeSnapshot(cloud);
       }
       return;
@@ -372,6 +387,9 @@ export class SyncService {
     if (resolution === "keepLocal") {
       await this.deps.cloudTemplateRepository.writeSnapshot(local);
     } else if (resolution === "keepCloud") {
+      if (!isTemplateSnapshot(cloud)) {
+        throw new Error("Cloud template data failed integrity check and was not written locally.");
+      }
       await this.deps.localTemplateRepository.writeSnapshot(cloud);
     }
   }
@@ -390,6 +408,9 @@ export class SyncService {
       return;
     }
     if (!local && cloud) {
+      if (!isPlansSnapshot(cloud)) {
+        throw new Error("Cloud plans data failed integrity check and was not written locally.");
+      }
       await this.deps.localPlansRepository.writeSnapshot(cloud);
       return;
     }
@@ -401,6 +422,9 @@ export class SyncService {
       if (local.updatedAt >= cloud.updatedAt) {
         await this.deps.cloudPlansRepository.writeSnapshot(local);
       } else {
+        if (!isPlansSnapshot(cloud)) {
+          throw new Error("Cloud plans data failed integrity check and was not written locally.");
+        }
         await this.deps.localPlansRepository.writeSnapshot(cloud);
       }
       return;
@@ -409,6 +433,9 @@ export class SyncService {
     if (resolution === "keepLocal") {
       await this.deps.cloudPlansRepository.writeSnapshot(local);
     } else if (resolution === "keepCloud") {
+      if (!isPlansSnapshot(cloud)) {
+        throw new Error("Cloud plans data failed integrity check and was not written locally.");
+      }
       await this.deps.localPlansRepository.writeSnapshot(cloud);
     }
   }

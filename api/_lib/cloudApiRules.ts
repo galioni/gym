@@ -53,8 +53,13 @@ export function isPlansSnapshotPayload(value: unknown): boolean {
     (p) =>
       isRecord(p) &&
       typeof p.id === "string" &&
+      p.id.length > 0 &&
       typeof p.label === "string" &&
+      p.label.length > 0 &&
       Array.isArray(p.sessionIds) &&
-      (p.sessionIds as unknown[]).every((s) => typeof s === "string")
+      // sessionIds reference session type keys — enforce the same format as template keys
+      (p.sessionIds as unknown[]).every(
+        (s) => typeof s === "string" && SESSION_TYPE_KEY_RE.test(s)
+      )
   );
 }

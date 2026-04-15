@@ -182,6 +182,7 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
                   onClick={() =>
                     setResolutions((current) => ({ ...current, [conflict.entity]: "keepLocal" }))
                   }
+                  title="Use this device's data — the cloud version will be overwritten"
                 >
                   Keep Local
                 </Button>
@@ -191,10 +192,18 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
                   onClick={() =>
                     setResolutions((current) => ({ ...current, [conflict.entity]: "keepCloud" }))
                   }
+                  title="Use the cloud data — this device's version will be overwritten"
                 >
                   Keep Cloud
                 </Button>
               </div>
+              {resolutions[conflict.entity] && (
+                <p className="mt-1.5 text-[11px] text-slate-500">
+                  {resolutions[conflict.entity] === "keepLocal"
+                    ? "The cloud copy will be replaced with your local data."
+                    : "Your local data will be replaced with the cloud copy."}
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -203,7 +212,10 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
       {restorePoints.length > 0 && (
         <div className="mt-4 rounded-xl border border-white/10 p-3">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-sm text-white font-semibold">Pre-sync Restore Points</div>
+            <div>
+              <div className="text-sm text-white font-semibold">Pre-sync Restore Points</div>
+              <div className="text-xs text-slate-500 mt-0.5">Snapshots saved automatically before each sync. Roll back if a sync overwrote something you wanted to keep.</div>
+            </div>
             {restorePoints.length > 1 && (
               <Button
                 size="sm"

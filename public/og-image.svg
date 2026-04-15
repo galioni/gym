@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Subtle grid pattern -->
+  <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+    <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+  </pattern>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <!-- Accent glow orb -->
+  <ellipse cx="600" cy="315" rx="320" ry="200" fill="#6366f1" opacity="0.06"/>
+
+  <!-- Top accent bar -->
+  <rect x="80" y="80" width="120" height="4" rx="2" fill="url(#accent)"/>
+
+  <!-- Icon: dumbbell-like shape -->
+  <g transform="translate(80, 140)" filter="url(#glow)">
+    <rect x="0" y="18" width="80" height="12" rx="6" fill="#6366f1" opacity="0.9"/>
+    <rect x="-8" y="10" width="16" height="28" rx="6" fill="#6366f1"/>
+    <rect x="72" y="10" width="16" height="28" rx="6" fill="#6366f1"/>
+  </g>
+
+  <!-- Main title -->
+  <text x="80" y="280" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="86" font-weight="800" fill="white" letter-spacing="-2">Daily Grind</text>
+
+  <!-- Subtitle -->
+  <text x="80" y="348" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="32" font-weight="400" fill="#94a3b8" letter-spacing="0">AI-powered workout tracking, built for consistency</text>
+
+  <!-- Bottom accent line -->
+  <rect x="80" y="430" width="1040" height="1" fill="rgba(255,255,255,0.08)"/>
+
+  <!-- Feature tags -->
+  <g transform="translate(80, 460)">
+    <rect width="180" height="44" rx="22" fill="rgba(99,102,241,0.15)" stroke="rgba(99,102,241,0.3)" stroke-width="1"/>
+    <text x="90" y="27" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#a5b4fc" text-anchor="middle">Smart Templates</text>
+  </g>
+  <g transform="translate(276, 460)">
+    <rect width="160" height="44" rx="22" fill="rgba(99,102,241,0.15)" stroke="rgba(99,102,241,0.3)" stroke-width="1"/>
+    <text x="80" y="27" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#a5b4fc" text-anchor="middle">Cloud Sync</text>
+  </g>
+  <g transform="translate(452, 460)">
+    <rect width="160" height="44" rx="22" fill="rgba(99,102,241,0.15)" stroke="rgba(99,102,241,0.3)" stroke-width="1"/>
+    <text x="80" y="27" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" fill="#a5b4fc" text-anchor="middle">AI Plans</text>
+  </g>
+
+  <!-- URL hint bottom right -->
+  <text x="1120" y="560" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="500" fill="#475569" text-anchor="end">dailygrind.app</text>
+</svg>

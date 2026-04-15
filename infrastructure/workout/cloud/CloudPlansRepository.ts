@@ -34,10 +34,21 @@ export class CloudPlansRepository implements PlansRepository {
     if (!response.ok) throw await toCloudApiError(response, "Cloud plans read");
 
     const payload = (await response.json()) as CloudPlansEnvelope;
+    const rawPlans = Array.isArray(payload.plans) ? payload.plans : [];
+    // Filter out any malformed entries so the client never processes null/invalid plan objects
+    const validPlans = rawPlans.filter(
+      (p): p is Plan =>
+        p !== null &&
+        typeof p === "object" &&
+        typeof p.id === "string" &&
+        p.id.length > 0 &&
+        typeof p.label === "string" &&
+        Array.isArray(p.sessionIds)
+    );
     return {
       version: typeof payload.version === "number" ? payload.version : 1,
       updatedAt: typeof payload.updatedAt === "string" ? payload.updatedAt : new Date().toISOString(),
-      data: Array.isArray(payload.plans) ? payload.plans : [],
+      data: validPlans,
     };
   }
 

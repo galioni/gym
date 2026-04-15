@@ -8,6 +8,8 @@ import { FixedWindowRateLimiter, checkRateLimit } from "./_lib/rateLimiter.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
 import { getSubscription } from "./_lib/subscriptionGuard.js";
 import {
+  ApiRequest,
+  ApiResponse,
   enforceMethod,
   handlePreflight,
   parseJsonBody,
@@ -21,7 +23,7 @@ const guards = new SyncRequestGuards(
   new FixedWindowRateLimiter({ maxRequests: 30, windowMs: 60_000 })
 );
 
-export default async function handler(req: any, res: any): Promise<void> {
+export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   const observation = attachApiRequestObservability(req, res, "/api/workout-data");
   setCorsHeaders(req, res);
   if (handlePreflight(req, res)) {

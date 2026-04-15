@@ -3,7 +3,9 @@ import { SyncService } from "./SyncService";
 import { SyncSettings, SyncSettingsRepository } from "../../interfaces/sync/SyncSettingsRepository";
 import { WorkoutDataRepository } from "../../interfaces/workout/WorkoutDataRepository";
 import { TemplateRepository } from "../../interfaces/workout/TemplateRepository";
-import { WorkoutDataSnapshot, TemplateSnapshot } from "./syncTypes";
+import { PlansRepository } from "../../interfaces/workout/PlansRepository";
+import { WorkoutDataSnapshot, TemplateSnapshot, PlansSnapshot } from "./syncTypes";
+import { Plan } from "../../types";
 import { createEmptyDay } from "../../utils";
 import { TEMPLATES } from "../../constants";
 
@@ -62,6 +64,7 @@ class InMemorySyncSettingsRepository implements SyncSettingsRepository {
     createdAt: string;
     workoutData: unknown;
     templates: unknown;
+    plans?: unknown;
   }> = [];
 
   public async readSettings() {
@@ -76,8 +79,38 @@ class InMemorySyncSettingsRepository implements SyncSettingsRepository {
     return this.restorePoints;
   }
 
-  public async writeRestorePoints(points: Array<{ id: string; createdAt: string; workoutData: unknown; templates: unknown }>) {
+  public async writeRestorePoints(points: Array<{ id: string; createdAt: string; workoutData: unknown; templates: unknown; plans?: unknown }>) {
     this.restorePoints = points;
+  }
+}
+
+class InMemoryPlansRepository implements PlansRepository {
+  public constructor(private snapshot: PlansSnapshot | null) {}
+
+  public async readPlans(): Promise<Plan[]> {
+    return this.snapshot?.data ?? [];
+  }
+
+  public async writePlans(plans: Plan[]): Promise<void> {
+    this.snapshot = {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      data: plans,
+    };
+  }
+
+  public async readActivePlanId(): Promise<string | null> {
+    return null;
+  }
+
+  public async writeActivePlanId(_id: string | null): Promise<void> {}
+
+  public async readSnapshot(): Promise<PlansSnapshot | null> {
+    return this.snapshot;
+  }
+
+  public async writeSnapshot(snapshot: PlansSnapshot): Promise<void> {
+    this.snapshot = snapshot;
   }
 }
 
@@ -194,6 +227,105 @@ describe("SyncService", () => {
 
     expect(result.status).toBe("success");
     expect(await cloudTemplateRepository.readSnapshot()).toMatchObject({ data: TEMPLATES });
+  });
+
+  it("detects plans conflict when local and cloud plans differ", async () => {
+    const settingsRepository = new InMemorySyncSettingsRepository();
+    const localPlans: PlansSnapshot = {
+      version: 1,
+      updatedAt: "2026-02-18T08:00:00.000Z",
+      data: [{ id: "p1", label: "Push/Pull", sessionIds: ["push", "pull"] }],
+    };
+    const cloudPlans: PlansSnapshot = {
+      version: 1,
+      updatedAt: "2026-02-18T09:00:00.000Z",
+      data: [{ id: "p1", label: "Push/Pull/Legs", sessionIds: ["push", "pull", "legs"] }],
+    };
+
+    const service = new SyncService({
+      settingsRepository,
+      localWorkoutRepository: new InMemoryWorkoutRepository(null),
+      localTemplateRepository: new InMemoryTemplateRepository(null),
+      cloudWorkoutRepository: new InMemoryWorkoutRepository(null),
+      cloudTemplateRepository: new InMemoryTemplateRepository(null),
+      localPlansRepository: new InMemoryPlansRepository(localPlans),
+      cloudPlansRepository: new InMemoryPlansRepository(cloudPlans),
+    });
+
+    const result = await service.syncNow();
+
+    expect(result.status).toBe("conflict");
+    expect(result.conflicts[0].entity).toBe("plans");
+    expect(result.conflicts[0].previewPaths.length).toBeGreaterThan(0);
+  });
+
+  it("restore point includes plans snapshot", async () => {
+    const settingsRepository = new InMemorySyncSettingsRepository();
+    const localPlans: PlansSnapshot = {
+      version: 1,
+      updatedAt: "2026-02-18T08:00:00.000Z",
+      data: [{ id: "p1", label: "My Plan", sessionIds: ["gym"] }],
+    };
+    const cloudPlans: PlansSnapshot = {
+      version: 1,
+      updatedAt: "2026-02-18T08:00:00.000Z",
+      data: [{ id: "p1", label: "My Plan", sessionIds: ["gym"] }],
+    };
+
+    const service = new SyncService({
+      settingsRepository,
+      localWorkoutRepository: new InMemoryWorkoutRepository(null),
+      localTemplateRepository: new InMemoryTemplateRepository(null),
+      cloudWorkoutRepository: new InMemoryWorkoutRepository(null),
+      cloudTemplateRepository: new InMemoryTemplateRepository(null),
+      localPlansRepository: new InMemoryPlansRepository(localPlans),
+      cloudPlansRepository: new InMemoryPlansRepository(cloudPlans),
+    });
+
+    await service.syncNow();
+
+    expect(settingsRepository.restorePoints.length).toBe(1);
+    const point = settingsRepository.restorePoints[0];
+    expect((point.plans as PlansSnapshot | null)?.data[0].label).toBe("My Plan");
+  });
+
+  it("rollback restores plans from restore point", async () => {
+    const settingsRepository = new InMemorySyncSettingsRepository();
+    const originalPlans: PlansSnapshot = {
+      version: 1,
+      updatedAt: "2026-02-18T10:00:00.000Z",
+      data: [{ id: "p1", label: "Original Plan", sessionIds: ["gym"] }],
+    };
+    const localPlansRepo = new InMemoryPlansRepository(originalPlans);
+    const cloudPlansRepo = new InMemoryPlansRepository(originalPlans);
+
+    const service = new SyncService({
+      settingsRepository,
+      localWorkoutRepository: new InMemoryWorkoutRepository(null),
+      localTemplateRepository: new InMemoryTemplateRepository(null),
+      cloudWorkoutRepository: new InMemoryWorkoutRepository(null),
+      cloudTemplateRepository: new InMemoryTemplateRepository(null),
+      localPlansRepository: localPlansRepo,
+      cloudPlansRepository: cloudPlansRepo,
+    });
+
+    // Sync creates a restore point
+    await service.syncNow();
+    const restorePointId = settingsRepository.restorePoints[0]?.id;
+    expect(restorePointId).toBeTruthy();
+
+    // Overwrite local plans with new data
+    await localPlansRepo.writeSnapshot({
+      version: 2,
+      updatedAt: "2026-02-18T11:00:00.000Z",
+      data: [{ id: "p1", label: "Modified Plan", sessionIds: ["gym", "cardio"] }],
+    });
+
+    // Rollback should restore the original plans
+    const rollbackResult = await service.rollbackToRestorePoint(restorePointId);
+    expect(rollbackResult.status).toBe("success");
+    const restoredPlans = await localPlansRepo.readSnapshot();
+    expect(restoredPlans?.data[0].label).toBe("Original Plan");
   });
 
   it("applies keepLocal resolution and can rollback from restore point", async () => {

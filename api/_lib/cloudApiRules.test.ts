@@ -52,12 +52,46 @@ describe("isPlansSnapshotPayload", () => {
     expect(isPlansSnapshotPayload({ version: 1, updatedAt: NOW, plans: [] })).toBe(true);
   });
 
-  it("rejects plans with invalid sessionIds", () => {
+  it("rejects plans with non-string sessionIds", () => {
     expect(
       isPlansSnapshotPayload({
         version: 1,
         updatedAt: NOW,
         plans: [{ id: "p1", label: "X", sessionIds: [123] }],
+      })
+    ).toBe(false);
+  });
+
+  it("rejects plans with sessionIds that do not match session type key format", () => {
+    expect(
+      isPlansSnapshotPayload({
+        version: 1,
+        updatedAt: NOW,
+        plans: [{ id: "p1", label: "X", sessionIds: ["UPPER_CASE"] }],
+      })
+    ).toBe(false);
+    expect(
+      isPlansSnapshotPayload({
+        version: 1,
+        updatedAt: NOW,
+        plans: [{ id: "p1", label: "X", sessionIds: ["<script>alert(1)</script>"] }],
+      })
+    ).toBe(false);
+  });
+
+  it("rejects plans with empty id or label", () => {
+    expect(
+      isPlansSnapshotPayload({
+        version: 1,
+        updatedAt: NOW,
+        plans: [{ id: "", label: "X", sessionIds: [] }],
+      })
+    ).toBe(false);
+    expect(
+      isPlansSnapshotPayload({
+        version: 1,
+        updatedAt: NOW,
+        plans: [{ id: "p1", label: "", sessionIds: [] }],
       })
     ).toBe(false);
   });

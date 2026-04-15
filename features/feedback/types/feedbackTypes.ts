@@ -1,10 +1,16 @@
 export type ToastTone = "success" | "error" | "info";
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface ToastOptions {
   title: string;
   description?: string;
   tone?: ToastTone;
   durationMs?: number;
+  action?: ToastAction;
 }
 
 export interface ToastMessage extends ToastOptions {

@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import type { IncomingMessage } from "node:http";
+import { ApiResponse } from "./_lib/http.js";
 import { getRequiredVercelKvEnv, getStripeWebhookSecret } from "./_lib/apiEnv.js";
 import {
   getStripeCustomerUserId,
@@ -11,7 +13,7 @@ export const config = {
   api: { bodyParser: false },
 };
 
-async function getRawBody(req: any): Promise<string> {
+async function getRawBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     let body = "";
     req.on("data", (chunk: Buffer) => {
@@ -58,7 +60,7 @@ function verifyStripeSignature(
   }
 }
 
-export default async function handler(req: any, res: any): Promise<void> {
+export default async function handler(req: IncomingMessage, res: ApiResponse): Promise<void> {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;
@@ -100,7 +102,7 @@ export default async function handler(req: any, res: any): Promise<void> {
     if (event.type === "checkout.session.completed") {
       const userId = obj["client_reference_id"] as string | null;
       const customerId = obj["customer"] as string | null;
-      const subscriptionId = obj["subscription"] as string | null;
+      const _subscriptionId = obj["subscription"] as string | null;
 
       if (userId && customerId) {
         // Ensure reverse mapping exists

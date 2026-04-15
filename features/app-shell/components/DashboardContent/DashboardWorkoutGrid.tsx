@@ -5,6 +5,8 @@ import { DayData } from "../../../../types";
 
 interface DashboardWorkoutGridProps {
   currentDay: DayData;
+  timerRunning?: { warmup: boolean; main: boolean };
+  onTimerRunningChange?: (section: "warmup" | "main", isRunning: boolean) => void;
   onToggleItem: (section: "warmup" | "main", id: string, done: boolean) => void;
   onDeleteItem: (section: "warmup" | "main", id: string) => Promise<boolean>;
   onUpdateDay: (updates: Partial<DayData>) => void;
@@ -14,6 +16,8 @@ interface DashboardWorkoutGridProps {
 
 export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
   currentDay,
+  timerRunning,
+  onTimerRunningChange,
   onToggleItem,
   onDeleteItem,
   onUpdateDay,
@@ -28,22 +32,24 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
   }, []);
 
   const handleWarmupRunningChange = useCallback((isRunning: boolean) => {
+    onTimerRunningChange?.("warmup", isRunning);
     if (isRunning) {
       scrollTo(warmupRef);
       onActiveTimerChange?.({ section: "warmup", scrollTo: () => scrollTo(warmupRef) });
     } else {
       onActiveTimerChange?.(null);
     }
-  }, [onActiveTimerChange, scrollTo]);
+  }, [onActiveTimerChange, onTimerRunningChange, scrollTo]);
 
   const handleMainRunningChange = useCallback((isRunning: boolean) => {
+    onTimerRunningChange?.("main", isRunning);
     if (isRunning) {
       scrollTo(mainRef);
       onActiveTimerChange?.({ section: "main", scrollTo: () => scrollTo(mainRef) });
     } else {
       onActiveTimerChange?.(null);
     }
-  }, [onActiveTimerChange, scrollTo]);
+  }, [onActiveTimerChange, onTimerRunningChange, scrollTo]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 pb-4">
@@ -52,6 +58,7 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
           title="Warm-up"
           items={currentDay.warmup}
           timerMs={currentDay.warmupTimerMs}
+          initialTimerRunning={timerRunning?.warmup}
           notes={currentDay.warmupNotes}
           onToggleItem={(id, done) => onToggleItem("warmup", id, done)}
           onDeleteItem={(id) => onDeleteItem("warmup", id)}
@@ -66,6 +73,7 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
           title="Main Session"
           items={currentDay.main}
           timerMs={currentDay.mainTimerMs}
+          initialTimerRunning={timerRunning?.main}
           notes={currentDay.mainNotes}
           onToggleItem={(id, done) => onToggleItem("main", id, done)}
           onDeleteItem={(id) => onDeleteItem("main", id)}

@@ -112,6 +112,24 @@ function DayButton({ n, selected, onClick }: { n: number; selected: boolean; onC
   );
 }
 
+const GENERATING_STEPS = [
+  "Analysing your goals...",
+  "Selecting exercises...",
+  "Building your schedule...",
+  "Finalising your plan...",
+];
+
+function GeneratingText() {
+  const [step, setStep] = React.useState(0);
+  React.useEffect(() => {
+    const id = window.setInterval(() => {
+      setStep((s) => (s + 1) % GENERATING_STEPS.length);
+    }, 2200);
+    return () => window.clearInterval(id);
+  }, []);
+  return <span>{GENERATING_STEPS[step]}</span>;
+}
+
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
@@ -272,7 +290,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             {isGenerating ? (
               <>
                 <Loader2 size={16} className="animate-spin" />
-                Generating your plan...
+                <GeneratingText />
               </>
             ) : (
               <>
@@ -283,13 +301,18 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
           </Button>
         </div>
 
-        <button
-          type="button"
-          onClick={onSkip}
-          className="w-full text-center text-xs text-slate-500 hover:text-slate-400 transition-colors py-2"
-        >
-          Skip — I'll set up my plan manually
-        </button>
+        <div className="text-center space-y-1">
+          <button
+            type="button"
+            onClick={onSkip}
+            className="w-full text-center text-xs text-slate-500 hover:text-slate-400 transition-colors py-2"
+          >
+            Skip — I'll set up my plan manually
+          </button>
+          <p className="text-[11px] text-slate-600 leading-relaxed">
+            You can build templates in <span className="text-slate-500">Settings → Templates</span> and come back to generate a plan any time from <span className="text-slate-500">Settings → AI Plan</span>.
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { requireAuth } from "./_lib/authContext.js";
-import { setCorsHeaders, handlePreflight, parseJsonBody } from "./_lib/http.js";
+import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight, parseJsonBody } from "./_lib/http.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
 import { getRequiredVercelKvEnv, getStripeProPriceId } from "./_lib/apiEnv.js";
 import {
@@ -24,7 +24,7 @@ function isValidUrl(raw: unknown): raw is string {
   }
 }
 
-export default async function handler(req: any, res: any): Promise<void> {
+export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   const observation = attachApiRequestObservability(req, res, "/api/create-checkout-session");
   setCorsHeaders(req, res);
   if (handlePreflight(req, res)) return;
@@ -48,7 +48,7 @@ export default async function handler(req: any, res: any): Promise<void> {
     }
 
     const kvEnv = getRequiredVercelKvEnv();
-    let subscription = await getSubscription(auth.userId, kvEnv);
+    const subscription = await getSubscription(auth.userId, kvEnv);
 
     // Create or reuse Stripe customer
     let stripeCustomerId = subscription.stripeCustomerId;

@@ -102,21 +102,22 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   onSetActivePlan,
 }) => {
   const { fileInputRef, exportBackup, openImportPicker, handleImportFileChange } = useBackupIO();
-  const { signOut } = useAuthSession();
+  const { signOut, session } = useAuthSession();
   const { confirm, showToast } = useFeedback();
   const { subscription, isLoading: isSubscriptionLoading, startCheckout, openBillingPortal } = useSubscription();
 
   const handleDeleteAllData = async () => {
     const confirmed = await confirm({
-      title: "Delete all data?",
+      title: "Delete account and all data?",
       description:
-        "This permanently removes all your workout history, templates, and sync settings from this device. You will be signed out. This cannot be undone.",
+        "This permanently removes your account, all workout history, templates, and cloud sync data. You will be signed out. This cannot be undone.",
       confirmLabel: "Delete everything",
       cancelLabel: "Cancel",
       tone: "danger",
     });
     if (!confirmed) return;
 
+    // Clear local storage first so data is gone even if the API call fails.
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(TEMPLATE_STORAGE_KEY);
     localStorage.removeItem(SYNC_SETTINGS_STORAGE_KEY);
@@ -124,7 +125,28 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
     localStorage.removeItem(PLANS_STORAGE_KEY);
     localStorage.removeItem(ACTIVE_PLAN_STORAGE_KEY);
 
-    showToast({ tone: "info", title: "All local data deleted" });
+    // Delete server-side data and the auth account.
+    // Sign out locally regardless of whether the API call succeeds.
+    if (session?.accessToken) {
+      try {
+        const response = await fetch("/api/delete-account", {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${session.accessToken}` },
+        });
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({})) as { error?: string };
+          throw new Error(body.error ?? "Server deletion failed");
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        showToast({
+          tone: "error",
+          title: "Server data deletion failed",
+          description: `Local data cleared. Server error: ${message}. Contact support if cloud data persists.`,
+        });
+      }
+    }
+
     await signOut();
   };
 
@@ -271,12 +293,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         </div>
       </Card>
 
-      {/* Training Plan */}
-      <Card title="Training Plan">
-        <div className="flex items-center justify-between">
+      {/* AI Plan */}
+      <Card title="AI Plan">
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-sm text-slate-300">AI-generated plan</div>
-            <div className="text-xs text-slate-500 mt-0.5">Answer 5 questions to rebuild your plan from scratch</div>
+            <div className="text-sm text-slate-300">Regenerate your AI workout plan</div>
+            <div className="text-xs text-slate-500 mt-0.5">Answer a few questions and Claude will build a personalised set of session templates from scratch. This replaces your existing templates.</div>
           </div>
           <Button variant="secondary" size="sm" className="gap-2 shrink-0" onClick={onRegeneratePlan}>
             <Sparkles size={14} />
@@ -307,10 +329,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               onClick={() => void handleDeleteAllData()}
             >
               <Trash2 size={14} />
-              Delete all data
+              Delete account and all data
             </Button>
             <p className="mt-2 text-xs text-slate-500 text-center">
-              Removes all local workout history, templates, and sync settings. You will be signed out.
+              Permanently deletes your account, all workout history, templates, and cloud data. Cannot be undone.
             </p>
           </div>
         </div>

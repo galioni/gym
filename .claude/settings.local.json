@@ -10,7 +10,11 @@
       "Bash(npm run:*)",
       "Bash(xargs grep:*)",
       "Bash(cat)",
-      "Bash(node /tmp/test_sig.js)"
+      "Bash(node /tmp/test_sig.js)",
+      "Bash(npm install:*)",
+      "Bash(npx vitest:*)",
+      "Bash(ls D:\\\\repositories\\\\gym\\\\README*)",
+      "Bash(npx husky:*)"
     ]
   }
 }

@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { AlertCircle, CheckCircle2, Info, X } from "lucide-react";
-import { ToastMessage } from "../../types/feedbackTypes";
+import { ToastAction, ToastMessage } from "../../types/feedbackTypes";
 
 interface ToastViewportProps {
   toasts: ToastMessage[];
@@ -33,6 +33,16 @@ const toneStyles: Record<
   },
 };
 
+const ToastActionButton: React.FC<{ action: ToastAction; onDismiss: () => void }> = ({ action, onDismiss }) => (
+  <button
+    type="button"
+    onClick={() => { action.onClick(); onDismiss(); }}
+    className="mt-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 rounded"
+  >
+    {action.label}
+  </button>
+);
+
 const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
   useEffect(() => {
     const timerId = window.setTimeout(() => {
@@ -57,6 +67,9 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
           <div className={`text-sm font-semibold ${style.text}`}>{toast.title}</div>
           {toast.description && (
             <div className="mt-0.5 text-xs leading-relaxed text-slate-300">{toast.description}</div>
+          )}
+          {toast.action && (
+            <ToastActionButton action={toast.action} onDismiss={() => onDismiss(toast.id)} />
           )}
         </div>
         <button
