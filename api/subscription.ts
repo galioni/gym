@@ -21,6 +21,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 
     const kvEnv = getRequiredVercelKvEnv();
     const subscription = await getSubscription(auth.userId, kvEnv);
+    res.setHeader("Cache-Control", "private, no-store");
     res.status(200).json(subscription);
   } catch (error) {
     observation.logUnhandledError(error);

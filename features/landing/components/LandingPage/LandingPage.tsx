@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Dumbbell, Sparkles, ShieldCheck, Zap, RefreshCw, Mail, Eye, EyeOff } from "lucide-react";
+import { Dumbbell, Sparkles, ShieldCheck, Zap, RefreshCw, Mail, Eye, EyeOff, Check, X } from "lucide-react";
 import { Button } from "../../../../components/ui/Button";
 
 type AuthMode = "signin" | "signup" | "reset";
@@ -303,6 +303,74 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             title="Simple by design"
             body="No streaks, no gamification, no bloat. Just your workout, tracked every day."
           />
+        </div>
+
+        {/* Pricing */}
+        <div className="space-y-5">
+          <p className="text-center text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Pricing</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            {/* Free */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-5">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Free</div>
+                <div className="mt-2 flex items-end gap-1">
+                  <span className="text-3xl font-bold text-white">$0</span>
+                  <span className="text-sm text-slate-400 mb-1">forever</span>
+                </div>
+              </div>
+              <ul className="space-y-2.5">
+                {[
+                  "Daily workout tracking",
+                  "AI plan generation",
+                  "Template & session editor",
+                  "Backup export / import",
+                ].map((f) => (
+                  <li key={f} className="flex items-center gap-2.5 text-xs text-slate-300">
+                    <Check size={12} className="text-primary shrink-0" />
+                    {f}
+                  </li>
+                ))}
+                <li className="flex items-center gap-2.5 text-xs text-slate-500">
+                  <X size={12} className="shrink-0" />
+                  Cloud sync
+                </li>
+              </ul>
+            </div>
+
+            {/* Pro */}
+            <div className="relative rounded-2xl border border-primary/40 bg-primary/5 p-6 space-y-5">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-background border border-primary/30 rounded-full px-3 py-1">
+                  Most popular
+                </span>
+              </div>
+              <div>
+                <div className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Pro</div>
+                <div className="mt-2 flex items-end gap-1">
+                  <span className="text-3xl font-bold text-white">$4.99</span>
+                  <span className="text-sm text-slate-400 mb-1">/ month</span>
+                </div>
+              </div>
+              <ul className="space-y-2.5">
+                {[
+                  "Everything in Free",
+                  "Cloud sync across devices",
+                  "Conflict resolution",
+                  "Restore points & rollback",
+                ].map((f) => (
+                  <li key={f} className="flex items-center gap-2.5 text-xs text-slate-300">
+                    <Check size={12} className="text-primary shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+          </div>
+          <p className="text-center text-[11px] text-slate-600">
+            No contracts. Cancel anytime. 7-day grace period on cancellation.
+          </p>
         </div>
 
         {/* How it works */}

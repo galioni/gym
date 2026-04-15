@@ -158,6 +158,10 @@ ${bodyFocusLine}`;
     }
 
     if (!openAiResponse.ok) {
+      if (openAiResponse.status === 429) {
+        res.status(429).json({ error: "AI plan generation is temporarily unavailable. Please try again in a minute.", retryAfter: 60 });
+        return;
+      }
       observation.logUnhandledError(new Error(`OpenAI error: ${openAiResponse.status}`));
       res.status(502).json({ error: "Plan generation failed. Please try again." });
       return;

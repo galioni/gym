@@ -4,6 +4,8 @@ import { ApiResponse } from "./_lib/http.js";
 import { getRequiredVercelKvEnv, getStripeWebhookSecret } from "./_lib/apiEnv.js";
 import {
   getStripeCustomerUserId,
+  isStripeEventProcessed,
+  markStripeEventProcessed,
   setSubscription,
   setStripeCustomerMappingAndSubscription,
 } from "./_lib/subscriptionGuard.js";
@@ -87,7 +89,7 @@ export default async function handler(req: IncomingMessage, res: ApiResponse): P
     return;
   }
 
-  let event: { type: string; data: { object: Record<string, unknown> } };
+  let event: { id?: string; type: string; data: { object: Record<string, unknown> } };
   try {
     event = JSON.parse(rawBody);
   } catch {
@@ -97,6 +99,14 @@ export default async function handler(req: IncomingMessage, res: ApiResponse): P
 
   try {
     const kvEnv = getRequiredVercelKvEnv();
+
+    // Idempotency: skip events already processed (Stripe retries on non-2xx).
+    const eventId = typeof event.id === "string" && event.id.length > 0 ? event.id : null;
+    if (eventId && await isStripeEventProcessed(eventId, kvEnv)) {
+      res.status(200).json({ received: true });
+      return;
+    }
+
     const obj = event.data.object;
 
     if (event.type === "checkout.session.completed") {
@@ -159,6 +169,10 @@ export default async function handler(req: IncomingMessage, res: ApiResponse): P
         },
         kvEnv
       );
+    }
+
+    if (eventId) {
+      await markStripeEventProcessed(eventId, kvEnv);
     }
 
     res.status(200).json({ received: true });

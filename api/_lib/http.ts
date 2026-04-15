@@ -146,7 +146,8 @@ export function parseJsonBody<T>(req: ApiRequest, fallback: T): T {
   if (typeof req.body === "string") {
     try {
       return JSON.parse(req.body) as T;
-    } catch {
+    } catch (err) {
+      console.warn("[http] Failed to parse JSON body:", err instanceof Error ? err.message : String(err));
       return fallback;
     }
   }

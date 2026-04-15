@@ -18,6 +18,8 @@ vi.mock("./_lib/subscriptionGuard.js", () => ({
   getStripeCustomerUserId: vi.fn(),
   setStripeCustomerMappingAndSubscription: vi.fn(),
   setSubscription: vi.fn(),
+  isStripeEventProcessed: vi.fn(),
+  markStripeEventProcessed: vi.fn(),
 }));
 
 // ── import after mocks ────────────────────────────────────────────────────────
@@ -25,6 +27,8 @@ vi.mock("./_lib/subscriptionGuard.js", () => ({
 import handler from "./stripe-webhook";
 import {
   getStripeCustomerUserId,
+  isStripeEventProcessed,
+  markStripeEventProcessed,
   setStripeCustomerMappingAndSubscription,
   setSubscription,
 } from "./_lib/subscriptionGuard.js";
@@ -32,6 +36,8 @@ import {
 const mockGetStripeCustomerUserId = vi.mocked(getStripeCustomerUserId);
 const mockSetStripeCustomerMappingAndSubscription = vi.mocked(setStripeCustomerMappingAndSubscription);
 const mockSetSubscription = vi.mocked(setSubscription);
+const mockIsStripeEventProcessed = vi.mocked(isStripeEventProcessed);
+const mockMarkStripeEventProcessed = vi.mocked(markStripeEventProcessed);
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -68,14 +74,16 @@ function makeRequest(body: string, overrides: { signature?: string; method?: str
   return req;
 }
 
-function stripeEvent(type: string, object: Record<string, unknown>): string {
-  return JSON.stringify({ type, data: { object } });
+function stripeEvent(type: string, object: Record<string, unknown>, id = "evt_test_001"): string {
+  return JSON.stringify({ id, type, data: { object } });
 }
 
 // ── tests ─────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockIsStripeEventProcessed.mockResolvedValue(false);
+  mockMarkStripeEventProcessed.mockResolvedValue(undefined);
   mockSetStripeCustomerMappingAndSubscription.mockResolvedValue(undefined);
   mockSetSubscription.mockResolvedValue(undefined);
 });
@@ -324,5 +332,77 @@ describe("POST /api/stripe-webhook — unknown event types", () => {
     expect(state.statusCode).toBe(200);
     expect(mockSetSubscription).not.toHaveBeenCalled();
     expect(mockSetStripeCustomerMappingAndSubscription).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/stripe-webhook — idempotency", () => {
+  it("returns 200 and skips processing when event was already handled", async () => {
+    mockIsStripeEventProcessed.mockResolvedValue(true);
+
+    const body = stripeEvent("checkout.session.completed", {
+      client_reference_id: "user-abc",
+      customer: "cus_123",
+      subscription: "sub_456",
+    }, "evt_already_seen");
+    const req = makeRequest(body);
+    const { res, state } = createMockResponse();
+
+    await handler(req, res);
+
+    expect(state.statusCode).toBe(200);
+    expect((state.jsonPayload as { received: boolean }).received).toBe(true);
+    expect(mockSetStripeCustomerMappingAndSubscription).not.toHaveBeenCalled();
+    expect(mockMarkStripeEventProcessed).not.toHaveBeenCalled();
+  });
+
+  it("marks event processed after successful checkout.session.completed", async () => {
+    mockIsStripeEventProcessed.mockResolvedValue(false);
+
+    const body = stripeEvent("checkout.session.completed", {
+      client_reference_id: "user-abc",
+      customer: "cus_123",
+      subscription: "sub_456",
+    }, "evt_new_001");
+    const req = makeRequest(body);
+    const { res, state } = createMockResponse();
+
+    await handler(req, res);
+
+    expect(state.statusCode).toBe(200);
+    expect(mockMarkStripeEventProcessed).toHaveBeenCalledWith("evt_new_001", expect.any(Object));
+  });
+
+  it("marks event processed after customer.subscription.updated", async () => {
+    mockIsStripeEventProcessed.mockResolvedValue(false);
+    mockGetStripeCustomerUserId.mockResolvedValue("user-abc");
+
+    const body = stripeEvent("customer.subscription.updated", {
+      customer: "cus_123",
+      status: "active",
+      current_period_end: 1893456000,
+    }, "evt_sub_update_001");
+    const req = makeRequest(body);
+    const { res, state } = createMockResponse();
+
+    await handler(req, res);
+
+    expect(state.statusCode).toBe(200);
+    expect(mockMarkStripeEventProcessed).toHaveBeenCalledWith("evt_sub_update_001", expect.any(Object));
+  });
+
+  it("processes event normally when KV is down (isStripeEventProcessed returns false)", async () => {
+    mockIsStripeEventProcessed.mockResolvedValue(false); // KV down, fail open
+
+    const body = stripeEvent("checkout.session.completed", {
+      client_reference_id: "user-abc",
+      customer: "cus_123",
+    }, "evt_kv_down");
+    const req = makeRequest(body);
+    const { res, state } = createMockResponse();
+
+    await handler(req, res);
+
+    expect(state.statusCode).toBe(200);
+    expect(mockSetStripeCustomerMappingAndSubscription).toHaveBeenCalledOnce();
   });
 });
