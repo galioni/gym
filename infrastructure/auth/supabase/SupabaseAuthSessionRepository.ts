@@ -85,6 +85,7 @@ export class SupabaseAuthSessionRepository implements AuthSessionRepository {
   public async signInWithGoogle(): Promise<void> {
     const client = createSupabaseClient();
     const redirectTo = getRequiredSupabaseClientEnv().redirectUrl;
+    console.log("[DEBUG] OAuth redirectTo:", redirectTo);
     const { error } = await client.auth.signInWithOAuth({
       provider: "google",
       options: {
