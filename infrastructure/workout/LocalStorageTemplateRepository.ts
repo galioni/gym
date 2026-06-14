@@ -3,46 +3,17 @@ import { TemplateRepository } from "../../interfaces/workout/TemplateRepository"
 import { Templates } from "../../types";
 import { sanitizeTemplates } from "../../application/workout/templates/templateRules";
 import { TemplateSnapshot } from "../../application/sync/syncTypes";
+import { migrateRawTemplateSnapshot } from "../../application/sync/migrations/snapshotMigrations";
 
-interface TemplateStorageEnvelope {
-  version: number;
-  updatedAt: string;
-  templates: Templates;
-}
-
-/**
- * Local storage adapter for user-editable workout templates.
- */
 export class LocalStorageTemplateRepository implements TemplateRepository {
   public async readSnapshot(): Promise<TemplateSnapshot | null> {
     const rawStorage = localStorage.getItem(TEMPLATE_STORAGE_KEY);
     if (!rawStorage) {
       return null;
     }
-
     try {
-      const parsed = JSON.parse(rawStorage) as TemplateStorageEnvelope | Partial<Templates>;
-
-      const isEnvelope = Boolean(
-        parsed &&
-          typeof parsed === "object" &&
-          "version" in parsed &&
-          "templates" in parsed
-      );
-
-      const sanitized = isEnvelope
-        ? sanitizeTemplates((parsed as TemplateStorageEnvelope).templates)
-        : sanitizeTemplates(parsed as Partial<Templates>);
-
-      const snapshot: TemplateSnapshot = {
-        version: TEMPLATE_SCHEMA_VERSION,
-        updatedAt:
-          isEnvelope && typeof (parsed as TemplateStorageEnvelope).updatedAt === "string"
-            ? (parsed as TemplateStorageEnvelope).updatedAt
-            : new Date().toISOString(),
-        data: sanitized,
-      };
-
+      const parsed = JSON.parse(rawStorage) as unknown;
+      const snapshot: TemplateSnapshot = migrateRawTemplateSnapshot(parsed);
       await this.writeSnapshot(snapshot);
       return snapshot;
     } catch (error) {
@@ -53,12 +24,19 @@ export class LocalStorageTemplateRepository implements TemplateRepository {
   }
 
   public async writeSnapshot(snapshot: TemplateSnapshot): Promise<void> {
-    const envelope: TemplateStorageEnvelope = {
-      version: snapshot.version,
-      updatedAt: snapshot.updatedAt,
-      templates: sanitizeTemplates(snapshot.data),
-    };
-    localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(envelope));
+    if (snapshot.version > TEMPLATE_SCHEMA_VERSION) {
+      throw new Error(
+        `Cannot write templates schema version ${snapshot.version}: app supports up to v${TEMPLATE_SCHEMA_VERSION}.`
+      );
+    }
+    localStorage.setItem(
+      TEMPLATE_STORAGE_KEY,
+      JSON.stringify({
+        version: snapshot.version,
+        updatedAt: snapshot.updatedAt,
+        templates: sanitizeTemplates(snapshot.data),
+      })
+    );
   }
 
   public async readTemplates(): Promise<Templates | null> {

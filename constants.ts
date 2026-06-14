@@ -10,6 +10,7 @@ export const SYNC_RESTORE_POINTS_STORAGE_KEY = "daily-workout-tracker:sync-resto
 export const ONBOARDING_STORAGE_KEY = "daily-workout-tracker:onboarded:v1";
 export const STORAGE_SCHEMA_VERSION = 1;
 export const TEMPLATE_SCHEMA_VERSION = 1;
+export const PLANS_SCHEMA_VERSION = 1;
 export const TEMPLATE_TEXT_MAX_LENGTH = 80;
 export const TEMPLATE_TARGET_MAX_LENGTH = 40;
 export const DEFAULT_SESSION_TYPE: SessionType = 'tennis';

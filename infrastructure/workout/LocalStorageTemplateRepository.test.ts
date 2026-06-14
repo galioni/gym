@@ -111,4 +111,12 @@ describe("LocalStorageTemplateRepository", () => {
 
     expect(read?.custom.warmup[0].text).toBe("Band work");
   });
+
+  it("writeSnapshot throws when snapshot version exceeds current schema version", async () => {
+    const repo = new LocalStorageTemplateRepository();
+
+    await expect(
+      repo.writeSnapshot({ version: TEMPLATE_SCHEMA_VERSION + 1, updatedAt: "2026-06-01T00:00:00.000Z", data: TEMPLATES })
+    ).rejects.toThrow(/schema version/);
+  });
 });
