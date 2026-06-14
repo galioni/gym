@@ -8,7 +8,7 @@ on:
 
 jobs:
   ci:
-    name: Audit · Type-check · Test · Build
+    name: Audit · Type-check · Test · Build · E2E
     runs-on: ubuntu-latest
 
     steps:
@@ -36,9 +36,21 @@ jobs:
       - name: Build
         run: npx vite build
         env:
-          # Provide stub values so the build doesn't fail on missing env vars.
-          # These are only used at runtime, never at build time.
           VITE_SUPABASE_URL: https://placeholder.supabase.co
           VITE_SUPABASE_ANON_KEY: placeholder
           VITE_SUPABASE_REDIRECT_URL: http://localhost:5173
           VITE_SYNC_API_BASE_URL: http://localhost:5173
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run E2E tests
+        run: npx playwright test
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
