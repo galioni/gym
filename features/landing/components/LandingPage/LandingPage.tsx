@@ -121,7 +121,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <div className="relative mx-auto max-w-6xl px-5 lg:px-10">
 
         {/* ── Above the fold: hero + auth ── */}
-        <div className="lg:flex lg:gap-16 lg:items-center lg:min-h-screen py-14 sm:py-20 lg:py-12">
+        <div className="lg:flex lg:gap-16 lg:items-start py-14 sm:py-20 lg:py-16">
 
           {/* Left: hero copy */}
           <div className="text-center lg:text-left space-y-6 lg:flex-1">
