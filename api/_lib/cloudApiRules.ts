@@ -1,6 +1,6 @@
-// Matches the normalization applied by sessionTypeRules.normalizeSessionTypeId:
-// lowercase alphanumeric with internal hyphens, no leading/trailing hyphens, max 32 chars.
-const SESSION_TYPE_KEY_RE = /^[a-z0-9]([a-z0-9-]{0,30}[a-z0-9])?$/;
+// Matches session type keys produced by normalizeSessionTypeId (hyphens) and
+// AI-generated plans (snake_case with underscores). Both are valid identifiers.
+const SESSION_TYPE_KEY_RE = /^[a-z0-9]([a-z0-9_-]{0,30}[a-z0-9])?$/;
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
 

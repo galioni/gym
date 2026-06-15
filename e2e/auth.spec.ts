@@ -46,12 +46,10 @@ function buildMockSession() {
 }
 
 /**
- * @supabase/supabase-js constructs the storage key as `sb-{ref}-auth-token` where
- * ref is the first hostname segment of the Supabase project URL. With the stub
- * URL https://placeholder.supabase.co the key is "sb-placeholder-auth-token".
- * This overrides the @supabase/auth-js default "supabase.auth.token".
+ * @supabase/auth-js GoTrueClient defaults to "supabase.auth.token" as the storage key
+ * when no custom storageKey is provided (see GoTrueClient constructor / STORAGE_KEY constant).
  */
-const SUPABASE_SESSION_KEY = "sb-placeholder-auth-token";
+const SUPABASE_SESSION_KEY = "supabase.auth.token";
 const ONBOARDING_KEY = "daily-workout-tracker:onboarded:v1";
 
 const MOCK_SESSION = buildMockSession();

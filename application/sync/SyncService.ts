@@ -16,6 +16,7 @@ import {
   WorkoutDataSnapshot,
 } from "./syncTypes";
 import { CloudApiPaymentRequiredError } from "../../infrastructure/workout/cloud/cloudApiError";
+import { DayData } from "../../types";
 
 type ConflictResolutionMap = Partial<Record<SyncEntity, ConflictResolution>>;
 
@@ -132,6 +133,19 @@ function hasConflict<T extends { updatedAt: string; data: unknown }>(
   return stableSerialize(local.data) !== stableSerialize(cloud.data);
 }
 
+/**
+ * Returns date keys present in both snapshots with differing content.
+ * Date keys that exist only on one side are not conflicts — they auto-merge.
+ */
+function findTrueWorkoutConflictKeys(
+  local: Record<string, DayData>,
+  cloud: Record<string, DayData>
+): string[] {
+  return Object.keys(local).filter(
+    (key) => key in cloud && stableSerialize(local[key]) !== stableSerialize(cloud[key])
+  );
+}
+
 export class SyncService {
   public constructor(private readonly deps: SyncServiceDeps) {}
 
@@ -217,13 +231,27 @@ export class SyncService {
       await this.createRestorePoint(localWorkout, localTemplates, localPlans);
 
       const conflicts: SyncConflict[] = [];
-      if (hasConflict(localWorkout, cloudWorkout)) {
-        conflicts.push({
-          entity: "workoutData",
-          localUpdatedAt: localWorkout!.updatedAt,
-          cloudUpdatedAt: cloudWorkout!.updatedAt,
-          previewPaths: collectDiffPaths(localWorkout?.data, cloudWorkout?.data).slice(0, 12),
-        });
+      if (localWorkout && cloudWorkout && stableSerialize(localWorkout.data) !== stableSerialize(cloudWorkout.data)) {
+        const trueConflictKeys = findTrueWorkoutConflictKeys(localWorkout.data, cloudWorkout.data);
+        if (trueConflictKeys.length > 0) {
+          // Scope previewPaths to only the truly conflicting dates, not the auto-mergeable ones.
+          const previewPaths = trueConflictKeys
+            .flatMap((key) =>
+              collectDiffPaths(
+                (localWorkout.data as Record<string, unknown>)[key],
+                (cloudWorkout.data as Record<string, unknown>)[key],
+                key
+              ).slice(0, 3)
+            )
+            .slice(0, 12);
+          conflicts.push({
+            entity: "workoutData",
+            localUpdatedAt: localWorkout.updatedAt,
+            cloudUpdatedAt: cloudWorkout.updatedAt,
+            previewPaths,
+          });
+        }
+        // No true conflicts: non-overlapping date diffs will auto-merge in syncWorkoutData.
       }
       if (hasConflict(localTemplates, cloudTemplates)) {
         conflicts.push({
@@ -338,13 +366,26 @@ export class SyncService {
       return;
     }
 
+    // Merge-aware resolution: neither side loses its unique dates.
+    const mergedAt = new Date().toISOString();
     if (resolution === "keepLocal") {
-      await this.deps.cloudWorkoutRepository.writeSnapshot(local);
+      // Local wins for same-date conflicts; cloud-only dates are preserved.
+      const merged: WorkoutDataSnapshot = { ...local, data: { ...cloud.data, ...local.data }, updatedAt: mergedAt };
+      await this.deps.cloudWorkoutRepository.writeSnapshot(merged);
+      await this.deps.localWorkoutRepository.writeSnapshot(merged);
     } else if (resolution === "keepCloud") {
       if (!isWorkoutDataSnapshot(cloud)) {
         throw new Error("Cloud workout data failed integrity check and was not written locally.");
       }
-      await this.deps.localWorkoutRepository.writeSnapshot(cloud);
+      // Cloud wins for same-date conflicts; local-only dates are preserved.
+      const merged: WorkoutDataSnapshot = { ...cloud, data: { ...local.data, ...cloud.data }, updatedAt: mergedAt };
+      await this.deps.cloudWorkoutRepository.writeSnapshot(merged);
+      await this.deps.localWorkoutRepository.writeSnapshot(merged);
+    } else {
+      // Auto-merge: syncNow guarantees no same-date conflicts on this path.
+      const merged: WorkoutDataSnapshot = { ...local, data: { ...cloud.data, ...local.data }, updatedAt: mergedAt };
+      await this.deps.cloudWorkoutRepository.writeSnapshot(merged);
+      await this.deps.localWorkoutRepository.writeSnapshot(merged);
     }
   }
 

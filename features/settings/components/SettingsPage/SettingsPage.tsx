@@ -13,7 +13,9 @@ import {
   DeleteSessionTypeResult,
   RenameSessionTypeResult,
 } from "../../../../application/workout/sessionTypes/sessionTypeRules";
+import { ExerciseLibraryEntry } from "../../../../application/workout/exerciseLibrary";
 import { useBackupIO } from "../../../session-controls/hooks/useBackupIO";
+import { PushNotificationsCard } from "../../../push/components/PushNotificationsCard";
 import { useAuthSession } from "../../../auth/hooks/useAuthSession";
 import { useFeedback } from "../../../feedback/hooks/useFeedback";
 import { useSubscription } from "../../../billing/hooks/useSubscription";
@@ -67,6 +69,7 @@ interface SettingsPageProps {
   onUpdatePlan: (id: string, updates: Partial<Pick<Plan, "label" | "sessionIds">>) => Promise<void>;
   onDeletePlan: (id: string) => Promise<void>;
   onSetActivePlan: (id: string | null) => Promise<void>;
+  exerciseLibrary: ExerciseLibraryEntry[];
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({
@@ -102,6 +105,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   onUpdatePlan,
   onDeletePlan,
   onSetActivePlan,
+  exerciseLibrary,
 }) => {
   const { fileInputRef, exportBackup, openImportPicker, handleImportFileChange } = useBackupIO();
   const { signOut, session } = useAuthSession();
@@ -173,6 +177,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         onCreateSessionType={onCreateSessionType}
         onDeleteSessionType={onDeleteSessionType}
         onRenameSessionType={onRenameSessionType}
+        exerciseLibrary={exerciseLibrary}
       />
 
       {/* Plans */}
@@ -209,7 +214,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                   </div>
                 )}
               </div>
-              <Button variant="secondary" size="sm" onClick={() => void openBillingPortal()}>
+              <Button variant="secondary" size="sm" onClick={() => void openBillingPortal().catch(() => showToast({ tone: "error", title: "Could not open billing portal. Try again." }))}>
                 Manage subscription
               </Button>
             </div>
@@ -219,7 +224,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             <div className="text-sm text-slate-300">
               You're on the <span className="font-semibold text-white">free plan</span>. Upgrade to Pro to enable cloud sync across devices.
             </div>
-            <Button variant="primary" size="sm" className="gap-2" onClick={() => void startCheckout()}>
+            <Button variant="primary" size="sm" className="gap-2" onClick={() => void startCheckout().catch(() => showToast({ tone: "error", title: "Could not start checkout. Try again." }))}>
               Upgrade to Pro
             </Button>
           </div>
@@ -278,6 +283,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           )}
         </div>
       </Card>
+
+      <PushNotificationsCard />
 
       {/* Appearance */}
       <Card title="Appearance">

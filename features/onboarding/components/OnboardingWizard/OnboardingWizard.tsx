@@ -82,6 +82,8 @@ function OptionCard<T extends string>({
   return (
     <button
       type="button"
+      role="radio"
+      aria-checked={selected}
       onClick={() => onClick(value)}
       className={cn(
         "w-full text-left px-4 py-3 rounded-2xl border transition-all duration-150",
@@ -100,6 +102,9 @@ function DayButton({ n, selected, onClick }: { n: number; selected: boolean; onC
   return (
     <button
       type="button"
+      role="radio"
+      aria-checked={selected}
+      aria-label={`${n} days`}
       onClick={onClick}
       className={cn(
         "h-11 w-11 rounded-xl text-sm font-bold border transition-all duration-150",
@@ -215,7 +220,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         <div className="rounded-[1.4rem] border border-white/10 bg-surface/60 backdrop-blur-xl p-5 space-y-5">
 
           <Section label="What's your goal?">
-            <div className="grid grid-cols-1 gap-2">
+            <div role="radiogroup" aria-label="Goal" className="grid grid-cols-1 gap-2">
               {GOALS.map((g) => (
                 <OptionCard key={g.value} value={g.value} selected={goal === g.value} label={g.label} sub={g.sub} onClick={setGoal} />
               ))}
@@ -223,7 +228,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
           </Section>
 
           <Section label="Training experience">
-            <div className="grid grid-cols-3 gap-2">
+            <div role="radiogroup" aria-label="Training experience" className="grid grid-cols-3 gap-2">
               {EXPERIENCE_LEVELS.map((e) => (
                 <OptionCard key={e.value} value={e.value} selected={experience === e.value} label={e.label} sub={e.sub} onClick={setExperience} />
               ))}
@@ -231,7 +236,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
           </Section>
 
           <Section label="Days per week">
-            <div className="flex gap-2">
+            <div role="radiogroup" aria-label="Days per week" className="flex gap-2">
               {[2, 3, 4, 5, 6].map((n) => (
                 <DayButton key={n} n={n} selected={daysPerWeek === n} onClick={() => setDaysPerWeek(n)} />
               ))}
@@ -239,7 +244,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
           </Section>
 
           <Section label="Equipment">
-            <div className="grid grid-cols-2 gap-2">
+            <div role="radiogroup" aria-label="Equipment" className="grid grid-cols-2 gap-2">
               {EQUIPMENT_OPTIONS.map((e) => (
                 <OptionCard key={e.value} value={e.value} selected={equipment === e.value} label={e.label} sub={e.sub} onClick={setEquipment} />
               ))}
@@ -247,11 +252,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
           </Section>
 
           <Section label="Body focus (optional — select all that apply)">
-            <div className="grid grid-cols-3 gap-2">
+            <div role="group" aria-label="Body focus" className="grid grid-cols-3 gap-2">
               {BODY_FOCUS_OPTIONS.map((b) => (
                 <button
                   key={b.value}
                   type="button"
+                  role="checkbox"
+                  aria-checked={bodyFocus.includes(b.value)}
                   onClick={() => toggleBodyFocus(b.value)}
                   className={cn(
                     "py-2.5 px-3 rounded-xl text-sm font-medium border transition-all duration-150 text-left",
@@ -267,11 +274,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
           </Section>
 
           <Section label="Session duration">
-            <div className="flex gap-2">
+            <div role="radiogroup" aria-label="Session duration" className="flex gap-2">
               {DURATIONS.map((d) => (
                 <button
                   key={d.value}
                   type="button"
+                  role="radio"
+                  aria-checked={duration === d.value}
                   onClick={() => setDuration(d.value)}
                   className={cn(
                     "flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all duration-150",

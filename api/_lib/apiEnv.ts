@@ -69,7 +69,7 @@ export function getRequiredVercelKvEnv(): RequiredVercelKvEnv {
 const AI_PROVIDER_DEFAULTS: Record<string, string> = {
   openai: "gpt-4o-mini",
   anthropic: "claude-haiku-4-5-20251001",
-  google: "gemini-2.5-flash",
+  google: "gemini-2.0-flash",
 };
 
 const AI_PROVIDER_KEY_ENV: Record<string, string> = {
@@ -108,4 +108,22 @@ export function getStripeWebhookSecret(): string {
 
 export function getStripeProPriceId(): string {
   return getRequiredApiEnv("STRIPE_PRO_PRICE_ID");
+}
+
+export interface VapidKeys {
+  publicKey: string;
+  privateKey: string;
+  subject: string;
+}
+
+export function getVapidKeys(): VapidKeys | null {
+  const publicKey = readRequiredEnvValue("VAPID_PUBLIC_KEY");
+  const privateKey = readRequiredEnvValue("VAPID_PRIVATE_KEY");
+  const subject = readRequiredEnvValue("VAPID_SUBJECT");
+  if (!publicKey || !privateKey || !subject) return null;
+  return { publicKey, privateKey, subject };
+}
+
+export function getCronSecret(): string | null {
+  return readRequiredEnvValue("CRON_SECRET");
 }

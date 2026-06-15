@@ -1,4 +1,4 @@
-import { generateText, APICallError } from "ai";
+import { generateText, APICallError, RetryError } from "ai";
 import { requireAuth } from "./_lib/authContext.js";
 import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight, parseJsonBody, getHeader } from "./_lib/http.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
@@ -66,13 +66,19 @@ const EQUIPMENT_LABELS: Record<string, string> = {
   bodyweight: "bodyweight only",
 };
 
+function extractJsonString(raw: string): string {
+  const trimmed = raw.trim();
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
+  return fenceMatch ? fenceMatch[1].trim() : trimmed;
+}
+
 const SYSTEM_PROMPT = `You are a certified strength and conditioning coach. Generate a personalized weekly workout plan as a JSON object.
 
 The JSON must exactly match this TypeScript type:
 type Plan = Record<string, { warmup: Array<{ text: string; target?: string }>; main: Array<{ text: string; target?: string }> }>
 
 Rules:
-- Keys are short session names in snake_case (e.g. "push", "pull", "legs", "upper", "lower", "full_body", "cardio", "rest_day")
+- Keys are short session names in kebab-case (e.g. "push", "pull", "legs", "upper", "lower", "full-body", "cardio", "rest-day")
 - Create exactly the number of distinct session types needed to fill the requested training days (e.g. 4 days = 4 keys)
 - Include one "rest_day" key with warmup: [] and 1-2 light recovery items in main
 - Each non-rest session: 3-5 warmup items and 5-8 main items
@@ -106,11 +112,17 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     observation.setUserId(auth.userId);
 
     // Tight rate limit: 10 per hour per user — each call costs money
-    const kvEnv = getRequiredVercelKvEnv();
-    const rateLimit = await checkRateLimit(auth.userId, "generate-plan", kvEnv.kvRestApiUrl, kvEnv.kvRestApiToken, 10, 3600);
-    if (!rateLimit.allowed) {
-      res.status(429).json({ error: "Too many requests. Try again later.", retryAfter: rateLimit.retryAfterSeconds });
-      return;
+    // RATE_LIMIT_BYPASS_USERS: comma-separated user IDs that skip the per-user limit (owner/testing use)
+    const bypassUsers = new Set((process.env.RATE_LIMIT_BYPASS_USERS ?? "").split(",").filter(Boolean));
+    if (bypassUsers.has(auth.userId)) {
+      console.log("[rate-limit] bypassed for user", auth.userId);
+    } else {
+      const kvEnv = getRequiredVercelKvEnv();
+      const rateLimit = await checkRateLimit(auth.userId, "generate-plan", kvEnv.kvRestApiUrl, kvEnv.kvRestApiToken, 10, 3600);
+      if (!rateLimit.allowed) {
+        res.status(429).json({ error: "Too many requests. Try again later.", retryAfter: rateLimit.retryAfterSeconds });
+        return;
+      }
     }
 
     const body = parseJsonBody<unknown>(req, null);
@@ -139,23 +151,34 @@ ${bodyFocusLine}`;
         system: SYSTEM_PROMPT,
         prompt: userPrompt,
         temperature: 0.7,
+        maxRetries: 0,
         abortSignal: AbortSignal.timeout(30_000),
       });
       aiText = text;
     } catch (error) {
-      if (error instanceof APICallError && error.statusCode === 429) {
+      const rootError = error instanceof RetryError ? error.lastError : error;
+      if (rootError instanceof APICallError && rootError.statusCode === 429) {
         res.status(429).json({ error: "AI plan generation is temporarily unavailable. Please try again in a minute.", retryAfter: 60 });
         return;
       }
-      if (error instanceof APICallError) {
-        console.error("[ai] APICallError", { status: error.statusCode, url: error.url, body: error.responseBody });
+      if (rootError instanceof APICallError) {
+        console.error("[ai] APICallError", { status: rootError.statusCode, url: rootError.url, body: rootError.responseBody });
+      } else {
+        console.error("[ai] error", error instanceof Error ? `${error.name}: ${error.message}` : String(error));
       }
       observation.logUnhandledError(error);
       res.status(502).json({ error: "Plan generation failed. Please try again." });
       return;
     }
 
-    const raw = JSON.parse(aiText) as { plan?: unknown };
+    let raw: { plan?: unknown };
+    try {
+      raw = JSON.parse(extractJsonString(aiText)) as { plan?: unknown };
+    } catch {
+      console.error("[ai] JSON parse failed", { preview: aiText.slice(0, 400) });
+      res.status(502).json({ error: "Unexpected response from AI. Please try again." });
+      return;
+    }
 
     if (!raw.plan || typeof raw.plan !== "object" || Array.isArray(raw.plan)) {
       res.status(502).json({ error: "Unexpected response from AI. Please try again." });
@@ -164,6 +187,7 @@ ${bodyFocusLine}`;
 
     res.status(200).json({ templates: raw.plan });
   } catch (error) {
+    console.error("[generate-plan] unhandled error", error instanceof Error ? error.message : String(error));
     observation.logUnhandledError(error);
     res.status(500).json({ error: "Internal server error", requestId: observation.requestId });
   }

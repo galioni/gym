@@ -11,14 +11,19 @@ import { createWorkoutServices } from "./infrastructure/workout/factory/createWo
 import { useSyncSettings } from "./features/sync/state/useSyncSettings";
 import { useWorkoutKeyboardShortcuts } from "./features/app-shell/hooks/useWorkoutKeyboardShortcuts";
 import { DashboardContent } from "./features/app-shell/components/DashboardContent/DashboardContent";
+import { OfflineBanner } from "./components/OfflineBanner";
 import { useFeedback } from "./features/feedback/hooks/useFeedback";
 import { getSessionLabel, getSessionOptions } from "./application/workout/sessionTypes/sessionTypeRules";
 import { usePlans } from "./features/plans/state/usePlans";
 import { useWeightReminder } from "./features/weight-reminder/hooks/useWeightReminder";
 import { ONBOARDING_STORAGE_KEY, PLAN_PARAMS_STORAGE_KEY } from "./constants";
+import { buildExerciseLibrary } from "./application/workout/exerciseLibrary";
 
 const SettingsPage = React.lazy(() =>
   import("./features/settings/components/SettingsPage/SettingsPage").then((m) => ({ default: m.SettingsPage }))
+);
+const HistoryPage = React.lazy(() =>
+  import("./features/history/components/HistoryPage/HistoryPage").then((m) => ({ default: m.HistoryPage }))
 );
 const OnboardingWizard = React.lazy(() =>
   import("./features/onboarding/components/OnboardingWizard/OnboardingWizard").then((m) => ({ default: m.OnboardingWizard }))
@@ -52,6 +57,7 @@ function App() {
     isLoaded,
     isSaving,
     currentDay,
+    allData,
     usedSessionTypes,
     setCurrentDate,
     updateDay,
@@ -78,6 +84,7 @@ function App() {
 
   const { plans, activePlanId, createPlan, updatePlan, deletePlan, setActivePlan } = usePlans(services.planService);
 
+  const exerciseLibrary = useMemo(() => buildExerciseLibrary(allData), [allData]);
   const allSessionOptions = useMemo(() => getSessionOptions(templates), [templates]);
   const sessionOptions = useMemo(() => {
     const activePlan = plans.find((p) => p.id === activePlanId);
@@ -90,7 +97,7 @@ function App() {
     [weightReminder.enabled, weightReminder.targetTime]
   );
   const [stickyFooterHeight, setStickyFooterHeight] = useState(124);
-  const [page, setPage] = useState<"dashboard" | "settings">("dashboard");
+  const [page, setPage] = useState<"dashboard" | "settings" | "history">("dashboard");
   const [activeTimer, setActiveTimer] = useState<{ section: "warmup" | "main"; scrollTo: () => void } | null>(null);
   const [timerRunning, setTimerRunning] = useState({ warmup: false, main: false });
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
@@ -262,10 +269,12 @@ function App() {
         onSessionTypeChange={(event) => changeSessionType(event.target.value as SessionType)}
         onLoadTemplate={() => void handleLoadTemplate()}
         onJumpToday={jumpToToday}
+        onNavigateHistory={() => setPage("history")}
         onNavigateSettings={() => setPage("settings")}
       />
+      <OfflineBanner />
 
-      {page === "dashboard" ? (
+      {page === "dashboard" && (
         <DashboardContent
           fridayHint={fridayHint}
           currentDay={currentDay}
@@ -278,7 +287,19 @@ function App() {
           onDuplicatePreviousDayNotesAndWeight={handleDuplicatePreviousDayNotesAndWeight}
           onActiveTimerChange={setActiveTimer}
         />
-      ) : (
+      )}
+
+      {page === "history" && (
+        <React.Suspense fallback={null}>
+          <HistoryPage
+            allData={allData}
+            onSelectDay={(dateKey) => { setCurrentDate(dateKey); setPage("dashboard"); }}
+            onBack={() => setPage("dashboard")}
+          />
+        </React.Suspense>
+      )}
+
+      {page === "settings" && (
         <React.Suspense fallback={null}>
           <SettingsPage
             onBack={() => setPage("dashboard")}
@@ -312,6 +333,7 @@ function App() {
             onDeletePlan={deletePlan}
             onSetActivePlan={setActivePlan}
             planParams={savedPlanParams ?? undefined}
+            exerciseLibrary={exerciseLibrary}
             onRegeneratePlan={() => {
               localStorage.removeItem(ONBOARDING_STORAGE_KEY);
               setHasOnboarded(false);

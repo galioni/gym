@@ -3,17 +3,21 @@ import { GripVertical, Trash2 } from "lucide-react";
 import { Button } from "../../../../components/ui/Button";
 import { TEMPLATE_TARGET_MAX_LENGTH, TEMPLATE_TEXT_MAX_LENGTH } from "../../../../constants";
 import { TemplateData } from "../../../../types";
+import { ExerciseLibraryEntry } from "../../../../application/workout/exerciseLibrary";
+import { ExerciseInput } from "./ExerciseInput";
 
 interface TemplateRowListProps {
   section: keyof TemplateData;
   rows: TemplateData[keyof TemplateData];
   onRowsChange: React.Dispatch<React.SetStateAction<TemplateData[keyof TemplateData]>>;
+  library: ExerciseLibraryEntry[];
 }
 
 export const TemplateRowList: React.FC<TemplateRowListProps> = ({
   section,
   rows,
   onRowsChange,
+  library,
 }) => {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [isCoarsePointer, setIsCoarsePointer] = useState(false);
@@ -83,13 +87,22 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
           >
             <GripVertical size={14} />
           </button>
-          <input
-            type="text"
+          <ExerciseInput
             value={row.text}
-            onChange={(event) => handleRowChange(index, "text", event.target.value)}
+            onChange={(text) => handleRowChange(index, "text", text)}
+            onSelect={(entry) => {
+              onRowsChange((prev) =>
+                prev.map((r, ri) =>
+                  ri === index
+                    ? { ...r, text: entry.text, target: entry.target ?? r.target }
+                    : r
+                )
+              );
+            }}
+            library={library}
             placeholder="Exercise"
             maxLength={TEMPLATE_TEXT_MAX_LENGTH}
-            className="col-span-3 bg-background/60 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-primary/50 sm:col-span-1"
+            className="col-span-3 sm:col-span-1"
           />
           <input
             type="text"

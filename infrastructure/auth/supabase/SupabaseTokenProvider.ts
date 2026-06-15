@@ -4,7 +4,7 @@ import { createSupabaseClient } from "./createSupabaseClient";
 export class SupabaseTokenProvider implements AuthTokenProvider {
   public async getAccessToken(): Promise<string | null> {
     const client = createSupabaseClient();
-    const { data, error } = await client.auth.getSession();
+    const { data, error } = await client.getSession();
     if (error) {
       throw new Error(error.message);
     }

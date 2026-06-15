@@ -17,6 +17,7 @@ interface UseWorkoutTrackerResult {
   isLoaded: boolean;
   isSaving: boolean;
   currentDay: DayData;
+  allData: Record<string, DayData>;
   usedSessionTypes: Set<SessionType>;
   setCurrentDate: (date: string) => void;
   updateDay: (updates: Partial<DayData>) => void;
@@ -226,6 +227,7 @@ export function useWorkoutTracker(service: WorkoutDataService, templates: Templa
     isLoaded,
     isSaving,
     currentDay,
+    allData,
     usedSessionTypes,
     setCurrentDate: handleSetCurrentDate,
     updateDay,

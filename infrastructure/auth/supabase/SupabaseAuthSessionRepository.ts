@@ -1,4 +1,4 @@
-import { Session } from "@supabase/supabase-js";
+import { Session } from "@supabase/auth-js";
 import { AuthSession } from "../../../interfaces/auth/AuthSession";
 import {
   AuthSessionListener,
@@ -34,7 +34,7 @@ function toAuthSession(session: Session | null): AuthSession | null {
 export class SupabaseAuthSessionRepository implements AuthSessionRepository {
   public async getSession(): Promise<AuthSession | null> {
     const client = createSupabaseClient();
-    const { data, error } = await client.auth.getSession();
+    const { data, error } = await client.getSession();
     if (error) {
       throw new Error(error.message);
     }
@@ -43,7 +43,7 @@ export class SupabaseAuthSessionRepository implements AuthSessionRepository {
 
   public async signInWithEmail(email: string, password: string): Promise<void> {
     const client = createSupabaseClient();
-    const { error } = await client.auth.signInWithPassword({ email, password });
+    const { error } = await client.signInWithPassword({ email, password });
     if (error) {
       throw new Error(error.message);
     }
@@ -52,7 +52,7 @@ export class SupabaseAuthSessionRepository implements AuthSessionRepository {
   public async signUpWithEmail(email: string, password: string): Promise<{ needsConfirmation: boolean }> {
     const client = createSupabaseClient();
     const { redirectUrl } = getRequiredSupabaseClientEnv();
-    const { data, error } = await client.auth.signUp({
+    const { data, error } = await client.signUp({
       email,
       password,
       options: { emailRedirectTo: redirectUrl },
@@ -67,7 +67,7 @@ export class SupabaseAuthSessionRepository implements AuthSessionRepository {
 
   public async updatePassword(newPassword: string): Promise<void> {
     const client = createSupabaseClient();
-    const { error } = await client.auth.updateUser({ password: newPassword });
+    const { error } = await client.updateUser({ password: newPassword });
     if (error) {
       throw new Error(error.message);
     }
@@ -76,7 +76,7 @@ export class SupabaseAuthSessionRepository implements AuthSessionRepository {
   public async resetPassword(email: string): Promise<void> {
     const client = createSupabaseClient();
     const redirectTo = getRequiredSupabaseClientEnv().redirectUrl;
-    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo });
+    const { error } = await client.resetPasswordForEmail(email, { redirectTo });
     if (error) {
       throw new Error(error.message);
     }
@@ -85,7 +85,7 @@ export class SupabaseAuthSessionRepository implements AuthSessionRepository {
   public async signInWithGoogle(): Promise<void> {
     const client = createSupabaseClient();
     const redirectTo = getRequiredSupabaseClientEnv().redirectUrl;
-    const { error } = await client.auth.signInWithOAuth({
+    const { error } = await client.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo,
@@ -98,7 +98,7 @@ export class SupabaseAuthSessionRepository implements AuthSessionRepository {
 
   public async signOut(): Promise<void> {
     const client = createSupabaseClient();
-    const { error } = await client.auth.signOut();
+    const { error } = await client.signOut();
     if (error) {
       throw new Error(error.message);
     }
@@ -106,7 +106,7 @@ export class SupabaseAuthSessionRepository implements AuthSessionRepository {
 
   public subscribe(listener: AuthSessionListener): () => void {
     const client = createSupabaseClient();
-    const { data } = client.auth.onAuthStateChange((event, session) => {
+    const { data } = client.onAuthStateChange((event, session) => {
       listener(toAuthSession(session), event);
     });
     return () => {

@@ -17,5 +17,5 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["**/*.test.ts", "vitest.config.ts"]
+  "exclude": ["**/*.test.ts", "vitest.config.ts", "src/sw.ts"]
 }

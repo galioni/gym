@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/api/cron/push-reminder",
+      "schedule": "*/30 * * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

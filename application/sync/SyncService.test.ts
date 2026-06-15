@@ -328,6 +328,123 @@ describe("SyncService", () => {
     expect(restoredPlans?.data[0].label).toBe("Original Plan");
   });
 
+  it("auto-merges non-overlapping workout dates without requiring user resolution", async () => {
+    const settingsRepository = new InMemorySyncSettingsRepository();
+    const localWorkoutRepository = new InMemoryWorkoutRepository({
+      version: 1,
+      updatedAt: "2026-02-18T10:00:00.000Z",
+      data: { "2026-02-17": { ...createEmptyDay("2026-02-17", "gym"), weight: "80" } },
+    });
+    const cloudWorkoutRepository = new InMemoryWorkoutRepository({
+      version: 1,
+      updatedAt: "2026-02-18T09:00:00.000Z",
+      data: { "2026-02-18": { ...createEmptyDay("2026-02-18", "gym"), weight: "80.5" } },
+    });
+
+    const service = new SyncService({
+      settingsRepository,
+      localWorkoutRepository,
+      localTemplateRepository: new InMemoryTemplateRepository(null),
+      cloudWorkoutRepository,
+      cloudTemplateRepository: new InMemoryTemplateRepository(null),
+    });
+
+    const result = await service.syncNow();
+
+    expect(result.status).toBe("success");
+    expect(result.conflicts).toHaveLength(0);
+
+    const localAfter = await localWorkoutRepository.readSnapshot();
+    const cloudAfter = await cloudWorkoutRepository.readSnapshot();
+    expect(localAfter?.data["2026-02-17"]?.weight).toBe("80");
+    expect(localAfter?.data["2026-02-18"]?.weight).toBe("80.5");
+    expect(cloudAfter?.data["2026-02-17"]?.weight).toBe("80");
+    expect(cloudAfter?.data["2026-02-18"]?.weight).toBe("80.5");
+  });
+
+  it("only flags same-date differences as true conflicts, auto-merging other dates silently", async () => {
+    const settingsRepository = new InMemorySyncSettingsRepository();
+    // local: has Jan 17 (unique) and Jan 18 (conflict)
+    // cloud: has Jan 18 (conflict) and Jan 19 (unique)
+    const localWorkoutRepository = new InMemoryWorkoutRepository({
+      version: 1,
+      updatedAt: "2026-02-18T10:00:00.000Z",
+      data: {
+        "2026-02-17": createEmptyDay("2026-02-17", "gym"),
+        "2026-02-18": { ...createEmptyDay("2026-02-18", "gym"), warmupNotes: "Local notes" },
+      },
+    });
+    const cloudWorkoutRepository = new InMemoryWorkoutRepository({
+      version: 1,
+      updatedAt: "2026-02-18T09:00:00.000Z",
+      data: {
+        "2026-02-18": { ...createEmptyDay("2026-02-18", "gym"), warmupNotes: "Cloud notes" },
+        "2026-02-19": createEmptyDay("2026-02-19", "gym"),
+      },
+    });
+
+    const service = new SyncService({
+      settingsRepository,
+      localWorkoutRepository,
+      localTemplateRepository: new InMemoryTemplateRepository(null),
+      cloudWorkoutRepository,
+      cloudTemplateRepository: new InMemoryTemplateRepository(null),
+    });
+
+    const result = await service.syncNow();
+
+    expect(result.status).toBe("conflict");
+    expect(result.conflicts).toHaveLength(1);
+    expect(result.conflicts[0].entity).toBe("workoutData");
+    // Paths should be scoped to the conflicting date only, not the auto-mergeable ones
+    expect(result.conflicts[0].previewPaths.every((p) => p.startsWith("2026-02-18"))).toBe(true);
+  });
+
+  it("keepLocal resolution preserves cloud-only dates in the merged result", async () => {
+    const settingsRepository = new InMemorySyncSettingsRepository();
+    const localWorkoutRepository = new InMemoryWorkoutRepository({
+      version: 1,
+      updatedAt: "2026-02-18T10:00:00.000Z",
+      data: {
+        "2026-02-17": createEmptyDay("2026-02-17", "gym"),
+        "2026-02-18": { ...createEmptyDay("2026-02-18", "gym"), warmupNotes: "Local notes" },
+      },
+    });
+    const cloudWorkoutRepository = new InMemoryWorkoutRepository({
+      version: 1,
+      updatedAt: "2026-02-18T09:00:00.000Z",
+      data: {
+        "2026-02-18": { ...createEmptyDay("2026-02-18", "gym"), warmupNotes: "Cloud notes" },
+        "2026-02-19": createEmptyDay("2026-02-19", "gym"),
+      },
+    });
+
+    const service = new SyncService({
+      settingsRepository,
+      localWorkoutRepository,
+      localTemplateRepository: new InMemoryTemplateRepository(null),
+      cloudWorkoutRepository,
+      cloudTemplateRepository: new InMemoryTemplateRepository(null),
+    });
+
+    const result = await service.syncNow({ workoutData: "keepLocal" });
+
+    expect(result.status).toBe("success");
+    const localAfter = await localWorkoutRepository.readSnapshot();
+    const cloudAfter = await cloudWorkoutRepository.readSnapshot();
+
+    // All three dates must be present on both sides
+    expect(Object.keys(localAfter?.data ?? {})).toHaveLength(3);
+    expect(Object.keys(cloudAfter?.data ?? {})).toHaveLength(3);
+    // Local wins for the conflicting date
+    expect(localAfter?.data["2026-02-18"]?.warmupNotes).toBe("Local notes");
+    expect(cloudAfter?.data["2026-02-18"]?.warmupNotes).toBe("Local notes");
+    // Cloud-only date preserved
+    expect(localAfter?.data["2026-02-19"]).toBeDefined();
+    // Local-only date preserved
+    expect(cloudAfter?.data["2026-02-17"]).toBeDefined();
+  });
+
   it("applies keepLocal resolution and can rollback from restore point", async () => {
     const settingsRepository = new InMemorySyncSettingsRepository();
     const localWorkoutSnapshot: WorkoutDataSnapshot = {

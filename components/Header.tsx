@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Menu, X, Calendar, Activity, RefreshCw, Crosshair, Settings } from 'lucide-react';
+import { Menu, X, Calendar, Activity, RefreshCw, Crosshair, Settings, History } from 'lucide-react';
 import { SessionOption, SessionType } from '../types';
 import { Button } from './ui/Button';
 import { cn, fromLocalDateKey } from '../utils';
@@ -13,6 +13,7 @@ interface HeaderProps {
   onLoadTemplate: () => void;
   onJumpToday: () => void;
   onNavigateSettings: () => void;
+  onNavigateHistory?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -24,6 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
   onLoadTemplate,
   onJumpToday,
   onNavigateSettings,
+  onNavigateHistory,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -111,6 +113,11 @@ export const Header: React.FC<HeaderProps> = ({
             </Button>
 
             <div className="flex gap-1 ml-1 pl-3 border-l border-white/10">
+              {onNavigateHistory && (
+                <Button onClick={onNavigateHistory} size="icon" variant="ghost" title="History" className="h-11 w-11">
+                  <History size={14} />
+                </Button>
+              )}
               <Button onClick={onNavigateSettings} size="icon" variant="ghost" title="Settings" className="h-11 w-11">
                 <Settings size={14} />
               </Button>
@@ -162,6 +169,12 @@ export const Header: React.FC<HeaderProps> = ({
               </Button>
             </div>
 
+            {onNavigateHistory && (
+              <Button onClick={() => { onNavigateHistory(); setIsOpen(false); }} variant="secondary" className="w-full min-h-11 gap-2 text-xs">
+                <History size={14} />
+                History
+              </Button>
+            )}
             <Button onClick={() => { onNavigateSettings(); setIsOpen(false); }} variant="secondary" className="w-full min-h-11 gap-2 text-xs">
               <Settings size={14} />
               Settings
