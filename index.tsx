@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { FeedbackProvider } from './features/feedback/context/FeedbackProvider';
 import { AuthProvider } from './features/auth/context/AuthProvider';
@@ -20,6 +21,7 @@ root.render(
         <FeedbackProvider>
           <AuthGate>
             <App />
+            <Analytics />
             <SpeedInsights />
           </AuthGate>
         </FeedbackProvider>
