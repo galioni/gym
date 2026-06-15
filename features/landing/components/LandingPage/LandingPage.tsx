@@ -25,9 +25,10 @@ function FeatureCard({ icon, title, body }: { icon: React.ReactNode; title: stri
 
 function RevealSection({ children, className }: { children: React.ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(() => typeof IntersectionObserver === "undefined");
 
   useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
     const el = ref.current;
     if (!el) return;
     const observer = new IntersectionObserver(
