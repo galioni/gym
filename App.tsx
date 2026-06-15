@@ -19,6 +19,7 @@ import { useWeightReminder } from "./features/weight-reminder/hooks/useWeightRem
 import { ONBOARDING_STORAGE_KEY, PLAN_PARAMS_STORAGE_KEY } from "./constants";
 import { buildExerciseLibrary } from "./application/workout/exerciseLibrary";
 import { useAuthSession } from "./features/auth/hooks/useAuthSession";
+import { useSubscription } from "./features/billing/hooks/useSubscription";
 
 const SettingsPage = React.lazy(() =>
   import("./features/settings/components/SettingsPage/SettingsPage").then((m) => ({ default: m.SettingsPage }))
@@ -32,6 +33,7 @@ const OnboardingWizard = React.lazy(() =>
 
 function App() {
   const { session, signOut, isWorking: isSigningOut } = useAuthSession();
+  const { subscription, isLoading: isLoadingSubscription, startCheckout } = useSubscription();
   const { confirm, showToast } = useFeedback();
   const services = useMemo(() => createWorkoutServices(), []);
   const isQAMode = useMemo(() => {
@@ -276,6 +278,7 @@ function App() {
         userEmail={session?.user.email ?? undefined}
         onSignOut={signOut}
         isSigningOut={isSigningOut}
+        onUpgrade={!isLoadingSubscription && subscription.plan === "free" ? () => void startCheckout() : undefined}
       />
       <OfflineBanner />
 

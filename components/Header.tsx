@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Menu, X, Calendar, Activity, RefreshCw, Crosshair, Settings, History, LogOut } from 'lucide-react';
+import { Menu, X, Calendar, Activity, RefreshCw, Crosshair, Settings, History, LogOut, Zap } from 'lucide-react';
 import { SessionOption, SessionType } from '../types';
 import { Button } from './ui/Button';
 import { cn, fromLocalDateKey } from '../utils';
@@ -17,6 +17,7 @@ interface HeaderProps {
   userEmail?: string;
   onSignOut?: () => Promise<void>;
   isSigningOut?: boolean;
+  onUpgrade?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -32,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
   userEmail,
   onSignOut,
   isSigningOut,
+  onUpgrade,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -121,6 +123,16 @@ export const Header: React.FC<HeaderProps> = ({
               Today
             </Button>
 
+            {onUpgrade && (
+              <button
+                onClick={onUpgrade}
+                className="flex items-center gap-1.5 px-3 h-11 rounded-xl text-xs font-semibold text-amber-400 border border-amber-400/30 hover:bg-amber-400/10 hover:text-amber-300 transition-colors"
+              >
+                <Zap size={12} />
+                Upgrade
+              </button>
+            )}
+
             <div className="flex gap-1 ml-1 pl-3 border-l border-white/10">
               {onNavigateHistory && (
                 <Button onClick={onNavigateHistory} size="icon" variant="ghost" title="History" className="h-11 w-11">
@@ -188,6 +200,15 @@ export const Header: React.FC<HeaderProps> = ({
                 <History size={14} />
                 History
               </Button>
+            )}
+            {onUpgrade && (
+              <button
+                onClick={() => { onUpgrade(); setIsOpen(false); }}
+                className="w-full flex items-center justify-center gap-2 min-h-11 rounded-xl text-sm font-semibold text-amber-400 border border-amber-400/30 hover:bg-amber-400/10 hover:text-amber-300 transition-colors"
+              >
+                <Zap size={14} />
+                Upgrade to Pro
+              </button>
             )}
             <Button onClick={() => { onNavigateSettings(); setIsOpen(false); }} variant="secondary" className="w-full min-h-11 gap-2 text-xs">
               <Settings size={14} />
