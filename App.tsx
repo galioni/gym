@@ -6,7 +6,7 @@ import { getFridayHint } from "./utils";
 import { QASmokePanel } from "./features/qa/components/QASmokePanel/QASmokePanel";
 import { useTheme } from "./features/theme/hooks/useTheme";
 import { useTemplates } from "./features/templates/state/useTemplates";
-import { SessionType } from "./types";
+import { PlanParams, SessionType } from "./types";
 import { createWorkoutServices } from "./infrastructure/workout/factory/createWorkoutServices";
 import { useSyncSettings } from "./features/sync/state/useSyncSettings";
 import { useWorkoutKeyboardShortcuts } from "./features/app-shell/hooks/useWorkoutKeyboardShortcuts";
@@ -15,7 +15,7 @@ import { useFeedback } from "./features/feedback/hooks/useFeedback";
 import { getSessionLabel, getSessionOptions } from "./application/workout/sessionTypes/sessionTypeRules";
 import { usePlans } from "./features/plans/state/usePlans";
 import { useWeightReminder } from "./features/weight-reminder/hooks/useWeightReminder";
-import { ONBOARDING_STORAGE_KEY } from "./constants";
+import { ONBOARDING_STORAGE_KEY, PLAN_PARAMS_STORAGE_KEY } from "./constants";
 
 const SettingsPage = React.lazy(() =>
   import("./features/settings/components/SettingsPage/SettingsPage").then((m) => ({ default: m.SettingsPage }))
@@ -108,6 +108,14 @@ function App() {
   const [hasOnboarded, setHasOnboarded] = useState(
     () => localStorage.getItem(ONBOARDING_STORAGE_KEY) === "true"
   );
+  const [savedPlanParams, setSavedPlanParams] = useState<PlanParams | null>(() => {
+    try {
+      const raw = localStorage.getItem(PLAN_PARAMS_STORAGE_KEY);
+      return raw ? (JSON.parse(raw) as PlanParams) : null;
+    } catch {
+      return null;
+    }
+  });
 
   const appShellStyle = useMemo(
     () =>
@@ -227,9 +235,12 @@ function App() {
     return (
       <React.Suspense fallback={null}>
         <OnboardingWizard
-          onComplete={async (generatedTemplates) => {
+          initialValues={savedPlanParams ?? undefined}
+          onComplete={async (generatedTemplates, params) => {
             await replaceTemplates(generatedTemplates);
             localStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
+            localStorage.setItem(PLAN_PARAMS_STORAGE_KEY, JSON.stringify(params));
+            setSavedPlanParams(params);
             setHasOnboarded(true);
           }}
           onSkip={() => {
@@ -300,6 +311,7 @@ function App() {
             onUpdatePlan={updatePlan}
             onDeletePlan={deletePlan}
             onSetActivePlan={setActivePlan}
+            planParams={savedPlanParams ?? undefined}
             onRegeneratePlan={() => {
               localStorage.removeItem(ONBOARDING_STORAGE_KEY);
               setHasOnboarded(false);

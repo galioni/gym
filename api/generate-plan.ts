@@ -1,7 +1,8 @@
+import { generateText, APICallError } from "ai";
 import { requireAuth } from "./_lib/authContext.js";
 import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight, parseJsonBody, getHeader } from "./_lib/http.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
-import { getOpenAiApiKey, getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
+import { getAiModel, getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
 import { checkRateLimit, FixedWindowRateLimiter } from "./_lib/rateLimiter.js";
 
 // IP-based burst protection — first line of defense before Redis auth check.
@@ -131,44 +132,30 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 - Session duration: ${input.duration} minutes
 ${bodyFocusLine}`;
 
-    const openAiAbort = new AbortController();
-    const openAiTimeout = setTimeout(() => openAiAbort.abort(), 30_000);
-
-    let openAiResponse: Response;
+    let aiText: string;
     try {
-      openAiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${getOpenAiApiKey()}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          response_format: { type: "json_object" },
-          temperature: 0.7,
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: userPrompt },
-          ],
-        }),
-        signal: openAiAbort.signal,
+      const { text } = await generateText({
+        model: getAiModel(),
+        system: SYSTEM_PROMPT,
+        prompt: userPrompt,
+        temperature: 0.7,
+        abortSignal: AbortSignal.timeout(30_000),
       });
-    } finally {
-      clearTimeout(openAiTimeout);
-    }
-
-    if (!openAiResponse.ok) {
-      if (openAiResponse.status === 429) {
+      aiText = text;
+    } catch (error) {
+      if (error instanceof APICallError && error.statusCode === 429) {
         res.status(429).json({ error: "AI plan generation is temporarily unavailable. Please try again in a minute.", retryAfter: 60 });
         return;
       }
-      observation.logUnhandledError(new Error(`OpenAI error: ${openAiResponse.status}`));
+      if (error instanceof APICallError) {
+        console.error("[ai] APICallError", { status: error.statusCode, url: error.url, body: error.responseBody });
+      }
+      observation.logUnhandledError(error);
       res.status(502).json({ error: "Plan generation failed. Please try again." });
       return;
     }
 
-    const openAiData = await openAiResponse.json() as { choices: Array<{ message: { content: string } }> };
-    const raw = JSON.parse(openAiData.choices[0].message.content) as { plan?: unknown };
+    const raw = JSON.parse(aiText) as { plan?: unknown };
 
     if (!raw.plan || typeof raw.plan !== "object" || Array.isArray(raw.plan)) {
       res.status(502).json({ error: "Unexpected response from AI. Please try again." });

@@ -1,35 +1,36 @@
-import { jwtVerify } from "jose";
-import { getSupabaseJwtSecret, getRequiredApiEnv } from "./apiEnv.js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { getRequiredApiEnv } from "./apiEnv.js";
 
 interface VerifiedSupabaseUser {
   id: string;
   email: string | null;
 }
 
+let adminClient: SupabaseClient | null = null;
+
+function getAdminClient(): SupabaseClient {
+  if (!adminClient) {
+    adminClient = createClient(
+      getRequiredApiEnv("SUPABASE_URL"),
+      getRequiredApiEnv("SUPABASE_SERVICE_ROLE_KEY"),
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+  }
+  return adminClient;
+}
+
 export async function verifySupabaseJwt(
   accessToken: string
 ): Promise<VerifiedSupabaseUser | null> {
-  const jwtSecret = getSupabaseJwtSecret();
-  const supabaseUrl = getRequiredApiEnv("SUPABASE_URL");
-
   try {
-    const secret = new TextEncoder().encode(jwtSecret);
-    const { payload } = await jwtVerify(accessToken, secret, {
-      audience: "authenticated",
-      issuer: `${supabaseUrl}/auth/v1`,
-    });
-
-    if (typeof payload.sub !== "string" || payload.sub.length === 0) {
+    const { data: { user }, error } = await getAdminClient().auth.getUser(accessToken);
+    if (error || !user) {
+      console.error("[auth] Token verification failed:", error?.message ?? "no user returned");
       return null;
     }
-
-    return {
-      id: payload.sub,
-      email: typeof payload.email === "string" ? payload.email : null,
-    };
+    return { id: user.id, email: user.email ?? null };
   } catch (err) {
-    // Log the failure reason for debugging without exposing details in the response
-    console.error("[auth] JWT verification failed:", err instanceof Error ? err.message : String(err));
+    console.error("[auth] Token verification failed:", err instanceof Error ? err.message : String(err));
     return null;
   }
 }

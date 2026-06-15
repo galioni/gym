@@ -44,7 +44,7 @@ function makeValidEnvelope(overrides?: object) {
 }
 
 function fireFileRead(content: string) {
-  const MockFileReader = vi.fn().mockImplementation(() => {
+  const MockFileReader = vi.fn().mockImplementation(function () {
     const reader = {
       onload: null as ((e: { target: { result: string } }) => void) | null,
       readAsText: vi.fn().mockImplementation(function () {

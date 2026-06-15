@@ -38,3 +38,12 @@ export interface Plan {
   /** References session types from the shared templates pool */
   sessionIds: SessionType[];
 }
+
+export interface PlanParams {
+  goal: "strength" | "muscle" | "weight_loss" | "endurance" | "active";
+  experience: "beginner" | "intermediate" | "advanced";
+  daysPerWeek: number;
+  equipment: "full_gym" | "home_gym" | "minimal" | "bodyweight";
+  duration: "30" | "45" | "60" | "90";
+  bodyFocus: string[];
+}

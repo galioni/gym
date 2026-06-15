@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { Dumbbell, Loader2, Sparkles } from "lucide-react";
-import { Templates } from "../../../../types";
+import { PlanParams, Templates } from "../../../../types";
 import { Button } from "../../../../components/ui/Button";
 import { useAuthSession } from "../../../auth/hooks/useAuthSession";
 import { cn } from "../../../../utils";
 
 interface OnboardingWizardProps {
-  onComplete: (templates: Templates) => Promise<void>;
+  onComplete: (templates: Templates, params: PlanParams) => Promise<void>;
   onSkip: () => void;
+  initialValues?: PlanParams;
 }
 
 type Goal = "strength" | "muscle" | "weight_loss" | "endurance" | "active";
@@ -139,14 +140,15 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, onSkip }) => {
+export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, onSkip, initialValues }) => {
   const { session } = useAuthSession();
-  const [goal, setGoal] = useState<Goal | null>(null);
-  const [experience, setExperience] = useState<Experience | null>(null);
-  const [daysPerWeek, setDaysPerWeek] = useState<number | null>(null);
-  const [equipment, setEquipment] = useState<Equipment | null>(null);
-  const [duration, setDuration] = useState<Duration | null>(null);
-  const [bodyFocus, setBodyFocus] = useState<BodyFocus[]>([]);
+  const isRebuilding = !!initialValues;
+  const [goal, setGoal] = useState<Goal | null>(initialValues?.goal ?? null);
+  const [experience, setExperience] = useState<Experience | null>(initialValues?.experience ?? null);
+  const [daysPerWeek, setDaysPerWeek] = useState<number | null>(initialValues?.daysPerWeek ?? null);
+  const [equipment, setEquipment] = useState<Equipment | null>(initialValues?.equipment ?? null);
+  const [duration, setDuration] = useState<Duration | null>(initialValues?.duration ?? null);
+  const [bodyFocus, setBodyFocus] = useState<BodyFocus[]>((initialValues?.bodyFocus ?? []) as BodyFocus[]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -188,7 +190,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
       }
 
       const { templates } = await res.json() as { templates: Templates };
-      await onComplete(templates);
+      const params: PlanParams = { goal: goal!, experience: experience!, daysPerWeek: daysPerWeek!, equipment: equipment!, duration: duration!, bodyFocus };
+      await onComplete(templates, params);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
@@ -205,8 +208,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             <Dumbbell size={22} />
             <span className="text-[11px] font-bold uppercase tracking-[0.2em]">Daily Grind</span>
           </div>
-          <h1 className="text-3xl font-bold text-white">Build your plan</h1>
-          <p className="text-sm text-slate-400">Answer a few questions and we'll generate a training plan tailored to you.</p>
+          <h1 className="text-3xl font-bold text-white">{isRebuilding ? "Rebuild your plan" : "Build your plan"}</h1>
+          <p className="text-sm text-slate-400">{isRebuilding ? "Adjust your preferences and we'll generate a fresh set of session templates." : "Answer a few questions and we'll generate a training plan tailored to you."}</p>
         </div>
 
         <div className="rounded-[1.4rem] border border-white/10 bg-surface/60 backdrop-blur-xl p-5 space-y-5">
@@ -316,11 +319,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             onClick={onSkip}
             className="w-full text-center text-xs text-slate-500 hover:text-slate-400 transition-colors py-2"
           >
-            Skip — I'll set up my plan manually
+            {isRebuilding ? "Cancel — keep my current plan" : "Skip — I'll set up my plan manually"}
           </button>
-          <p className="text-[11px] text-slate-600 leading-relaxed">
-            Skipping leaves you with an empty template list. You can build templates in <span className="text-slate-500">Settings → Templates</span> or generate a plan any time from <span className="text-slate-500">Settings → AI Plan</span>.
-          </p>
+          {!isRebuilding && (
+            <p className="text-[11px] text-slate-600 leading-relaxed">
+              Skipping leaves you with an empty template list. You can build templates in <span className="text-slate-500">Settings → Templates</span> or generate a plan any time from <span className="text-slate-500">Settings → AI Plan</span>.
+            </p>
+          )}
         </div>
       </div>
     </div>

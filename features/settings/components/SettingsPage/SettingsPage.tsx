@@ -5,7 +5,7 @@ import { SyncSettingsPanel } from "../../../sync/components/SyncSettingsPanel/Sy
 import { PlansEditor } from "../../../plans/components/PlansEditor/PlansEditor";
 import { Card } from "../../../../components/ui/Card";
 import { Button } from "../../../../components/ui/Button";
-import { Plan, SessionOption, SessionType, TemplateData, Templates } from "../../../../types";
+import { Plan, PlanParams, SessionOption, SessionType, TemplateData, Templates } from "../../../../types";
 import { SyncConflict, SyncNowResult, SyncRestorePoint } from "../../../../application/sync/syncTypes";
 import { TemplateValidationError } from "../../../../application/workout/templates/templateRules";
 import {
@@ -59,6 +59,7 @@ interface SettingsPageProps {
   ) => Promise<SyncNowResult>;
   onRollback: (id: string) => Promise<SyncNowResult>;
   onPruneRestorePoints: () => Promise<void>;
+  planParams?: PlanParams;
   onRegeneratePlan: () => void;
   plans: Plan[];
   activePlanId: string | null;
@@ -93,6 +94,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   onSyncNow,
   onRollback,
   onPruneRestorePoints,
+  planParams,
   onRegeneratePlan,
   plans,
   activePlanId,
@@ -297,6 +299,20 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 
       {/* AI Plan */}
       <Card title="AI Plan">
+        {planParams && (
+          <div className="text-xs text-slate-500 mb-3">
+            {[
+              planParams.goal.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()),
+              planParams.experience.replace(/^./, (c) => c.toUpperCase()),
+              `${planParams.daysPerWeek} days/week`,
+              planParams.equipment.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()),
+              `${planParams.duration} min`,
+              ...(planParams.bodyFocus.length > 0
+                ? [planParams.bodyFocus.map((f) => f.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())).join(", ")]
+                : []),
+            ].join(" · ")}
+          </div>
+        )}
         <div className="flex items-center justify-between gap-4">
           <div>
             <div className="text-sm text-slate-300">Regenerate your AI workout plan</div>

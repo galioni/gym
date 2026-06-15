@@ -8,6 +8,7 @@ export const TEMPLATE_STORAGE_KEY = "daily-workout-tracker:templates:v1";
 export const SYNC_SETTINGS_STORAGE_KEY = "daily-workout-tracker:sync-settings:v1";
 export const SYNC_RESTORE_POINTS_STORAGE_KEY = "daily-workout-tracker:sync-restore-points:v1";
 export const ONBOARDING_STORAGE_KEY = "daily-workout-tracker:onboarded:v1";
+export const PLAN_PARAMS_STORAGE_KEY = "daily-workout-tracker:plan-params:v1";
 export const STORAGE_SCHEMA_VERSION = 1;
 export const TEMPLATE_SCHEMA_VERSION = 1;
 export const PLANS_SCHEMA_VERSION = 1;

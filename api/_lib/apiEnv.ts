@@ -1,10 +1,14 @@
+import { openai } from "@ai-sdk/openai";
+import { anthropic } from "@ai-sdk/anthropic";
+import { google } from "@ai-sdk/google";
+import type { LanguageModel } from "ai";
+
 type RequiredApiEnvName =
   | "KV_REST_API_URL"
   | "KV_REST_API_TOKEN"
   | "SUPABASE_URL"
   | "SUPABASE_JWT_SECRET"
   | "SUPABASE_SERVICE_ROLE_KEY"
-  | "OPENAI_API_KEY"
   | "STRIPE_SECRET_KEY"
   | "STRIPE_WEBHOOK_SECRET"
   | "STRIPE_PRO_PRICE_ID";
@@ -62,12 +66,36 @@ export function getRequiredVercelKvEnv(): RequiredVercelKvEnv {
   };
 }
 
-export function getSupabaseJwtSecret(): string {
-  return getRequiredApiEnv("SUPABASE_JWT_SECRET");
+const AI_PROVIDER_DEFAULTS: Record<string, string> = {
+  openai: "gpt-4o-mini",
+  anthropic: "claude-haiku-4-5-20251001",
+  google: "gemini-2.5-flash",
+};
+
+const AI_PROVIDER_KEY_ENV: Record<string, string> = {
+  openai: "OPENAI_API_KEY",
+  anthropic: "ANTHROPIC_API_KEY",
+  google: "GOOGLE_GENERATIVE_AI_API_KEY",
+};
+
+export function getAiModel(): LanguageModel {
+  const provider = process.env.AI_PROVIDER ?? "google";
+  const model = process.env.AI_MODEL ?? AI_PROVIDER_DEFAULTS[provider];
+  const keyEnv = AI_PROVIDER_KEY_ENV[provider];
+
+  if (!keyEnv) throw new Error(`Unsupported AI_PROVIDER: ${provider}. Use: openai | anthropic | google`);
+  if (!readRequiredEnvValue(keyEnv)) throw new Error(`Missing required env var: ${keyEnv}`);
+
+  switch (provider) {
+    case "openai":     return openai(model);
+    case "anthropic":  return anthropic(model);
+    case "google":     return google(model);
+    default:           throw new Error(`Unsupported AI_PROVIDER: ${provider}`);
+  }
 }
 
-export function getOpenAiApiKey(): string {
-  return getRequiredApiEnv("OPENAI_API_KEY");
+export function getSupabaseJwtSecret(): string {
+  return getRequiredApiEnv("SUPABASE_JWT_SECRET");
 }
 
 export function getStripeSecretKey(): string {
