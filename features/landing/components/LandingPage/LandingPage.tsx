@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Dumbbell, Sparkles, ShieldCheck, Zap, RefreshCw, Mail, Eye, EyeOff, Check, X } from "lucide-react";
+import { Dumbbell, Sparkles, ShieldCheck, Zap, RefreshCw, Mail, Eye, EyeOff, Check, X, Smartphone } from "lucide-react";
 import { Button } from "../../../../components/ui/Button";
 
 type AuthMode = "signin" | "signup" | "reset";
@@ -130,7 +130,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div>
             <h1 className="display-title text-6xl sm:text-7xl text-white leading-none">Daily Grind</h1>
             <p className="mt-4 text-lg text-slate-300 leading-relaxed max-w-md mx-auto">
-              Tell the AI your goals. Get a personalised training plan in seconds. Track it every day.
+              Tell the AI your goals. Get a personalised training plan in seconds. Track it every day — on any device.
             </p>
           </div>
         </div>
@@ -287,7 +287,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
 
         {/* Features */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <FeatureCard
             icon={<Sparkles size={20} />}
             title="AI-generated plans"
@@ -297,6 +297,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             icon={<ShieldCheck size={20} />}
             title="Your data, your device"
             body="Everything is stored locally first. Sync to cloud when you want it — never held hostage."
+          />
+          <FeatureCard
+            icon={<Smartphone size={20} />}
+            title="Mobile-first PWA"
+            body="Installable on iOS and Android. Swipe to delete, tap to check — built for gym use, not desk use."
           />
           <FeatureCard
             icon={<Zap size={20} />}
@@ -322,9 +327,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <ul className="space-y-2.5">
                 {[
                   "Daily workout tracking",
-                  "AI plan generation",
+                  "AI plan generation (Gemini)",
                   "Template & session editor",
                   "Backup export / import",
+                  "Installable on iOS & Android",
                 ].map((f) => (
                   <li key={f} className="flex items-center gap-2.5 text-xs text-slate-300">
                     <Check size={12} className="text-primary shrink-0" />
@@ -358,6 +364,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   "Cloud sync across devices",
                   "Conflict resolution",
                   "Restore points & rollback",
+                  "Choose your AI model (Claude, ChatGPT, Gemini)",
                 ].map((f) => (
                   <li key={f} className="flex items-center gap-2.5 text-xs text-slate-300">
                     <Check size={12} className="text-primary shrink-0" />
