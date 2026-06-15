@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Dumbbell, Sparkles, ShieldCheck, Zap, RefreshCw, Mail, Eye, EyeOff, Check, X, Smartphone } from "lucide-react";
 import { Button } from "../../../../components/ui/Button";
 
@@ -15,10 +15,32 @@ interface LandingPageProps {
 
 function FeatureCard({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-2">
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-2 transition-transform duration-300 hover:-translate-y-1 hover:border-white/20">
       <div className="text-primary">{icon}</div>
-      <div className="text-sm font-semibold text-white">{title}</div>
-      <div className="text-xs text-slate-400 leading-relaxed">{body}</div>
+      <div className="text-base font-semibold text-white">{title}</div>
+      <div className="text-base text-slate-400 leading-relaxed">{body}</div>
+    </div>
+  );
+}
+
+function RevealSection({ children, className }: { children: React.ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect(); } },
+      { threshold: 0.08 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} className={`${visible ? "motion-rise" : "opacity-0"} ${className ?? ""}`}>
+      {children}
     </div>
   );
 }
@@ -116,7 +138,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     <div data-theme="recovery-light" className="relative min-h-screen overflow-hidden bg-background text-slate-200">
 
       {/* Background gradient */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgb(72_213_151_/_0.15),transparent_40%),radial-gradient(circle_at_80%_10%,rgb(255_122_26_/_0.22),transparent_35%),linear-gradient(160deg,rgb(10_13_19),rgb(6_10_17))]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(160deg,rgb(10_13_19),rgb(6_10_17))]" />
+      <div className="motion-orb-a pointer-events-none absolute -top-20 -left-20 w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,rgb(72_213_151_/_0.12),transparent_65%)]" />
+      <div className="motion-orb-b pointer-events-none absolute -top-10 right-0 w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgb(111_208_255_/_0.15),transparent_65%)]" />
 
       <div className="relative mx-auto max-w-6xl px-5 lg:px-10">
 
@@ -125,12 +149,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           {/* Left: hero copy */}
           <div className="text-center lg:text-left space-y-6 lg:flex-1">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+            <div className="motion-rise inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-primary">
               <Sparkles size={12} />
               AI-powered workout tracking
             </div>
 
-            <div>
+            <div className="motion-rise motion-delay-1">
               <h1 className="display-title text-6xl sm:text-7xl lg:text-8xl text-white leading-none">Daily Grind</h1>
               <p className="mt-4 text-lg text-slate-300 leading-relaxed max-w-md mx-auto lg:mx-0">
                 Tell the AI your goals. Get a personalised training plan in seconds. Track it every day — on any device.
@@ -138,15 +162,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
             {/* Desktop-only value prop list */}
-            <ul className="hidden lg:flex flex-col gap-3">
+            <ul className="motion-rise motion-delay-2 hidden lg:flex flex-col gap-3">
               {[
                 "AI-generated plans — Gemini included free, Claude & ChatGPT for Pro",
                 "Installable PWA — works on iOS, Android, and desktop",
                 "Local-first storage, cloud sync across devices on Pro",
                 "No streaks, no gamification — just your workout, tracked",
               ].map((item) => (
-                <li key={item} className="flex items-center gap-3 text-sm text-slate-300">
-                  <Check size={14} className="text-primary shrink-0" />
+                <li key={item} className="flex items-center gap-3 text-base text-slate-300">
+                  <Check size={16} className="text-primary shrink-0" />
                   {item}
                 </li>
               ))}
@@ -154,12 +178,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
 
           {/* Right: auth box */}
-          <div className="mt-10 lg:mt-0 lg:w-[22rem] lg:shrink-0 space-y-4">
+          <div className="motion-rise motion-delay-2 mt-10 lg:mt-0 lg:w-[22rem] lg:shrink-0 space-y-4">
             <div className="rounded-[1.4rem] border border-white/10 bg-surface/60 backdrop-blur-xl p-5 space-y-4">
 
               {/* Mode tabs */}
               {!resetSent && !confirmationPending && (
-                <div className="flex rounded-xl border border-white/10 overflow-hidden text-sm font-medium">
+                <div className="flex rounded-xl border border-white/10 overflow-hidden text-base font-medium">
                   {(["signin", "signup"] as AuthMode[]).map((mode) => (
                     <button
                       key={mode}
@@ -179,50 +203,50 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
               {confirmationPending ? (
                 <div className="text-center space-y-3 py-2">
-                  <div className="text-sm text-slate-200">
+                  <div className="text-base text-slate-200">
                     Check your email to confirm your account, then sign in.
                   </div>
                   <button
                     type="button"
                     onClick={() => switchMode("signin")}
-                    className="text-xs text-primary hover:underline"
+                    className="text-sm text-primary hover:underline"
                   >
                     Back to sign in
                   </button>
                 </div>
               ) : resetSent ? (
                 <div className="text-center space-y-3 py-2">
-                  <div className="text-sm text-slate-200">Check your email for a password reset link.</div>
+                  <div className="text-base text-slate-200">Check your email for a password reset link.</div>
                   <button
                     type="button"
                     onClick={() => switchMode("signin")}
-                    className="text-xs text-primary hover:underline"
+                    className="text-sm text-primary hover:underline"
                   >
                     Back to sign in
                   </button>
                 </div>
               ) : authMode === "reset" ? (
                 <form onSubmit={(e) => void handleEmailSubmit(e)} className="space-y-3">
-                  <p className="text-sm text-slate-400">Enter your email and we'll send you a reset link.</p>
+                  <p className="text-base text-slate-400">Enter your email and we'll send you a reset link.</p>
                   <input
                     type="email"
                     autoComplete="email"
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-background/70 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-primary/50 outline-none"
+                    className="w-full bg-background/70 border border-white/10 rounded-xl px-3 py-2.5 text-base text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-primary/50 outline-none"
                     required
                   />
                   {displayError && (
-                    <p className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-red-200">{displayError}</p>
+                    <p className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-200">{displayError}</p>
                   )}
-                  <Button variant="primary" size="sm" className="w-full" type="submit" disabled={busy}>
+                  <Button variant="primary" size="md" className="w-full text-base py-3" type="submit" disabled={busy}>
                     {busy ? "Sending..." : "Send reset link"}
                   </Button>
                   <button
                     type="button"
                     onClick={() => switchMode("signin")}
-                    className="w-full text-xs text-slate-500 hover:text-slate-400 transition-colors"
+                    className="w-full text-sm text-slate-500 hover:text-slate-400 transition-colors"
                   >
                     Back to sign in
                   </button>
@@ -235,7 +259,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-background/70 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-primary/50 outline-none"
+                    className="w-full bg-background/70 border border-white/10 rounded-xl px-3 py-2.5 text-base text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-primary/50 outline-none"
                     required
                   />
                   <div className="relative">
@@ -245,7 +269,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       placeholder="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-background/70 border border-white/10 rounded-xl px-3 py-2.5 pr-10 text-sm text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-primary/50 outline-none"
+                      className="w-full bg-background/70 border border-white/10 rounded-xl px-3 py-2.5 pr-10 text-base text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-primary/50 outline-none"
                       required
                       minLength={authMode === "signup" ? 8 : undefined}
                     />
@@ -260,9 +284,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </button>
                   </div>
                   {displayError && (
-                    <p className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-red-200">{displayError}</p>
+                    <p className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-200">{displayError}</p>
                   )}
-                  <Button variant="primary" size="sm" className="w-full gap-2" type="submit" disabled={busy}>
+                  <Button variant="primary" size="md" className="w-full gap-2 text-base py-3" type="submit" disabled={busy}>
                     <Mail size={14} />
                     {busy ? (authMode === "signup" ? "Creating account..." : "Signing in...") : (authMode === "signup" ? "Create account" : "Sign in")}
                   </Button>
@@ -270,7 +294,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <button
                       type="button"
                       onClick={() => switchMode("reset")}
-                      className="w-full text-xs text-slate-500 hover:text-slate-400 transition-colors"
+                      className="w-full text-sm text-slate-500 hover:text-slate-400 transition-colors"
                     >
                       Forgot password?
                     </button>
@@ -282,13 +306,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <>
                   <div className="relative flex items-center gap-3">
                     <div className="flex-1 border-t border-white/10" />
-                    <span className="text-[11px] text-slate-600 uppercase tracking-widest">or</span>
+                    <span className="text-sm text-slate-600 uppercase tracking-widest">or</span>
                     <div className="flex-1 border-t border-white/10" />
                   </div>
                   <Button
                     variant="secondary"
-                    size="sm"
-                    className="w-full gap-2"
+                    size="md"
+                    className="w-full gap-2 text-base py-3"
                     onClick={() => void onSignIn()}
                     disabled={busy}
                   >
@@ -299,7 +323,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               )}
             </div>
 
-            <p className="text-center text-[11px] text-slate-600 uppercase tracking-[0.14em]">
+            <p className="text-center text-sm text-slate-600 uppercase tracking-[0.14em]">
               No credit card required
             </p>
           </div>
@@ -309,8 +333,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="space-y-16 pb-20">
 
           {/* Features */}
-          <div className="space-y-5">
-            <p className="text-center text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Features</p>
+          <RevealSection className="space-y-5">
+            <p className="text-center text-sm font-bold uppercase tracking-[0.2em] text-slate-400">Features</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <FeatureCard
                 icon={<Sparkles size={20} />}
@@ -333,20 +357,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 body="No streaks, no gamification, no bloat. Just your workout, tracked every day."
               />
             </div>
-          </div>
+          </RevealSection>
 
           {/* Pricing */}
-          <div className="space-y-5">
-            <p className="text-center text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Pricing</p>
+          <RevealSection className="space-y-5">
+            <p className="text-center text-sm font-bold uppercase tracking-[0.2em] text-slate-400">Pricing</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
 
               {/* Free */}
               <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-5">
                 <div>
-                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Free</div>
+                  <div className="text-sm font-bold uppercase tracking-[0.14em] text-slate-400">Free</div>
                   <div className="mt-2 flex items-end gap-1">
                     <span className="text-3xl font-bold text-white">$0</span>
-                    <span className="text-sm text-slate-400 mb-1">forever</span>
+                    <span className="text-base text-slate-400 mb-1">forever</span>
                   </div>
                 </div>
                 <ul className="space-y-2.5">
@@ -357,12 +381,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     "Backup export / import",
                     "Installable on iOS & Android",
                   ].map((f) => (
-                    <li key={f} className="flex items-center gap-2.5 text-xs text-slate-300">
-                      <Check size={12} className="text-primary shrink-0" />
+                    <li key={f} className="flex items-center gap-2.5 text-base text-slate-300">
+                      <Check size={13} className="text-primary shrink-0" />
                       {f}
                     </li>
                   ))}
-                  <li className="flex items-center gap-2.5 text-xs text-slate-500">
+                  <li className="flex items-center gap-2.5 text-base text-slate-500">
                     <X size={12} className="shrink-0" />
                     Cloud sync
                   </li>
@@ -372,15 +396,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {/* Pro */}
               <div className="relative rounded-2xl border border-primary/40 bg-primary/5 p-6 space-y-5">
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary bg-background border border-primary/30 rounded-full px-3 py-1">
+                  <span className="text-sm font-bold uppercase tracking-widest text-primary bg-background border border-primary/30 rounded-full px-3 py-1">
                     Most popular
                   </span>
                 </div>
                 <div>
-                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Pro</div>
+                  <div className="text-sm font-bold uppercase tracking-[0.14em] text-primary">Pro</div>
                   <div className="mt-2 flex items-end gap-1">
                     <span className="text-3xl font-bold text-white">$4.99</span>
-                    <span className="text-sm text-slate-400 mb-1">/ month</span>
+                    <span className="text-base text-slate-400 mb-1">/ month</span>
                   </div>
                 </div>
                 <ul className="space-y-2.5">
@@ -391,8 +415,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     "Restore points & rollback",
                     "Choose your AI model (Claude, ChatGPT, Gemini)",
                   ].map((f) => (
-                    <li key={f} className="flex items-center gap-2.5 text-xs text-slate-300">
-                      <Check size={12} className="text-primary shrink-0" />
+                    <li key={f} className="flex items-center gap-2.5 text-base text-slate-300">
+                      <Check size={13} className="text-primary shrink-0" />
                       {f}
                     </li>
                   ))}
@@ -400,29 +424,44 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
 
             </div>
-            <p className="text-center text-[11px] text-slate-600">
+            <p className="text-center text-sm text-slate-600">
               No contracts. Cancel anytime. 7-day grace period on cancellation.
             </p>
-          </div>
+          </RevealSection>
 
           {/* How it works */}
-          <div className="space-y-5">
-            <p className="text-center text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">How it works</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <RevealSection className="space-y-8">
+            <div className="text-center space-y-2">
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">How it works</p>
+              <p className="text-slate-300 text-lg">From zero to training in under two minutes.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 relative">
+              {/* Connector line — desktop only */}
+              <div className="hidden sm:block absolute top-8 left-[12.5%] right-[12.5%] h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
               {[
-                { step: "1", label: "Sign in", icon: <ShieldCheck size={18} /> },
-                { step: "2", label: "Answer questions", icon: <Dumbbell size={18} /> },
-                { step: "3", label: "AI builds your plan", icon: <Sparkles size={18} /> },
-                { step: "4", label: "Track daily", icon: <RefreshCw size={18} /> },
-              ].map(({ step, label, icon }) => (
-                <div key={step} className="flex flex-col items-center gap-2 rounded-2xl border border-white/8 bg-white/4 px-3 py-4 text-center">
-                  <div className="text-primary">{icon}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">{step}</div>
-                  <div className="text-xs text-slate-300 leading-snug">{label}</div>
+                { step: "1", label: "Create an account", desc: "Sign up free in seconds — no credit card needed.", icon: <ShieldCheck size={22} /> },
+                { step: "2", label: "Tell us your goals", desc: "Equipment, schedule, experience level — a few quick questions.", icon: <Dumbbell size={22} /> },
+                { step: "3", label: "Get your plan", desc: "The AI builds a full training programme tailored to you.", icon: <Sparkles size={22} /> },
+                { step: "4", label: "Track every session", desc: "Open the app, check off your sets. That's the whole habit.", icon: <RefreshCw size={22} /> },
+              ].map(({ step, label, desc, icon }) => (
+                <div key={step} className="flex flex-col items-center text-center gap-3 px-4 py-6 rounded-2xl border border-white/8 bg-white/4 transition-transform duration-300 hover:-translate-y-1 hover:border-white/20">
+                  <div className="relative">
+                    <div className="w-14 h-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                      {icon}
+                    </div>
+                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-black text-[10px] font-black flex items-center justify-center">
+                      {step}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-lg font-semibold text-white">{label}</div>
+                    <div className="text-base text-slate-400 leading-relaxed">{desc}</div>
+                  </div>
                 </div>
               ))}
             </div>
-          </div>
+          </RevealSection>
 
         </div>
       </div>

@@ -127,7 +127,7 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
           >
             <Trash2 size={13} />
           </Button>
-          <div className="col-span-full flex flex-col gap-1">
+          <div className="col-span-full sm:col-start-2 sm:col-span-2 flex flex-col gap-1">
             <input
               type="url"
               value={row.videoUrl ?? ""}

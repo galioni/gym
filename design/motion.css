@@ -45,6 +45,24 @@
   animation-delay: calc(var(--motion-stagger-step) * 3);
 }
 
+@keyframes float-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, -25px) scale(1.08); }
+}
+
+@keyframes float-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-20px, 20px) scale(1.06); }
+}
+
+.motion-orb-a {
+  animation: float-a 12s ease-in-out infinite;
+}
+
+.motion-orb-b {
+  animation: float-b 15s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root {
     --motion-standard: 0ms;
