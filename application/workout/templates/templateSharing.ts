@@ -8,8 +8,8 @@ export interface TemplateShareEnvelope {
   session: SessionType;
   label: string;
   template: {
-    warmup: { text: string; target?: string }[];
-    main: { text: string; target?: string }[];
+    warmup: { text: string; target?: string; videoUrl?: string }[];
+    main: { text: string; target?: string; videoUrl?: string }[];
   };
 }
 
@@ -21,8 +21,8 @@ export function buildTemplateExport(session: SessionType, template: TemplateData
     session,
     label: getSessionLabel(session),
     template: {
-      warmup: template.warmup.map((r) => ({ text: r.text, ...(r.target ? { target: r.target } : {}) })),
-      main: template.main.map((r) => ({ text: r.text, ...(r.target ? { target: r.target } : {}) })),
+      warmup: template.warmup.map((r) => ({ text: r.text, ...(r.target ? { target: r.target } : {}), ...(r.videoUrl ? { videoUrl: r.videoUrl } : {}) })),
+      main: template.main.map((r) => ({ text: r.text, ...(r.target ? { target: r.target } : {}), ...(r.videoUrl ? { videoUrl: r.videoUrl } : {}) })),
     },
   };
   return JSON.stringify(envelope, null, 2);

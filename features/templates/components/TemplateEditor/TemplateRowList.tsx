@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { GripVertical, Trash2 } from "lucide-react";
+import { GripVertical, Trash2, AlertCircle } from "lucide-react";
+
+const YOUTUBE_URL_RE = /^https?:\/\/(www\.|m\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[\w-]{11}/;
+
+function isValidYouTubeUrl(url: string): boolean {
+  return YOUTUBE_URL_RE.test(url);
+}
 import { Button } from "../../../../components/ui/Button";
 import { TEMPLATE_TARGET_MAX_LENGTH, TEMPLATE_TEXT_MAX_LENGTH } from "../../../../constants";
 import { TemplateData } from "../../../../types";
@@ -37,7 +43,7 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
     return () => pointerMedia.removeListener(syncPointerMode);
   }, []);
 
-  const handleRowChange = (index: number, field: "text" | "target", value: string) => {
+  const handleRowChange = (index: number, field: "text" | "target" | "videoUrl", value: string) => {
     onRowsChange((previous) =>
       previous.map((row, rowIndex) => (rowIndex === index ? { ...row, [field]: value } : row))
     );
@@ -121,6 +127,25 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
           >
             <Trash2 size={13} />
           </Button>
+          <div className="col-span-full flex flex-col gap-1">
+            <input
+              type="url"
+              value={row.videoUrl ?? ""}
+              onChange={(event) => handleRowChange(index, "videoUrl", event.target.value)}
+              placeholder="YouTube URL (optional)"
+              className={`w-full bg-background/60 border rounded-xl px-3 py-2 text-xs text-slate-300 outline-none focus:ring-2 placeholder:text-slate-600 ${
+                row.videoUrl && !isValidYouTubeUrl(row.videoUrl)
+                  ? "border-red-500/60 focus:ring-red-500/40"
+                  : "border-white/10 focus:ring-primary/50"
+              }`}
+            />
+            {row.videoUrl && !isValidYouTubeUrl(row.videoUrl) && (
+              <p className="flex items-center gap-1 text-xs text-red-400 pl-1">
+                <AlertCircle size={11} />
+                Must be a valid YouTube URL
+              </p>
+            )}
+          </div>
         </div>
       ))}
     </div>

@@ -18,15 +18,16 @@ function normalizeCell(value: string, maxLength: number): string {
   return value.trim().slice(0, maxLength);
 }
 
-function sanitizeRows(rows: Array<{ text: string; target?: string; id?: string }>): Array<{ text: string; target?: string; id?: string }> {
+function sanitizeRows(rows: Array<{ text: string; target?: string; videoUrl?: string; id?: string }>): Array<{ text: string; target?: string; videoUrl?: string; id?: string }> {
   return rows
     .map((row) => ({
       id: row.id ?? generateId(),
       text: normalizeCell(row.text ?? "", TEMPLATE_TEXT_MAX_LENGTH),
       target: normalizeCell(row.target ?? "", TEMPLATE_TARGET_MAX_LENGTH),
+      videoUrl: typeof row.videoUrl === "string" && row.videoUrl.trim().length > 0 ? row.videoUrl.trim() : undefined,
     }))
     .filter((row) => row.text.length > 0)
-    .map((row) => ({ id: row.id, text: row.text, target: row.target || undefined }));
+    .map((row) => ({ id: row.id, text: row.text, target: row.target || undefined, videoUrl: row.videoUrl }));
 }
 
 function sanitizeSessionTemplate(

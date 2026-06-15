@@ -16,11 +16,12 @@ export function sanitizeDayData(raw: unknown, date: string, templates: Templates
     }
     const normalized = items
       .map((item) => (item && typeof item === "object" ? item : null))
-      .filter((item): item is { id?: string; text?: string; target?: string; done?: boolean } => Boolean(item))
+      .filter((item): item is { id?: string; text?: string; target?: string; videoUrl?: string; done?: boolean } => Boolean(item))
       .map((item, index) => ({
         id: typeof item.id === "string" && item.id.length > 0 ? item.id : `${date}-${index}`,
         text: typeof item.text === "string" ? item.text : "",
         target: typeof item.target === "string" ? item.target : undefined,
+        videoUrl: typeof item.videoUrl === "string" && item.videoUrl.trim().length > 0 ? item.videoUrl.trim() : undefined,
         done: Boolean(item.done),
       }))
       .filter((item) => item.text.trim().length > 0);

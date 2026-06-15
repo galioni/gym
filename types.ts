@@ -9,6 +9,7 @@ export interface WorkoutItem {
   id: string;
   text: string;
   target?: string;
+  videoUrl?: string;
   done: boolean;
 }
 
@@ -26,8 +27,8 @@ export interface DayData {
 }
 
 export interface TemplateData {
-  warmup: { text: string; target?: string; id?: string }[];
-  main: { text: string; target?: string; id?: string }[];
+  warmup: { text: string; target?: string; videoUrl?: string; id?: string }[];
+  main: { text: string; target?: string; videoUrl?: string; id?: string }[];
 }
 
 export type Templates = Record<SessionType, TemplateData>;

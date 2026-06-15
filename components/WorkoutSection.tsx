@@ -1,5 +1,5 @@
 import React, { useState, useRef, memo } from 'react';
-import { Trash2, Check } from 'lucide-react';
+import { Trash2, Check, Youtube } from 'lucide-react';
 import { WorkoutItem } from '../types';
 import { Card } from './ui/Card';
 import { Timer } from './Timer';
@@ -151,6 +151,18 @@ const SwipeableWorkoutItem: React.FC<{
               <span className="w-1 h-1 rounded-full bg-accent inline-block" />
               {item.target}
             </div>
+          )}
+          {item.videoUrl && (
+            <a
+              href={item.videoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="pointer-events-auto mt-1.5 inline-flex items-center gap-1 text-xs text-red-400/70 hover:text-red-400 transition-colors"
+            >
+              <Youtube size={12} />
+              Watch video
+            </a>
           )}
         </div>
       </label>
