@@ -271,7 +271,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                 setSession(e.target.value as SessionType);
                 setIsCreating(false);
               }}
-              className="flex-1 bg-background/70 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
+              className="flex-1 min-w-0 bg-background/70 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
             >
               {sessionOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -318,7 +318,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
             <button
               type="button"
               onClick={() => setIsCreating((v) => !v)}
-              className={`flex items-center gap-1 px-3 py-2 rounded-xl border text-sm transition-colors ${
+              className={`flex items-center gap-1 px-2 sm:px-3 py-2 rounded-xl border text-sm transition-colors shrink-0 ${
                 isCreating
                   ? "border-primary/40 bg-primary/10 text-primary"
                   : "border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/30"
@@ -326,7 +326,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
               title="Add new session type"
             >
               <Plus size={14} />
-              New
+              <span className="hidden sm:inline">New</span>
             </button>
           </>
         )}
