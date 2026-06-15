@@ -68,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({
               {formattedDate}
             </p>
             {userEmail && (
-              <p className="text-[10px] text-slate-500 tracking-[0.04em] truncate max-w-[160px]">{userEmail}</p>
+              <p className="hidden md:block text-[10px] text-slate-500 tracking-[0.04em] truncate max-w-[160px]">{userEmail}</p>
             )}
           </div>
 
@@ -142,7 +142,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Mobile menu */}
         <div className={cn(
           "md:hidden overflow-hidden transition-all duration-300 ease-in-out",
-          isOpen ? "max-h-[400px] opacity-100 mt-4 border-t border-white/10 pt-4" : "max-h-0 opacity-0"
+          isOpen ? "max-h-[560px] opacity-100 mt-4 border-t border-white/10 pt-4" : "max-h-0 opacity-0"
         )}>
           <div className="space-y-4 pb-2 bg-surface/50 border border-white/10 rounded-2xl p-3">
             <div className="space-y-1">
