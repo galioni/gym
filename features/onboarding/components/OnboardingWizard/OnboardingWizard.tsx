@@ -228,7 +228,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
           </Section>
 
           <Section label="Training experience">
-            <div role="radiogroup" aria-label="Training experience" className="grid grid-cols-3 gap-2">
+            <div role="radiogroup" aria-label="Training experience" className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {EXPERIENCE_LEVELS.map((e) => (
                 <OptionCard key={e.value} value={e.value} selected={experience === e.value} label={e.label} sub={e.sub} onClick={setExperience} />
               ))}
@@ -252,7 +252,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
           </Section>
 
           <Section label="Body focus (optional — select all that apply)">
-            <div role="group" aria-label="Body focus" className="grid grid-cols-3 gap-2">
+            <div role="group" aria-label="Body focus" className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {BODY_FOCUS_OPTIONS.map((b) => (
                 <button
                   key={b.value}

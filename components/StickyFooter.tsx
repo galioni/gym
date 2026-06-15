@@ -46,9 +46,9 @@ export const StickyFooter: React.FC<StickyFooterProps> = ({ day, isSaving, onCle
                 <button
                   type="button"
                   onClick={activeTimer.scrollTo}
-                  className="flex items-center gap-1 text-[10px] font-bold text-primary uppercase tracking-[0.16em] animate-pulse hover:opacity-80 transition-opacity"
+                  className="flex items-center gap-1 text-xs font-bold text-primary uppercase tracking-[0.16em] animate-pulse hover:opacity-80 transition-opacity min-h-[44px] px-1"
                 >
-                  <Timer size={11} />
+                  <Timer size={14} />
                   {activeTimer.section === "warmup" ? "Warm-up" : "Main Session"}
                 </button>
               )}

@@ -26,15 +26,15 @@ const SwipeableWorkoutItem: React.FC<{
   onDelete: (id: string) => Promise<boolean>;
 }> = memo(({ item, onToggle, onDelete }) => {
   const [translateX, setTranslateX] = useState(0);
+  const [animate, setAnimate] = useState(false);
   const startX = useRef<number | null>(null);
-  const isDragging = useRef(false);
 
-  const DELETE_THRESHOLD = -60; 
+  const DELETE_THRESHOLD = -60;
   const MAX_SWIPE = -100;
 
   const handleTouchStart = (e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX;
-    isDragging.current = true;
+    setAnimate(false);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -50,13 +50,13 @@ const SwipeableWorkoutItem: React.FC<{
   };
 
   const handleTouchEnd = () => {
-    isDragging.current = false;
     startX.current = null;
+    setAnimate(true);
 
     if (translateX < DELETE_THRESHOLD) {
-      setTranslateX(MAX_SWIPE); 
+      setTranslateX(MAX_SWIPE);
     } else {
-      setTranslateX(0); 
+      setTranslateX(0);
     }
   };
 
@@ -77,12 +77,24 @@ const SwipeableWorkoutItem: React.FC<{
     onToggle(item.id, checked);
   };
 
+  const swipeProgress = Math.min(1, Math.abs(translateX) / Math.abs(MAX_SWIPE));
+  const isPastThreshold = translateX < DELETE_THRESHOLD;
+
   return (
     <div className="relative overflow-hidden rounded-2xl mb-3 group">
-      <div className="absolute inset-0 bg-danger/10 flex items-center justify-end pr-5 rounded-2xl border border-danger/30">
-        <button 
+      <div
+        className="absolute inset-0 flex items-center justify-end pr-5 rounded-2xl border transition-colors duration-150"
+        style={{
+          backgroundColor: `rgba(239, 68, 68, ${0.08 + swipeProgress * 0.22})`,
+          borderColor: `rgba(239, 68, 68, ${0.2 + swipeProgress * 0.4})`,
+        }}
+      >
+        <button
           onClick={handleDeleteClick}
-          className="text-red-300 font-bold text-xs uppercase tracking-[0.15em] flex items-center gap-1 active:scale-95 transition-transform"
+          className={cn(
+            "font-bold text-xs uppercase tracking-[0.15em] flex items-center gap-1 active:scale-95 transition-all",
+            isPastThreshold ? "text-red-300 scale-110" : "text-red-400/70"
+          )}
         >
           <Trash2 size={16} />
           Delete
@@ -104,7 +116,7 @@ const SwipeableWorkoutItem: React.FC<{
         onTouchEnd={handleTouchEnd}
         style={{
           transform: `translateX(${translateX}px)`,
-          transition: isDragging.current ? 'none' : 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'
+          transition: animate ? 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none'
         }}
         className={cn(
           "relative flex items-start gap-4 p-4 pr-10 rounded-2xl border transition-all duration-300 cursor-pointer select-none z-10",
@@ -130,7 +142,7 @@ const SwipeableWorkoutItem: React.FC<{
           </div>
         </div>
        
-        <div className="flex-1 pointer-events-none"> 
+        <div className="flex-1 pointer-events-none">
           <div className={cn("text-base font-medium leading-snug transition-colors", item.done ? "line-through text-slate-500" : "text-slate-100")}>
             {item.text}
           </div>

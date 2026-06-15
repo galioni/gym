@@ -65,14 +65,14 @@ export const PushNotificationsCard: React.FC = () => {
           <p className="text-xs text-red-400">{error}</p>
         )}
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between min-h-[44px]">
           <div>
             <div className="text-sm text-slate-300">Workout reminders</div>
             <div className="text-xs text-slate-500 mt-0.5">
               Daily push notification at your chosen time
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-h-[44px] pl-4">
             {isLoading && (
               <svg
                 className="animate-spin h-4 w-4 text-slate-400 shrink-0"
