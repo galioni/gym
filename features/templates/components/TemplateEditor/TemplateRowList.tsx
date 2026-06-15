@@ -133,7 +133,7 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
               value={row.videoUrl ?? ""}
               onChange={(event) => handleRowChange(index, "videoUrl", event.target.value)}
               placeholder="YouTube URL (optional)"
-              className={`w-full bg-background/60 border rounded-xl px-3 py-2 text-xs text-slate-300 outline-none focus:ring-2 placeholder:text-slate-600 ${
+              className={`w-full bg-background/60 border rounded-lg px-2.5 py-1.5 text-[11px] text-slate-400 outline-none focus:ring-2 placeholder:text-slate-600 ${
                 row.videoUrl && !isValidYouTubeUrl(row.videoUrl)
                   ? "border-red-500/60 focus:ring-red-500/40"
                   : "border-white/10 focus:ring-primary/50"
