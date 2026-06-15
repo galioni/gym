@@ -58,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header ref={menuRef} className="sticky top-0 z-40 border-b border-white/10 bg-background/80 backdrop-blur-xl motion-sweep">
-      <div className="max-w-4xl mx-auto px-4 py-3 md:py-4">
+      <div className="max-w-5xl mx-auto px-4 py-3 md:py-4">
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <h1 className="display-title text-3xl md:text-4xl leading-none text-white">

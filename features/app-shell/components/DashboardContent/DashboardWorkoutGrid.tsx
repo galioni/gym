@@ -52,8 +52,8 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
   }, [onActiveTimerChange, onTimerRunningChange, scrollTo]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 pb-4">
-      <div ref={warmupRef} className="motion-rise motion-delay-1">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6 pb-4 xl:items-start">
+      <div ref={warmupRef} className="motion-rise motion-delay-1 flex flex-col">
         <WorkoutSection
           title="Warm-up"
           items={currentDay.warmup}
@@ -68,7 +68,7 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
         />
       </div>
 
-      <div ref={mainRef} className="motion-rise motion-delay-2">
+      <div ref={mainRef} className="motion-rise motion-delay-2 flex flex-col">
         <WorkoutSection
           title="Main Session"
           items={currentDay.main}
@@ -83,7 +83,7 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
         />
       </div>
 
-      <div className="md:col-span-2 motion-rise motion-delay-3">
+      <div className="md:col-span-2 xl:col-span-1 motion-rise motion-delay-3">
         <DailyCheckCard
           day={currentDay}
           onUpdateField={(updates) => {
