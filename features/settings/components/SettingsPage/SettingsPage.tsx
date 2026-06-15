@@ -15,7 +15,6 @@ import {
 } from "../../../../application/workout/sessionTypes/sessionTypeRules";
 import { ExerciseLibraryEntry } from "../../../../application/workout/exerciseLibrary";
 import { useBackupIO } from "../../../session-controls/hooks/useBackupIO";
-import { PushNotificationsCard } from "../../../push/components/PushNotificationsCard";
 import { AiProviderSelector } from "../AiProviderSelector";
 import { useAuthSession } from "../../../auth/hooks/useAuthSession";
 import { useFeedback } from "../../../feedback/hooks/useFeedback";
@@ -286,8 +285,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           )}
         </div>
       </Card>
-
-      <PushNotificationsCard />
 
       {/* Appearance */}
       <Card title="Appearance">
