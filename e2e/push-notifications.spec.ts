@@ -109,7 +109,9 @@ test.describe("Push Notifications card", () => {
 
     await expect(page.getByText("Push Notifications")).toBeVisible({ timeout: 10_000 });
 
-    const toggle = page.getByRole("switch");
+    // Scope to push notifications card via its unique "Workout reminders" label
+    const pushCard = page.locator(".glass").filter({ hasText: "Workout reminders" });
+    const toggle = pushCard.getByRole("switch");
     await expect(toggle).toBeVisible();
     // Not subscribed yet — aria-checked should be false
     await expect(toggle).toHaveAttribute("aria-checked", "false");

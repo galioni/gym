@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Menu, X, Calendar, Activity, RefreshCw, Crosshair, Settings, History } from 'lucide-react';
+import { Menu, X, Calendar, Activity, RefreshCw, Crosshair, Settings, History, LogOut } from 'lucide-react';
 import { SessionOption, SessionType } from '../types';
 import { Button } from './ui/Button';
 import { cn, fromLocalDateKey } from '../utils';
@@ -14,6 +14,9 @@ interface HeaderProps {
   onJumpToday: () => void;
   onNavigateSettings: () => void;
   onNavigateHistory?: () => void;
+  userEmail?: string;
+  onSignOut?: () => Promise<void>;
+  isSigningOut?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -26,6 +29,9 @@ export const Header: React.FC<HeaderProps> = ({
   onJumpToday,
   onNavigateSettings,
   onNavigateHistory,
+  userEmail,
+  onSignOut,
+  isSigningOut,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -61,6 +67,9 @@ export const Header: React.FC<HeaderProps> = ({
             <p className="text-slate-400 text-xs font-medium tracking-[0.14em] uppercase">
               {formattedDate}
             </p>
+            {userEmail && (
+              <p className="text-[10px] text-slate-500 tracking-[0.04em] truncate max-w-[160px]">{userEmail}</p>
+            )}
           </div>
 
           {/* Mobile hamburger */}
@@ -121,6 +130,11 @@ export const Header: React.FC<HeaderProps> = ({
               <Button onClick={onNavigateSettings} size="icon" variant="ghost" title="Settings" className="h-11 w-11">
                 <Settings size={14} />
               </Button>
+              {onSignOut && (
+                <Button onClick={() => void onSignOut()} size="icon" variant="ghost" title="Sign out" disabled={isSigningOut} className="h-11 w-11">
+                  <LogOut size={14} />
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -179,6 +193,22 @@ export const Header: React.FC<HeaderProps> = ({
               <Settings size={14} />
               Settings
             </Button>
+            {onSignOut && (
+              <div className="pt-2 border-t border-white/10 space-y-1">
+                {userEmail && (
+                  <p className="text-[10px] text-slate-500 truncate px-1">{userEmail}</p>
+                )}
+                <Button
+                  onClick={() => { void onSignOut(); setIsOpen(false); }}
+                  variant="secondary"
+                  className="w-full min-h-11 gap-2 text-xs"
+                  disabled={isSigningOut}
+                >
+                  <LogOut size={14} />
+                  Sign out
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

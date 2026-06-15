@@ -18,6 +18,7 @@ import { usePlans } from "./features/plans/state/usePlans";
 import { useWeightReminder } from "./features/weight-reminder/hooks/useWeightReminder";
 import { ONBOARDING_STORAGE_KEY, PLAN_PARAMS_STORAGE_KEY } from "./constants";
 import { buildExerciseLibrary } from "./application/workout/exerciseLibrary";
+import { useAuthSession } from "./features/auth/hooks/useAuthSession";
 
 const SettingsPage = React.lazy(() =>
   import("./features/settings/components/SettingsPage/SettingsPage").then((m) => ({ default: m.SettingsPage }))
@@ -30,6 +31,7 @@ const OnboardingWizard = React.lazy(() =>
 );
 
 function App() {
+  const { session, signOut, isWorking: isSigningOut } = useAuthSession();
   const { confirm, showToast } = useFeedback();
   const services = useMemo(() => createWorkoutServices(), []);
   const isQAMode = useMemo(() => {
@@ -271,6 +273,9 @@ function App() {
         onJumpToday={jumpToToday}
         onNavigateHistory={() => setPage("history")}
         onNavigateSettings={() => setPage("settings")}
+        userEmail={session?.user.email ?? undefined}
+        onSignOut={signOut}
+        isSigningOut={isSigningOut}
       />
       <OfflineBanner />
 

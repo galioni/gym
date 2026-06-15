@@ -91,11 +91,10 @@ test.describe("Template export / import", () => {
   test("export button triggers a JSON file download", async ({ page }) => {
     await page.goto("/");
 
-    // Navigate to settings
     await page.getByTitle("Settings").click();
 
     // Wait for settings page to render
-    await expect(page.getByText("Templates")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: "Templates" })).toBeVisible({ timeout: 10_000 });
 
     // Start waiting for the download before clicking
     const downloadPromise = page.waitForEvent("download");
@@ -110,7 +109,7 @@ test.describe("Template export / import", () => {
     await page.goto("/");
 
     await page.getByTitle("Settings").click();
-    await expect(page.getByText("Templates")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: "Templates" })).toBeVisible({ timeout: 10_000 });
 
     // The hidden file input for import should exist in the DOM
     const importButton = page.getByTitle("Import template from file");

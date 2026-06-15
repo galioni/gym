@@ -78,16 +78,16 @@ test.describe("Authenticated state (mocked session)", () => {
     // Landing page email input should not be visible once signed in
     await expect(page.getByPlaceholder("Email")).not.toBeVisible({ timeout: 10_000 });
     // UserMenu shows the signed-in email
-    await expect(page.getByText("e2e@example.com")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("e2e@example.com").first()).toBeVisible({ timeout: 10_000 });
   });
 
   test("session persists after a page reload", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByText("e2e@example.com")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("e2e@example.com").first()).toBeVisible({ timeout: 10_000 });
 
     await page.reload();
 
-    await expect(page.getByText("e2e@example.com")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("e2e@example.com").first()).toBeVisible({ timeout: 10_000 });
     await expect(page.getByPlaceholder("Email")).not.toBeVisible();
   });
 

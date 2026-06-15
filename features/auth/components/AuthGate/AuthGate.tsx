@@ -1,5 +1,4 @@
 import React from "react";
-import { UserMenu } from "../UserMenu/UserMenu";
 import { LandingPage } from "../../../landing/components/LandingPage/LandingPage";
 import { PasswordResetScreen } from "../PasswordResetScreen/PasswordResetScreen";
 import { useAuthSession } from "../../hooks/useAuthSession";
@@ -38,14 +37,5 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
     );
   }
 
-  return (
-    <>
-      <UserMenu
-        email={session.user.email ?? "Signed in"}
-        isWorking={isWorking}
-        onSignOut={signOut}
-      />
-      {children}
-    </>
-  );
+  return <>{children}</>;
 };
