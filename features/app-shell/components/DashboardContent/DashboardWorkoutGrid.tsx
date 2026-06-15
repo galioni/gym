@@ -52,38 +52,42 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
   }, [onActiveTimerChange, onTimerRunningChange, scrollTo]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6 pb-4 xl:items-start">
-      <div ref={warmupRef} className="motion-rise motion-delay-1 flex flex-col">
-        <WorkoutSection
-          title="Warm-up"
-          items={currentDay.warmup}
-          timerMs={currentDay.warmupTimerMs}
-          initialTimerRunning={timerRunning?.warmup}
-          notes={currentDay.warmupNotes}
-          onToggleItem={(id, done) => onToggleItem("warmup", id, done)}
-          onDeleteItem={(id) => onDeleteItem("warmup", id)}
-          onUpdateTimer={(ms) => onUpdateDay({ warmupTimerMs: ms })}
-          onUpdateNotes={(txt) => onUpdateDayDebounced({ warmupNotes: txt })}
-          onTimerRunningChange={handleWarmupRunningChange}
-        />
+    <div className="xl:flex xl:gap-6 xl:items-start pb-4">
+      {/* Workout columns — 1-col on mobile, 2-col on md+ */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 xl:flex-1 min-w-0">
+        <div ref={warmupRef} className="motion-rise motion-delay-1">
+          <WorkoutSection
+            title="Warm-up"
+            items={currentDay.warmup}
+            timerMs={currentDay.warmupTimerMs}
+            initialTimerRunning={timerRunning?.warmup}
+            notes={currentDay.warmupNotes}
+            onToggleItem={(id, done) => onToggleItem("warmup", id, done)}
+            onDeleteItem={(id) => onDeleteItem("warmup", id)}
+            onUpdateTimer={(ms) => onUpdateDay({ warmupTimerMs: ms })}
+            onUpdateNotes={(txt) => onUpdateDayDebounced({ warmupNotes: txt })}
+            onTimerRunningChange={handleWarmupRunningChange}
+          />
+        </div>
+
+        <div ref={mainRef} className="motion-rise motion-delay-2">
+          <WorkoutSection
+            title="Main Session"
+            items={currentDay.main}
+            timerMs={currentDay.mainTimerMs}
+            initialTimerRunning={timerRunning?.main}
+            notes={currentDay.mainNotes}
+            onToggleItem={(id, done) => onToggleItem("main", id, done)}
+            onDeleteItem={(id) => onDeleteItem("main", id)}
+            onUpdateTimer={(ms) => onUpdateDay({ mainTimerMs: ms })}
+            onUpdateNotes={(txt) => onUpdateDayDebounced({ mainNotes: txt })}
+            onTimerRunningChange={handleMainRunningChange}
+          />
+        </div>
       </div>
 
-      <div ref={mainRef} className="motion-rise motion-delay-2 flex flex-col">
-        <WorkoutSection
-          title="Main Session"
-          items={currentDay.main}
-          timerMs={currentDay.mainTimerMs}
-          initialTimerRunning={timerRunning?.main}
-          notes={currentDay.mainNotes}
-          onToggleItem={(id, done) => onToggleItem("main", id, done)}
-          onDeleteItem={(id) => onDeleteItem("main", id)}
-          onUpdateTimer={(ms) => onUpdateDay({ mainTimerMs: ms })}
-          onUpdateNotes={(txt) => onUpdateDayDebounced({ mainNotes: txt })}
-          onTimerRunningChange={handleMainRunningChange}
-        />
-      </div>
-
-      <div className="md:col-span-2 xl:col-span-1 motion-rise motion-delay-3">
+      {/* Daily check — full-width below workout on mobile/tablet, sticky sidebar on desktop */}
+      <div className="mt-5 sm:mt-6 xl:mt-0 xl:w-72 xl:shrink-0 xl:sticky xl:top-20 motion-rise motion-delay-3">
         <DailyCheckCard
           day={currentDay}
           onUpdateField={(updates) => {
