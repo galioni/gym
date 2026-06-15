@@ -18,7 +18,16 @@ vi.mock("./_lib/rateLimiter.js", async (importOriginal) => {
 });
 vi.mock("./_lib/apiEnv.js", () => ({
   getRequiredVercelKvEnv: vi.fn(() => ({ kvRestApiUrl: "https://kv.test", kvRestApiToken: "tok" })),
-  getAiModel: vi.fn(() => ({ specificationVersion: "v1", provider: "google", modelId: "gemini-2.5-flash" })),
+  getAiModel: vi.fn(() => ({ specificationVersion: "v1", provider: "google", modelId: "gemini-2.0-flash" })),
+  getAiModelForProvider: vi.fn(() => ({ specificationVersion: "v1", provider: "google", modelId: "gemini-2.0-flash" })),
+  getEnabledProviders: vi.fn(() => ["google"]),
+}));
+vi.mock("./_lib/subscriptionGuard.js", () => ({
+  getSubscription: vi.fn(() => Promise.resolve({ plan: "free", status: "inactive", stripeCustomerId: null, currentPeriodEnd: null })),
+  hasProAccess: vi.fn(() => false),
+}));
+vi.mock("./_lib/userSettingsKv.js", () => ({
+  getUserSettings: vi.fn(() => Promise.resolve({})),
 }));
 
 import handler from "./generate-plan";

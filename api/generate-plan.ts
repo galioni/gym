@@ -2,7 +2,9 @@ import { generateText, APICallError, RetryError } from "ai";
 import { requireAuth } from "./_lib/authContext.js";
 import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight, parseJsonBody, getHeader } from "./_lib/http.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
-import { getAiModel, getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
+import { getAiModelForProvider, getEnabledProviders, getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
+import { getUserSettings } from "./_lib/userSettingsKv.js";
+import { getSubscription, hasProAccess } from "./_lib/subscriptionGuard.js";
 import { checkRateLimit, FixedWindowRateLimiter } from "./_lib/rateLimiter.js";
 
 // IP-based burst protection — first line of defense before Redis auth check.
@@ -125,6 +127,19 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       }
     }
 
+    const kvEnv = getRequiredVercelKvEnv();
+    const [subscription, userSettings] = await Promise.all([
+      getSubscription(auth.userId, kvEnv),
+      getUserSettings(auth.userId, kvEnv),
+    ]);
+
+    const enabledProviders = getEnabledProviders();
+    const isPro = hasProAccess(subscription);
+    const requestedProvider = userSettings.aiProvider ?? "google";
+    const provider = isPro && enabledProviders.includes(requestedProvider)
+      ? requestedProvider
+      : "google";
+
     const body = parseJsonBody<unknown>(req, null);
     const input = validate(body);
     if (!input) {
@@ -147,7 +162,7 @@ ${bodyFocusLine}`;
     let aiText: string;
     try {
       const { text } = await generateText({
-        model: getAiModel(),
+        model: getAiModelForProvider(provider),
         system: SYSTEM_PROMPT,
         prompt: userPrompt,
         temperature: 0.7,

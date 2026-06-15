@@ -66,32 +66,48 @@ export function getRequiredVercelKvEnv(): RequiredVercelKvEnv {
   };
 }
 
-const AI_PROVIDER_DEFAULTS: Record<string, string> = {
+export type AiProvider = "google" | "anthropic" | "openai";
+
+const AI_PROVIDER_DEFAULTS: Record<AiProvider, string> = {
   openai: "gpt-4o-mini",
   anthropic: "claude-haiku-4-5-20251001",
   google: "gemini-2.0-flash",
 };
 
-const AI_PROVIDER_KEY_ENV: Record<string, string> = {
+const AI_PROVIDER_KEY_ENV: Record<AiProvider, string> = {
   openai: "OPENAI_API_KEY",
   anthropic: "ANTHROPIC_API_KEY",
   google: "GOOGLE_GENERATIVE_AI_API_KEY",
 };
 
-export function getAiModel(): LanguageModel {
-  const provider = process.env.AI_PROVIDER ?? "google";
-  const model = process.env.AI_MODEL ?? AI_PROVIDER_DEFAULTS[provider];
+/**
+ * Returns providers available for plan generation. Google is always included
+ * (free-tier baseline). AI_EXTRA_PROVIDERS adds optional pro-only providers.
+ * Example: AI_EXTRA_PROVIDERS=anthropic,openai
+ */
+export function getEnabledProviders(): AiProvider[] {
+  const extras = (process.env.AI_EXTRA_PROVIDERS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s): s is AiProvider => s === "anthropic" || s === "openai");
+  return ["google", ...extras];
+}
+
+export function getAiModelForProvider(provider: AiProvider): LanguageModel {
+  const model = AI_PROVIDER_DEFAULTS[provider];
   const keyEnv = AI_PROVIDER_KEY_ENV[provider];
-
-  if (!keyEnv) throw new Error(`Unsupported AI_PROVIDER: ${provider}. Use: openai | anthropic | google`);
   if (!readRequiredEnvValue(keyEnv)) throw new Error(`Missing required env var: ${keyEnv}`);
-
   switch (provider) {
-    case "openai":     return openai(model);
-    case "anthropic":  return anthropic(model);
-    case "google":     return google(model);
-    default:           throw new Error(`Unsupported AI_PROVIDER: ${provider}`);
+    case "openai":    return openai(model);
+    case "anthropic": return anthropic(model);
+    case "google":    return google(model);
   }
+}
+
+/** @deprecated Use getAiModelForProvider — this remains for backward compatibility. */
+export function getAiModel(): LanguageModel {
+  const provider = (process.env.AI_PROVIDER ?? "google") as AiProvider;
+  return getAiModelForProvider(provider);
 }
 
 export function getSupabaseJwtSecret(): string {

@@ -16,6 +16,7 @@ import {
 import { ExerciseLibraryEntry } from "../../../../application/workout/exerciseLibrary";
 import { useBackupIO } from "../../../session-controls/hooks/useBackupIO";
 import { PushNotificationsCard } from "../../../push/components/PushNotificationsCard";
+import { AiProviderSelector } from "../AiProviderSelector";
 import { useAuthSession } from "../../../auth/hooks/useAuthSession";
 import { useFeedback } from "../../../feedback/hooks/useFeedback";
 import { useSubscription } from "../../../billing/hooks/useSubscription";
@@ -306,6 +307,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 
       {/* AI Plan */}
       <Card title="AI Plan">
+        <AiProviderSelector />
         {planParams && (
           <div className="text-xs text-slate-500 mb-3">
             {[
