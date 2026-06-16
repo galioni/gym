@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Activity, RefreshCw, Crosshair } from 'lucide-react';
+import { Calendar, Activity, Crosshair } from 'lucide-react';
 import { SessionOption, SessionType } from '../../../../types';
 import { Button } from '../../../../components/ui/Button';
 
@@ -9,7 +9,6 @@ interface MobileSessionControlsProps {
   sessionType: SessionType;
   sessionOptions: SessionOption[];
   onSessionTypeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  onLoadTemplate: () => void;
   onJumpToday: () => void;
 }
 
@@ -19,7 +18,6 @@ export const MobileSessionControls: React.FC<MobileSessionControlsProps> = ({
   sessionType,
   sessionOptions,
   onSessionTypeChange,
-  onLoadTemplate,
   onJumpToday,
 }) => {
   const todayKey = new Date().toLocaleDateString('en-CA');
@@ -77,16 +75,10 @@ export const MobileSessionControls: React.FC<MobileSessionControlsProps> = ({
           </select>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <Button onClick={onLoadTemplate} variant="primary" className="gap-2 min-h-11 text-xs">
-          <RefreshCw size={14} />
-          Load
-        </Button>
-        <Button onClick={onJumpToday} variant="ghost" className="gap-2 min-h-11 text-xs">
-          <Crosshair size={14} />
-          Today
-        </Button>
-      </div>
+      <Button onClick={onJumpToday} variant="ghost" className="gap-2 min-h-11 text-xs w-full">
+        <Crosshair size={14} />
+        Today
+      </Button>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Menu, X, RefreshCw, Crosshair, Settings, History, LogOut, Zap } from 'lucide-react';
+import { Menu, X, Crosshair, Settings, History, LogOut, Zap } from 'lucide-react';
 import { SessionOption, SessionType } from '../types';
 import { Button } from './ui/Button';
 import { cn, fromLocalDateKey } from '../utils';
@@ -10,7 +10,6 @@ interface HeaderProps {
   sessionType: SessionType;
   sessionOptions: SessionOption[];
   onSessionTypeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  onLoadTemplate: () => void;
   onJumpToday: () => void;
   onNavigateSettings: () => void;
   onNavigateHistory?: () => void;
@@ -26,7 +25,6 @@ export const Header: React.FC<HeaderProps> = ({
   sessionType,
   sessionOptions,
   onSessionTypeChange,
-  onLoadTemplate,
   onJumpToday,
   onNavigateSettings,
   onNavigateHistory,
@@ -128,11 +126,6 @@ export const Header: React.FC<HeaderProps> = ({
                 })()}
               </select>
             </div>
-
-            <Button onClick={onLoadTemplate} size="sm" variant="secondary" className="gap-2 min-h-11 px-3 text-xs">
-              <RefreshCw size={12} />
-              Load
-            </Button>
 
             <Button onClick={onJumpToday} size="sm" variant="ghost" className="gap-2 min-h-11 px-3 text-xs">
               <Crosshair size={12} />

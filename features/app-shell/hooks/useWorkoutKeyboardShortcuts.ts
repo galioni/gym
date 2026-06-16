@@ -2,7 +2,6 @@ import { useEffect } from "react";
 
 interface UseWorkoutKeyboardShortcutsParams {
   onJumpToday: () => void;
-  onLoadTemplate: () => void;
   onDuplicatePreviousDayNotesAndWeight: () => void;
   onShowShortcuts?: () => void;
 }
@@ -12,7 +11,6 @@ interface UseWorkoutKeyboardShortcutsParams {
  */
 export function useWorkoutKeyboardShortcuts({
   onJumpToday,
-  onLoadTemplate,
   onDuplicatePreviousDayNotesAndWeight,
   onShowShortcuts,
 }: UseWorkoutKeyboardShortcutsParams): void {
@@ -39,9 +37,6 @@ export function useWorkoutKeyboardShortcuts({
       if (key === "t") {
         event.preventDefault();
         onJumpToday();
-      } else if (key === "l") {
-        event.preventDefault();
-        onLoadTemplate();
       } else if (key === "d") {
         event.preventDefault();
         onDuplicatePreviousDayNotesAndWeight();
@@ -53,5 +48,5 @@ export function useWorkoutKeyboardShortcuts({
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onJumpToday, onLoadTemplate, onDuplicatePreviousDayNotesAndWeight, onShowShortcuts]);
+  }, [onJumpToday, onDuplicatePreviousDayNotesAndWeight, onShowShortcuts]);
 }

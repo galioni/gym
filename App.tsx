@@ -65,7 +65,6 @@ function App() {
     toggleItem,
     deleteItem,
     changeSessionType,
-    resetFromTemplate,
     clearCurrentDay,
     jumpToToday,
     duplicatePreviousDayNotesAndWeight,
@@ -134,21 +133,6 @@ function App() {
       }) as React.CSSProperties,
     [stickyFooterHeight]
   );
-
-  const handleLoadTemplate = useCallback(async () => {
-    const confirmed = await confirm({
-      title: "Load session?",
-      description: "This will overwrite the current workout list for the selected day.",
-      confirmLabel: "Load",
-      cancelLabel: "Keep Current",
-      tone: "danger",
-    });
-    if (!confirmed) {
-      return;
-    }
-    resetFromTemplate();
-    showToast({ tone: "success", title: "Template loaded" });
-  }, [confirm, resetFromTemplate, showToast]);
 
   const handleClearDay = useCallback(async () => {
     const confirmed = await confirm({
@@ -232,7 +216,6 @@ function App() {
 
   useWorkoutKeyboardShortcuts({
     onJumpToday: jumpToToday,
-    onLoadTemplate: () => void handleLoadTemplate(),
     onDuplicatePreviousDayNotesAndWeight: handleDuplicatePreviousDayNotesAndWeight,
     onShowShortcuts: () => setShowShortcutsModal(true),
   });
@@ -289,7 +272,6 @@ function App() {
         sessionType={currentDay.sessionType}
         sessionOptions={sessionOptions}
         onSessionTypeChange={(event) => changeSessionType(event.target.value as SessionType)}
-        onLoadTemplate={() => void handleLoadTemplate()}
         onJumpToday={jumpToToday}
         onNavigateHistory={() => setPage("history")}
         onNavigateSettings={() => setPage("settings")}
@@ -314,7 +296,6 @@ function App() {
           onDateChange={(event) => setCurrentDate(event.target.value)}
           sessionOptions={sessionOptions}
           onSessionTypeChange={(event) => changeSessionType(event.target.value as SessionType)}
-          onLoadTemplate={() => void handleLoadTemplate()}
           onJumpToday={jumpToToday}
         />
       )}
@@ -404,7 +385,6 @@ function App() {
             <div className="space-y-2">
               {([
                 ["T", "Jump to today"],
-                ["L", "Load template for current session"],
                 ["D", "Copy yesterday's notes & weight"],
                 ["?", "Show this help"],
               ] as [string, string][]).map(([key, label]) => (

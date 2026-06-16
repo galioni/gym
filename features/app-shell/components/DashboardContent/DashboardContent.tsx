@@ -17,7 +17,6 @@ interface DashboardContentProps {
   onDateChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   sessionOptions: SessionOption[];
   onSessionTypeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  onLoadTemplate: () => void;
   onJumpToday: () => void;
 }
 
@@ -34,7 +33,6 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   onDateChange,
   sessionOptions,
   onSessionTypeChange,
-  onLoadTemplate,
   onJumpToday,
 }) => {
   const activeOption = sessionOptions.find((o) => o.value === currentDay.sessionType);
@@ -53,7 +51,6 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
         sessionType={currentDay.sessionType}
         sessionOptions={sessionOptions}
         onSessionTypeChange={onSessionTypeChange}
-        onLoadTemplate={onLoadTemplate}
         onJumpToday={onJumpToday}
       />
 

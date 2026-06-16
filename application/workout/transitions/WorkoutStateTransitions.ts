@@ -42,6 +42,7 @@ export function resetSectionsFromTemplate(
 ): DayData {
   const freshTemplate = createEmptyDay(date, sessionType, templates);
   return applyDayUpdates(day, {
+    sessionType,
     warmup: freshTemplate.warmup,
     main: freshTemplate.main,
     warmupTimerMs: 0,
