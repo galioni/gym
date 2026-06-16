@@ -19,7 +19,6 @@ import { AiProviderSelector } from "../AiProviderSelector";
 import { useAuthSession } from "../../../auth/hooks/useAuthSession";
 import { useFeedback } from "../../../feedback/hooks/useFeedback";
 import { useSubscription } from "../../../billing/hooks/useSubscription";
-import { WeightReminderSettings } from "../../../weight-reminder/hooks/useWeightReminder";
 import {
   STORAGE_KEY,
   SYNC_RESTORE_POINTS_STORAGE_KEY,
@@ -31,8 +30,6 @@ import {
 
 interface SettingsPageProps {
   onBack: () => void;
-  weightReminder: WeightReminderSettings;
-  onUpdateWeightReminder: (updates: Partial<WeightReminderSettings>) => void;
   templates: Templates;
   sessionOptions: SessionOption[];
   templateSaveError: string | null;
@@ -71,8 +68,6 @@ interface SettingsPageProps {
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({
   onBack,
-  weightReminder,
-  onUpdateWeightReminder,
   templates,
   sessionOptions,
   templateSaveError,
@@ -239,47 +234,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         onPruneRestorePoints={onPruneRestorePoints}
         onUpgrade={startCheckout}
       />
-
-      {/* Reminders */}
-      <Card title="Reminders">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between min-h-[44px]">
-            <div>
-              <div className="text-sm text-slate-300">Friday weight check</div>
-              <div className="text-xs text-slate-500 mt-0.5">Banner shown on Fridays from midnight until the target time</div>
-            </div>
-            <div className="flex items-center min-h-[44px] pl-4">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={weightReminder.enabled}
-                onClick={() => onUpdateWeightReminder({ enabled: !weightReminder.enabled })}
-                className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 ${
-                  weightReminder.enabled ? "bg-primary" : "bg-white/20"
-                }`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg transition-transform ${
-                    weightReminder.enabled ? "translate-x-5" : "translate-x-0"
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-
-          {weightReminder.enabled && (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-300">Target time</span>
-              <input
-                type="time"
-                value={weightReminder.targetTime}
-                onChange={(e) => onUpdateWeightReminder({ targetTime: e.target.value })}
-                className="bg-background/70 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
-              />
-            </div>
-          )}
-        </div>
-      </Card>
 
       {/* AI Plan */}
       <Card title="AI Plan">

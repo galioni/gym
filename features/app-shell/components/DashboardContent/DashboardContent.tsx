@@ -1,11 +1,9 @@
 import React from "react";
-import { InfoBanner } from "../InfoBanner/InfoBanner";
 import { DayData, SessionOption, SessionType } from "../../../../types";
 import { DashboardWorkoutGrid } from "./DashboardWorkoutGrid";
 import { MobileSessionControls } from "./MobileSessionControls";
 
 interface DashboardContentProps {
-  fridayHint: string | null;
   currentDay: DayData;
   timerRunning?: { warmup: boolean; main: boolean };
   onTimerRunningChange?: (section: "warmup" | "main", isRunning: boolean) => void;
@@ -24,7 +22,6 @@ interface DashboardContentProps {
 }
 
 export const DashboardContent: React.FC<DashboardContentProps> = ({
-  fridayHint,
   currentDay,
   timerRunning,
   onTimerRunningChange,
@@ -45,8 +42,6 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
       className="max-w-5xl mx-auto p-4 md:p-6 space-y-5 sm:space-y-6"
       style={{ paddingBottom: "calc(var(--sticky-footer-height, 0px) + 1rem)" }}
     >
-      <InfoBanner content={fridayHint} />
-
       <MobileSessionControls
         currentDate={currentDate}
         onDateChange={onDateChange}

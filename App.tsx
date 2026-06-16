@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Header } from "./components/Header";
 import { StickyFooter } from "./components/StickyFooter";
 import { useWorkoutTracker } from "./features/workout/state/useWorkoutTracker";
-import { getFridayHint } from "./utils";
 import { QASmokePanel } from "./features/qa/components/QASmokePanel/QASmokePanel";
 import { useTemplates } from "./features/templates/state/useTemplates";
 import { PlanParams, SessionType } from "./types";
@@ -14,7 +13,6 @@ import { OfflineBanner } from "./components/OfflineBanner";
 import { useFeedback } from "./features/feedback/hooks/useFeedback";
 import { getSessionLabel, getSessionOptions } from "./application/workout/sessionTypes/sessionTypeRules";
 import { usePlans } from "./features/plans/state/usePlans";
-import { useWeightReminder } from "./features/weight-reminder/hooks/useWeightReminder";
 import { ONBOARDING_STORAGE_KEY, PLAN_PARAMS_STORAGE_KEY } from "./constants";
 import { buildExerciseLibrary } from "./application/workout/exerciseLibrary";
 import { useAuthSession } from "./features/auth/hooks/useAuthSession";
@@ -93,11 +91,6 @@ function App() {
     if (!activePlan || activePlan.sessionIds.length === 0) return allSessionOptions;
     return allSessionOptions.filter((o) => activePlan.sessionIds.includes(o.value));
   }, [allSessionOptions, plans, activePlanId]);
-  const { settings: weightReminder, updateSettings: updateWeightReminder } = useWeightReminder();
-  const fridayHint = useMemo(
-    () => getFridayHint(weightReminder.enabled, weightReminder.targetTime),
-    [weightReminder.enabled, weightReminder.targetTime]
-  );
   const [stickyFooterHeight, setStickyFooterHeight] = useState(124);
   const [page, setPage] = useState<"dashboard" | "settings" | "history">("dashboard");
   const [activeTimer, setActiveTimer] = useState<{ section: "warmup" | "main"; scrollTo: () => void } | null>(null);
@@ -282,7 +275,6 @@ function App() {
 
       {page === "dashboard" && (
         <DashboardContent
-          fridayHint={fridayHint}
           currentDay={currentDay}
           timerRunning={timerRunning}
           onTimerRunningChange={handleTimerRunningChange}
@@ -314,8 +306,6 @@ function App() {
         <React.Suspense fallback={null}>
           <SettingsPage
             onBack={() => setPage("dashboard")}
-            weightReminder={weightReminder}
-            onUpdateWeightReminder={updateWeightReminder}
             templates={templates}
             sessionOptions={sessionOptions}
             templateSaveError={templateSaveError}

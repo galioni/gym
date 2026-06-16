@@ -64,22 +64,6 @@ export function createEmptyDay(date: string, sessionType: SessionType, templates
   };
 }
 
-export function getFridayHint(
-  enabled: boolean,
-  targetTime: string,
-  now: Date = new Date()
-): string | null {
-  if (!enabled) return null;
-  if (now.getDay() !== 5) return null;
-
-  const [hourStr, minuteStr] = targetTime.split(":");
-  const targetMinutes = Number(hourStr) * 60 + Number(minuteStr);
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-
-  if (nowMinutes > targetMinutes) return null;
-
-  return `Friday weight check: aim ~${targetTime}`;
-}
 
 export function getProgress(day: DayData) {
   const allItems = [...day.warmup, ...day.main];
