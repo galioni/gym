@@ -21,9 +21,9 @@ root.render(
         <FeedbackProvider>
           <AuthGate>
             <App />
-            <Analytics />
-            <SpeedInsights />
           </AuthGate>
+          <Analytics />
+          <SpeedInsights />
         </FeedbackProvider>
       </AuthProvider>
     </ErrorBoundary>
