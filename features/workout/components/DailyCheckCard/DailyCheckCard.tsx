@@ -44,8 +44,8 @@ export const DailyCheckCard: React.FC<DailyCheckCardProps> = ({ day, onUpdateFie
         </div>
       }
     >
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="md:w-44 md:shrink-0">
+      <div className="flex gap-4 items-start">
+        <div className="w-36 shrink-0">
           <label className="text-xs text-slate-500 font-medium uppercase tracking-[0.18em] block mb-1.5">
             Weight (kg)
           </label>

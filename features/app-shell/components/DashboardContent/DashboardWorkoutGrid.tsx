@@ -52,9 +52,9 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
   }, [onActiveTimerChange, onTimerRunningChange, scrollTo]);
 
   return (
-    <div className="xl:flex xl:gap-6 xl:items-start pb-4">
+    <div className="space-y-5 sm:space-y-6 pb-4">
       {/* Workout columns — 1-col on mobile, 2-col on md+ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 xl:flex-1 min-w-0">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
         <div ref={warmupRef} className="motion-rise motion-delay-1">
           <WorkoutSection
             title="Warm-up"
@@ -86,8 +86,8 @@ export const DashboardWorkoutGrid: React.FC<DashboardWorkoutGridProps> = ({
         </div>
       </div>
 
-      {/* Daily check — full-width below workout on mobile/tablet, sticky sidebar on desktop */}
-      <div className="mt-5 sm:mt-6 xl:mt-0 xl:w-72 xl:shrink-0 xl:sticky xl:top-20 motion-rise motion-delay-3">
+      {/* Daily check — always below the workout sections */}
+      <div className="motion-rise motion-delay-3">
         <DailyCheckCard
           day={currentDay}
           onUpdateField={(updates) => {
