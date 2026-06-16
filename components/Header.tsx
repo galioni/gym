@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Menu, X, Calendar, Activity, RefreshCw, Crosshair, Settings, History, LogOut, Zap } from 'lucide-react';
+import { Menu, X, RefreshCw, Crosshair, Settings, History, LogOut, Zap } from 'lucide-react';
 import { SessionOption, SessionType } from '../types';
 import { Button } from './ui/Button';
 import { cn, fromLocalDateKey } from '../utils';
@@ -151,50 +151,12 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Mobile menu */}
+        {/* Mobile menu — navigation only; session controls live inline on the home page */}
         <div className={cn(
           "md:hidden overflow-hidden transition-all duration-300 ease-in-out",
-          isOpen ? "max-h-[560px] opacity-100 mt-4 border-t border-white/10 pt-4" : "max-h-0 opacity-0"
+          isOpen ? "max-h-[320px] opacity-100 mt-4 border-t border-white/10 pt-4" : "max-h-0 opacity-0"
         )}>
-          <div className="space-y-4 pb-2 bg-surface/50 border border-white/10 rounded-2xl p-3">
-            <div className="space-y-1">
-              <label className="text-xs text-slate-500 font-medium uppercase tracking-[0.14em] flex items-center gap-2">
-                <Calendar size={14} /> Date
-              </label>
-              <input
-                type="date"
-                value={currentDate}
-                onChange={(e) => { onDateChange(e); setIsOpen(false); }}
-                className="w-full bg-background/80 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs text-slate-500 font-medium uppercase tracking-[0.14em] flex items-center gap-2">
-                <Activity size={14} /> Session Type
-              </label>
-              <select
-                value={sessionType}
-                onChange={(e) => { onSessionTypeChange(e); setIsOpen(false); }}
-                className="w-full bg-background/80 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none appearance-none"
-              >
-                {sessionOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <Button onClick={() => { onLoadTemplate(); setIsOpen(false); }} variant="primary" className="gap-2 min-h-11 text-xs">
-                <RefreshCw size={14} />
-                Load
-              </Button>
-              <Button onClick={() => { onJumpToday(); setIsOpen(false); }} variant="ghost" className="gap-2 min-h-11 text-xs">
-                <Crosshair size={14} />
-                Today
-              </Button>
-            </div>
-
+          <div className="space-y-3 pb-2 bg-surface/50 border border-white/10 rounded-2xl p-3">
             {onNavigateHistory && (
               <Button onClick={() => { onNavigateHistory(); setIsOpen(false); }} variant="secondary" className="w-full min-h-11 gap-2 text-xs">
                 <History size={14} />

@@ -294,6 +294,12 @@ function App() {
           onUpdateDayDebounced={updateDayDebounced}
           onDuplicatePreviousDayNotesAndWeight={handleDuplicatePreviousDayNotesAndWeight}
           onActiveTimerChange={setActiveTimer}
+          currentDate={currentDate}
+          onDateChange={(event) => setCurrentDate(event.target.value)}
+          sessionOptions={sessionOptions}
+          onSessionTypeChange={(event) => changeSessionType(event.target.value as SessionType)}
+          onLoadTemplate={() => void handleLoadTemplate()}
+          onJumpToday={jumpToToday}
         />
       )}
 

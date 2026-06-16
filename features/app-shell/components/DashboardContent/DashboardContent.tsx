@@ -1,8 +1,9 @@
 import React from "react";
 import { Button } from "../../../../components/ui/Button";
 import { InfoBanner } from "../InfoBanner/InfoBanner";
-import { DayData } from "../../../../types";
+import { DayData, SessionOption, SessionType } from "../../../../types";
 import { DashboardWorkoutGrid } from "./DashboardWorkoutGrid";
+import { MobileSessionControls } from "./MobileSessionControls";
 
 interface DashboardContentProps {
   fridayHint: string | null;
@@ -15,6 +16,13 @@ interface DashboardContentProps {
   onUpdateDayDebounced: (updates: Partial<DayData>) => void;
   onDuplicatePreviousDayNotesAndWeight: () => void;
   onActiveTimerChange?: (info: { section: "warmup" | "main"; scrollTo: () => void } | null) => void;
+  // mobile session controls
+  currentDate: string;
+  onDateChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  sessionOptions: SessionOption[];
+  onSessionTypeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onLoadTemplate: () => void;
+  onJumpToday: () => void;
 }
 
 export const DashboardContent: React.FC<DashboardContentProps> = ({
@@ -28,6 +36,12 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   onUpdateDayDebounced,
   onDuplicatePreviousDayNotesAndWeight,
   onActiveTimerChange,
+  currentDate,
+  onDateChange,
+  sessionOptions,
+  onSessionTypeChange,
+  onLoadTemplate,
+  onJumpToday,
 }) => {
   return (
     <main
@@ -35,6 +49,16 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
       style={{ paddingBottom: "calc(var(--sticky-footer-height, 0px) + 1rem)" }}
     >
       <InfoBanner content={fridayHint} />
+
+      <MobileSessionControls
+        currentDate={currentDate}
+        onDateChange={onDateChange}
+        sessionType={currentDay.sessionType}
+        sessionOptions={sessionOptions}
+        onSessionTypeChange={onSessionTypeChange}
+        onLoadTemplate={onLoadTemplate}
+        onJumpToday={onJumpToday}
+      />
 
       <div className="flex items-center justify-end gap-2 motion-rise">
         <Button
