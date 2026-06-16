@@ -41,7 +41,7 @@ export const SwipeToDeleteRow: React.FC<SwipeToDeleteRowProps> = ({ onDelete, ch
 
   return (
     <div className="relative overflow-hidden rounded-xl group">
-      {/* Delete affordance revealed behind the row on swipe */}
+      {/* Red delete affordance behind the row (revealed on swipe) */}
       <div
         className={`absolute inset-y-0 right-0 flex items-center justify-center w-20 rounded-r-xl transition-colors ${
           isFullyRevealed ? "bg-red-500" : "bg-red-500/15"
@@ -50,9 +50,9 @@ export const SwipeToDeleteRow: React.FC<SwipeToDeleteRowProps> = ({ onDelete, ch
         <Trash2 size={15} className={isFullyRevealed ? "text-white" : "text-red-400/70"} />
       </div>
 
-      {/* Swipeable content */}
+      {/* Swipeable row */}
       <div
-        className="relative"
+        className="flex items-center"
         style={{
           transform: `translateX(${offset}px)`,
           transition: isAnimating ? "transform 0.2s ease" : "none",
@@ -61,16 +61,22 @@ export const SwipeToDeleteRow: React.FC<SwipeToDeleteRowProps> = ({ onDelete, ch
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {children}
-        {/* Desktop hover delete — sibling of children to avoid nested-button issues */}
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:inline-flex items-center justify-center h-7 w-7 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-          aria-label="Delete day"
-        >
-          <Trash2 size={13} />
-        </button>
+        {/* Day content — flex-1 so it shrinks when the desktop trash slides in */}
+        <div className="flex-1 min-w-0">
+          {children}
+        </div>
+
+        {/* Desktop trash — slides in as a flex sibling so it never overlaps content */}
+        <div className="shrink-0 w-0 overflow-hidden group-hover:w-9 transition-[width] duration-150">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="w-9 h-full flex items-center justify-center text-slate-500 hover:text-red-400 transition-colors"
+            aria-label="Delete day"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
       </div>
     </div>
   );
