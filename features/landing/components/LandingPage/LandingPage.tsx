@@ -136,7 +136,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const busy = isWorking || isSubmitting;
 
   return (
-    <div data-theme="recovery-light" className="relative min-h-screen overflow-hidden bg-background text-slate-200">
+    <div className="relative min-h-screen overflow-hidden bg-background text-slate-200">
 
       {/* Background gradient */}
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(160deg,rgb(10_13_19),rgb(6_10_17))]" />

@@ -4,7 +4,6 @@ import { StickyFooter } from "./components/StickyFooter";
 import { useWorkoutTracker } from "./features/workout/state/useWorkoutTracker";
 import { getFridayHint } from "./utils";
 import { QASmokePanel } from "./features/qa/components/QASmokePanel/QASmokePanel";
-import { useTheme } from "./features/theme/hooks/useTheme";
 import { useTemplates } from "./features/templates/state/useTemplates";
 import { PlanParams, SessionType } from "./types";
 import { createWorkoutServices } from "./infrastructure/workout/factory/createWorkoutServices";
@@ -42,7 +41,6 @@ function App() {
     }
     return new URLSearchParams(window.location.search).get("qa") === "1";
   }, []);
-  const { theme, setTheme } = useTheme();
   const {
     templates,
     isLoaded: areTemplatesLoaded,
@@ -316,8 +314,6 @@ function App() {
         <React.Suspense fallback={null}>
           <SettingsPage
             onBack={() => setPage("dashboard")}
-            theme={theme}
-            onThemeChange={setTheme}
             weightReminder={weightReminder}
             onUpdateWeightReminder={updateWeightReminder}
             templates={templates}
