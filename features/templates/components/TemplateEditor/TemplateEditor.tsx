@@ -1,5 +1,5 @@
-import React, { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Check, FileDown, FileUp, Pencil, Plus, RotateCcw, Save, Trash2, Undo2, X } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Check, Pencil, Plus, RotateCcw, Save, Trash2, Undo2, X } from "lucide-react";
 import { Card } from "../../../../components/ui/Card";
 import { Button } from "../../../../components/ui/Button";
 import { SessionOption, SessionType, TemplateData, Templates } from "../../../../types";
@@ -14,7 +14,6 @@ import {
 } from "../../../../application/workout/sessionTypes/sessionTypeRules";
 import { TemplateRowList } from "./TemplateRowList";
 import { ExerciseLibraryEntry } from "../../../../application/workout/exerciseLibrary";
-import { buildTemplateExport, parseTemplateImport } from "../../../../application/workout/templates/templateSharing";
 
 interface TemplateEditorProps {
   templates: Templates;
@@ -45,87 +44,12 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
   onDeleteSessionType,
   exerciseLibrary,
 }) => {
-  const { showToast, confirm } = useFeedback();
+  const { showToast } = useFeedback();
   const [session, setSession] = useState<SessionType>(sessionOptions[0]?.value ?? "gym");
   const [section, setSection] = useState<keyof TemplateData>("main");
   const [rows, setRows] = useState<TemplateData[keyof TemplateData]>([]);
   const [errors, setErrors] = useState<TemplateValidationError[]>([]);
   const previousSaveErrorRef = useRef<string | null>(null);
-
-  const importFileRef = useRef<HTMLInputElement>(null);
-
-  const handleExportTemplate = () => {
-    const template = templates[session];
-    if (!template) return;
-    try {
-      const json = buildTemplateExport(session, template);
-      const blob = new Blob([json], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `template-${session}.json`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-      URL.revokeObjectURL(url);
-      showToast({ tone: "success", title: "Template exported" });
-    } catch {
-      showToast({ tone: "error", title: "Export failed" });
-    }
-  };
-
-  const handleImportFile = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (loadEvent) => {
-      try {
-        const json = loadEvent.target?.result as string;
-        const raw = JSON.parse(json) as unknown;
-        const envelope = parseTemplateImport(raw);
-        if (!envelope) {
-          showToast({ tone: "error", title: "Invalid template file", description: "File is not a Daily Grind template export." });
-          return;
-        }
-        if (templates[envelope.session]) {
-          const ok = await confirm({
-            title: `Replace "${envelope.label}"?`,
-            description: "The existing template for this session will be overwritten.",
-            confirmLabel: "Replace",
-            cancelLabel: "Cancel",
-            tone: "danger",
-          });
-          if (!ok) return;
-          const warmupErrors = onSaveSection(envelope.session, "warmup", envelope.template.warmup.map((r) => ({ id: generateId(), text: r.text, target: r.target })));
-          const mainErrors = onSaveSection(envelope.session, "main", envelope.template.main.map((r) => ({ id: generateId(), text: r.text, target: r.target })));
-          if (warmupErrors.length > 0 || mainErrors.length > 0) {
-            showToast({ tone: "error", title: "Import failed", description: "Template contains invalid rows." });
-            return;
-          }
-          setSession(envelope.session);
-          showToast({ tone: "success", title: `"${envelope.label}" template replaced` });
-        } else {
-          const result = await onCreateSessionType(envelope.label);
-          if (result.status === "error" || !result.sessionType) {
-            showToast({ tone: "error", title: result.message });
-            return;
-          }
-          const warmupErrors = onSaveSection(result.sessionType, "warmup", envelope.template.warmup.map((r) => ({ id: generateId(), text: r.text, target: r.target })));
-          const mainErrors = onSaveSection(result.sessionType, "main", envelope.template.main.map((r) => ({ id: generateId(), text: r.text, target: r.target })));
-          if (warmupErrors.length > 0 || mainErrors.length > 0) {
-            showToast({ tone: "error", title: "Import failed", description: "Template contains invalid rows." });
-            return;
-          }
-          setSession(result.sessionType);
-          showToast({ tone: "success", title: `"${envelope.label}" session imported` });
-        }
-      } catch {
-        showToast({ tone: "error", title: "Invalid template file" });
-      }
-    };
-    reader.readAsText(file);
-    event.target.value = "";
-  };
 
   // New session form
   const [isCreating, setIsCreating] = useState(false);
@@ -301,22 +225,6 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
             )}
             <button
               type="button"
-              onClick={() => importFileRef.current?.click()}
-              className="text-slate-500 hover:text-slate-300 transition-colors p-1"
-              title="Import template from file"
-            >
-              <FileUp size={15} />
-            </button>
-            <button
-              type="button"
-              onClick={handleExportTemplate}
-              className="text-slate-500 hover:text-slate-300 transition-colors p-1"
-              title="Export template to file"
-            >
-              <FileDown size={15} />
-            </button>
-            <button
-              type="button"
               onClick={() => setIsCreating((v) => !v)}
               className={`flex items-center gap-1 px-2 sm:px-3 py-2 rounded-xl border text-sm transition-colors shrink-0 ${
                 isCreating
@@ -437,13 +345,6 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
         </Button>
       </div>
 
-      <input
-        type="file"
-        ref={importFileRef}
-        accept=".json"
-        onChange={handleImportFile}
-        className="hidden"
-      />
     </Card>
   );
 };
