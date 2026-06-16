@@ -29,6 +29,8 @@ export interface DayData {
   checkNotes: string;
 }
 
+export type TemplateSectionKey = "warmup" | "main";
+
 export interface TemplateData {
   focus?: string;
   warmup: { text: string; target?: string; equipment?: string; description?: string; videoUrl?: string; id?: string }[];

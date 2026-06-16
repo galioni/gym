@@ -1,6 +1,6 @@
 import { TEMPLATES } from "../../constants";
 import { TemplateRepository } from "../../interfaces/workout/TemplateRepository";
-import { SessionType, TemplateData, Templates } from "../../types";
+import { SessionType, TemplateData, TemplateSectionKey, Templates } from "../../types";
 import { sanitizeTemplates } from "./templates/templateRules";
 import {
   createSessionType,
@@ -28,8 +28,8 @@ export class TemplateService {
 
   public getDefaultSection(
     session: SessionType,
-    section: keyof TemplateData
-  ): TemplateData[keyof TemplateData] {
+    section: TemplateSectionKey
+  ): TemplateData["warmup"] {
     return getDefaultTemplate(session)[section].map((row) => ({ ...row }));
   }
 

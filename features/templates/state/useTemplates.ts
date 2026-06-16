@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TemplateService } from "../../../application/workout/TemplateService";
 import { TEMPLATES } from "../../../constants";
-import { SessionType, TemplateData, Templates } from "../../../types";
+import { SessionType, TemplateData, TemplateSectionKey, Templates } from "../../../types";
 import { TemplateValidationError, validateTemplateRows } from "../../../application/workout/templates/templateRules";
 import { CreateSessionTypeResult, DeleteSessionTypeResult, RenameSessionTypeResult } from "../../../application/workout/sessionTypes/sessionTypeRules";
 
@@ -11,11 +11,11 @@ interface UseTemplatesResult {
   lastError: string | null;
   saveSectionTemplate: (
     session: SessionType,
-    section: keyof TemplateData,
-    rows: TemplateData[keyof TemplateData]
+    section: TemplateSectionKey,
+    rows: TemplateData[TemplateSectionKey]
   ) => TemplateValidationError[];
-  undoSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
-  resetSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
+  undoSectionTemplate: (session: SessionType, section: TemplateSectionKey) => void;
+  resetSectionTemplate: (session: SessionType, section: TemplateSectionKey) => void;
   replaceTemplates: (templates: Templates) => Promise<void>;
   addSessionType: (label: string) => Promise<CreateSessionTypeResult>;
   removeSessionType: (sessionType: SessionType) => Promise<DeleteSessionTypeResult>;
@@ -30,10 +30,12 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
   const [isLoaded, setIsLoaded] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const [history, setHistory] = useState<
-    Partial<Record<SessionType, Partial<Record<keyof TemplateData, TemplateData[keyof TemplateData]>>>>
+    Partial<Record<SessionType, Partial<Record<TemplateSectionKey, TemplateData[TemplateSectionKey]>>>>
   >({});
   const historyRef = useRef(history);
-  historyRef.current = history;
+  useEffect(() => {
+    historyRef.current = history;
+  });
 
   useEffect(() => {
     let isCancelled = false;
@@ -60,7 +62,7 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
   }, [service]);
 
   const saveSectionTemplate = useCallback(
-    (session: SessionType, section: keyof TemplateData, rows: TemplateData[keyof TemplateData]) => {
+    (session: SessionType, section: TemplateSectionKey, rows: TemplateData[TemplateSectionKey]) => {
       const validationErrors = validateTemplateRows(rows);
       if (validationErrors.length > 0) {
         return validationErrors;
@@ -94,7 +96,7 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
   );
 
   const undoSectionTemplate = useCallback(
-    (session: SessionType, section: keyof TemplateData) => {
+    (session: SessionType, section: TemplateSectionKey) => {
       const previousValue = historyRef.current[session]?.[section];
       if (!previousValue) {
         return;
@@ -127,7 +129,7 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
   );
 
   const resetSectionTemplate = useCallback(
-    (session: SessionType, section: keyof TemplateData) => {
+    (session: SessionType, section: TemplateSectionKey) => {
       setLastError(null);
       setTemplates((current) => {
         setHistory((historyState) => ({

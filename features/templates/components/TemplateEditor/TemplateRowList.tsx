@@ -8,14 +8,14 @@ function isValidYouTubeUrl(url: string): boolean {
 }
 import { Button } from "../../../../components/ui/Button";
 import { TEMPLATE_TARGET_MAX_LENGTH, TEMPLATE_TEXT_MAX_LENGTH } from "../../../../constants";
-import { TemplateData } from "../../../../types";
+import { TemplateData, TemplateSectionKey } from "../../../../types";
 import { ExerciseLibraryEntry } from "../../../../application/workout/exerciseLibrary";
 import { ExerciseInput } from "./ExerciseInput";
 
 interface TemplateRowListProps {
-  section: keyof TemplateData;
-  rows: TemplateData[keyof TemplateData];
-  onRowsChange: React.Dispatch<React.SetStateAction<TemplateData[keyof TemplateData]>>;
+  section: TemplateSectionKey;
+  rows: TemplateData[TemplateSectionKey];
+  onRowsChange: React.Dispatch<React.SetStateAction<TemplateData[TemplateSectionKey]>>;
   library: ExerciseLibraryEntry[];
 }
 

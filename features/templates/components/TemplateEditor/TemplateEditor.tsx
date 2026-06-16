@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Pencil, Plus, RotateCcw, Save, Trash2, Undo2, X } from "lucide-react";
 import { Card } from "../../../../components/ui/Card";
 import { Button } from "../../../../components/ui/Button";
-import { SessionOption, SessionType, TemplateData, Templates } from "../../../../types";
+import { SessionOption, SessionType, TemplateData, TemplateSectionKey, Templates } from "../../../../types";
 import { generateId } from "../../../../utils";
 import { TemplateValidationError } from "../../../../application/workout/templates/templateRules";
 import { useFeedback } from "../../../feedback/hooks/useFeedback";
@@ -21,11 +21,11 @@ interface TemplateEditorProps {
   saveError: string | null;
   onSaveSection: (
     session: SessionType,
-    section: keyof TemplateData,
-    rows: TemplateData[keyof TemplateData]
+    section: TemplateSectionKey,
+    rows: TemplateData[TemplateSectionKey]
   ) => TemplateValidationError[];
-  onUndoSection: (session: SessionType, section: keyof TemplateData) => void;
-  onResetSection: (session: SessionType, section: keyof TemplateData) => void;
+  onUndoSection: (session: SessionType, section: TemplateSectionKey) => void;
+  onResetSection: (session: SessionType, section: TemplateSectionKey) => void;
   onCreateSessionType: (label: string) => Promise<CreateSessionTypeResult>;
   onRenameSessionType: (oldType: SessionType, newLabel: string) => Promise<RenameSessionTypeResult>;
   onDeleteSessionType: (sessionType: SessionType) => Promise<DeleteSessionTypeResult>;
@@ -46,8 +46,8 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
 }) => {
   const { showToast } = useFeedback();
   const [session, setSession] = useState<SessionType>(sessionOptions[0]?.value ?? "gym");
-  const [section, setSection] = useState<keyof TemplateData>("main");
-  const [rows, setRows] = useState<TemplateData[keyof TemplateData]>([]);
+  const [section, setSection] = useState<TemplateSectionKey>("main");
+  const [rows, setRows] = useState<TemplateData[TemplateSectionKey]>([]);
   const [errors, setErrors] = useState<TemplateValidationError[]>([]);
   const previousSaveErrorRef = useRef<string | null>(null);
 

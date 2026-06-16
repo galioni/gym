@@ -5,7 +5,7 @@ import { SyncSettingsPanel } from "../../../sync/components/SyncSettingsPanel/Sy
 import { PlansEditor } from "../../../plans/components/PlansEditor/PlansEditor";
 import { Card } from "../../../../components/ui/Card";
 import { Button } from "../../../../components/ui/Button";
-import { GeneratedPlanMeta, Plan, PlanParams, SessionOption, SessionType, TemplateData, Templates } from "../../../../types";
+import { GeneratedPlanMeta, Plan, PlanParams, SessionOption, SessionType, TemplateData, TemplateSectionKey, Templates } from "../../../../types";
 import { SyncConflict, SyncNowResult, SyncRestorePoint } from "../../../../application/sync/syncTypes";
 import { TemplateValidationError } from "../../../../application/workout/templates/templateRules";
 import {
@@ -41,11 +41,11 @@ interface SettingsPageProps {
   isSyncing: boolean;
   onSaveSectionTemplate: (
     session: SessionType,
-    section: keyof TemplateData,
-    rows: TemplateData[keyof TemplateData]
+    section: TemplateSectionKey,
+    rows: TemplateData[TemplateSectionKey]
   ) => TemplateValidationError[];
-  onUndoSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
-  onResetSectionTemplate: (session: SessionType, section: keyof TemplateData) => void;
+  onUndoSectionTemplate: (session: SessionType, section: TemplateSectionKey) => void;
+  onResetSectionTemplate: (session: SessionType, section: TemplateSectionKey) => void;
   onCreateSessionType: (label: string) => Promise<CreateSessionTypeResult>;
   onDeleteSessionType: (sessionType: SessionType) => Promise<DeleteSessionTypeResult>;
   onRenameSessionType: (oldType: SessionType, newLabel: string) => Promise<RenameSessionTypeResult>;
