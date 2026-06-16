@@ -292,7 +292,6 @@ function App() {
           onDeleteItem={handleDeleteItem}
           onUpdateDay={updateDay}
           onUpdateDayDebounced={updateDayDebounced}
-          onDuplicatePreviousDayNotesAndWeight={handleDuplicatePreviousDayNotesAndWeight}
           onActiveTimerChange={setActiveTimer}
           currentDate={currentDate}
           onDateChange={(event) => setCurrentDate(event.target.value)}

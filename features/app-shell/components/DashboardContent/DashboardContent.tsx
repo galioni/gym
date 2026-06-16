@@ -1,5 +1,4 @@
 import React from "react";
-import { Button } from "../../../../components/ui/Button";
 import { InfoBanner } from "../InfoBanner/InfoBanner";
 import { DayData, SessionOption, SessionType } from "../../../../types";
 import { DashboardWorkoutGrid } from "./DashboardWorkoutGrid";
@@ -14,7 +13,6 @@ interface DashboardContentProps {
   onDeleteItem: (section: "warmup" | "main", id: string) => Promise<boolean>;
   onUpdateDay: (updates: Partial<DayData>) => void;
   onUpdateDayDebounced: (updates: Partial<DayData>) => void;
-  onDuplicatePreviousDayNotesAndWeight: () => void;
   onActiveTimerChange?: (info: { section: "warmup" | "main"; scrollTo: () => void } | null) => void;
   // mobile session controls
   currentDate: string;
@@ -34,7 +32,6 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   onDeleteItem,
   onUpdateDay,
   onUpdateDayDebounced,
-  onDuplicatePreviousDayNotesAndWeight,
   onActiveTimerChange,
   currentDate,
   onDateChange,
@@ -59,19 +56,6 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
         onLoadTemplate={onLoadTemplate}
         onJumpToday={onJumpToday}
       />
-
-      <div className="flex items-center justify-end gap-2 motion-rise">
-        <Button
-          variant="secondary"
-          size="sm"
-          className="min-h-11 gap-2"
-          onClick={onDuplicatePreviousDayNotesAndWeight}
-          title="Copy check-in weight and session notes from the previous day"
-        >
-          Copy Yesterday's Notes
-          <kbd className="hidden md:inline-flex items-center font-mono text-[10px] bg-white/10 border border-white/15 rounded px-1.5 py-0.5 text-slate-400">D</kbd>
-        </Button>
-      </div>
 
       <DashboardWorkoutGrid
         currentDay={currentDay}
