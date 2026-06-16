@@ -229,6 +229,21 @@ function App() {
     onShowShortcuts: () => setShowShortcutsModal(true),
   });
 
+  const handleRegeneratePlan = useCallback(async () => {
+    const confirmed = await confirm({
+      title: "Replace all session templates?",
+      description:
+        "This will overwrite every session template with a new AI-generated plan. Your current exercises and customisations will be permanently lost.",
+      confirmLabel: "Continue",
+      cancelLabel: "Cancel",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+    localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+    setHasOnboarded(false);
+    setPage("dashboard");
+  }, [confirm]);
+
   if (!isLoaded || !areTemplatesLoaded) {
     return null;
   }
@@ -333,11 +348,7 @@ function App() {
             onSetActivePlan={setActivePlan}
             planParams={savedPlanParams ?? undefined}
             exerciseLibrary={exerciseLibrary}
-            onRegeneratePlan={() => {
-              localStorage.removeItem(ONBOARDING_STORAGE_KEY);
-              setHasOnboarded(false);
-              setPage("dashboard");
-            }}
+            onRegeneratePlan={() => void handleRegeneratePlan()}
           />
         </React.Suspense>
       )}
