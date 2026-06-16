@@ -44,9 +44,9 @@ export const DailyCheckCard: React.FC<DailyCheckCardProps> = ({ day, onUpdateFie
         </div>
       }
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <label className="text-xs text-slate-500 font-medium uppercase tracking-[0.18em] block mb-1.5 whitespace-nowrap">
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="md:w-44 md:shrink-0">
+          <label className="text-xs text-slate-500 font-medium uppercase tracking-[0.18em] block mb-1.5">
             Weight (kg)
           </label>
           <input
@@ -64,7 +64,7 @@ export const DailyCheckCard: React.FC<DailyCheckCardProps> = ({ day, onUpdateFie
             <div className="mt-1 text-xs text-red-400">{weightError}</div>
           )}
         </div>
-        <div className="md:col-span-2">
+        <div className="flex-1 min-w-0">
           <label className="text-xs text-slate-500 font-medium uppercase tracking-[0.18em] block mb-1.5">
             Check-in Notes
           </label>
