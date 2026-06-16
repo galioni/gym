@@ -17,8 +17,10 @@ describe("templateRules", () => {
     });
 
     expect(result.gym.warmup[0].text).toBe("Bike");
+    // empty-text main rows are stripped; falls back to the built-in gym default
     expect(result.gym.main.length).toBeGreaterThan(0);
-    expect(result.tennis.main.length).toBeGreaterThan(0);
+    // sessions absent from the payload are not force-repopulated
+    expect(result.tennis).toBeUndefined();
   });
 
   it("preserves custom session types while sanitizing their sections", () => {

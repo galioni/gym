@@ -128,12 +128,6 @@ export function deleteSessionType(
   templates: Templates,
   sessionType: SessionType
 ): DeleteSessionTypeResult {
-  if (isBuiltInSessionType(sessionType)) {
-    return {
-      status: "error",
-      message: `Cannot delete built-in session type "${getSessionLabel(sessionType)}".`,
-    };
-  }
   if (!templates[sessionType]) {
     return {
       status: "error",

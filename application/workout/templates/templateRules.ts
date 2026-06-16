@@ -114,18 +114,12 @@ export function sanitizeTemplates(payload: Partial<Templates> | null | undefined
   const safe = payload ?? {};
   const nextTemplates: Templates = {};
 
-  (Object.keys(TEMPLATES) as SessionType[]).forEach((session) => {
-    nextTemplates[session] = sanitizeSessionTemplate(safe[session], cloneTemplateData(TEMPLATES[session]));
-  });
-
   Object.entries(safe).forEach(([session, template]) => {
-    if (session in nextTemplates || session.trim().length === 0) {
-      return;
-    }
-
-    // Custom session types have no seeded workout rows, so malformed payloads fall back
-    // to an empty template instead of impersonating one of the built-in sessions.
-    nextTemplates[session] = sanitizeSessionTemplate(template, cloneTemplateData(EMPTY_TEMPLATE));
+    if (session.trim().length === 0) return;
+    const fallback = TEMPLATES[session]
+      ? cloneTemplateData(TEMPLATES[session])
+      : cloneTemplateData(EMPTY_TEMPLATE);
+    nextTemplates[session] = sanitizeSessionTemplate(template, fallback);
   });
 
   return nextTemplates;
