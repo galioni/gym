@@ -169,9 +169,10 @@ export function useWorkoutTracker(service: WorkoutDataService, templates: Templa
 
   const changeSessionType = useCallback(
     (sessionType: SessionType) => {
-      updateDay({ sessionType });
+      const nextDay = resetSectionsFromTemplate(currentDate, sessionType, currentDay, templates);
+      updateDay(nextDay, 0);
     },
-    [updateDay]
+    [currentDate, currentDay, templates, updateDay]
   );
 
   const resetFromTemplate = useCallback(() => {
