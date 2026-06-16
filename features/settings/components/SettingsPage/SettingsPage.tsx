@@ -197,8 +197,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         />
       </Card>
 
-      {/* Plan */}
-      <Card title="Plan">
+      {/* Subscription */}
+      <Card title="Subscription">
         {isSubscriptionLoading ? (
           <div className="text-sm text-slate-400">Loading...</div>
         ) : subscriptionFetchError ? (
