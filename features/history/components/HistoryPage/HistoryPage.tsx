@@ -199,42 +199,46 @@ export function HistoryPage({ allData, onSelectDay, onDeleteDay, onBack }: Histo
                     month: "short",
                   });
                   return (
-                    <div key={day.date} className="relative group">
-                      <SwipeToDeleteRow onDelete={() => onDeleteDay(day.date)}>
-                        <button
-                          onClick={() => onSelectDay(day.date)}
-                          className="w-full flex items-center gap-3 px-4 py-3 md:pr-10 bg-surface/40 hover:bg-surface/70 border border-white/[0.08] hover:border-white/15 rounded-xl transition-colors text-left"
-                        >
-                          <div className="min-w-0 flex-1 space-y-1.5">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-sm font-medium text-white">{dateStr}</span>
-                              <span className="text-xs text-slate-400 shrink-0">{sessionLabel}</span>
-                            </div>
-                            {pct > 0 && (
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                  <div
-                                    className={cn("h-full rounded-full", progressBarColor(pct))}
-                                    style={{ width: `${pct}%` }}
-                                  />
-                                </div>
-                                <span className="text-[10px] text-slate-500 shrink-0 w-7 text-right">{pct}%</span>
+                    <div key={day.date} className="flex items-center gap-1 group">
+                      {/* Row — flex-1 so the delete button sits outside it, never inside */}
+                      <div className="flex-1 min-w-0">
+                        <SwipeToDeleteRow onDelete={() => onDeleteDay(day.date)}>
+                          <button
+                            onClick={() => onSelectDay(day.date)}
+                            className="w-full flex items-center gap-3 px-4 py-3 bg-surface/40 hover:bg-surface/70 border border-white/[0.08] hover:border-white/15 rounded-xl transition-colors text-left"
+                          >
+                            <div className="min-w-0 flex-1 space-y-1.5">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-sm font-medium text-white">{dateStr}</span>
+                                <span className="text-xs text-slate-400 shrink-0">{sessionLabel}</span>
                               </div>
+                              {pct > 0 && (
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                    <div
+                                      className={cn("h-full rounded-full", progressBarColor(pct))}
+                                      style={{ width: `${pct}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-[10px] text-slate-500 shrink-0 w-7 text-right">{pct}%</span>
+                                </div>
+                              )}
+                            </div>
+                            {day.weight.trim().length > 0 && (
+                              <span className="text-xs text-slate-500 shrink-0">{day.weight} kg</span>
                             )}
-                          </div>
-                          {day.weight.trim().length > 0 && (
-                            <span className="text-xs text-slate-500 shrink-0">{day.weight} kg</span>
-                          )}
-                        </button>
-                      </SwipeToDeleteRow>
-                      {/* Desktop delete — outside SwipeToDeleteRow so it never competes with row content */}
+                          </button>
+                        </SwipeToDeleteRow>
+                      </div>
+                      {/* Desktop delete — flex sibling, never inside the row */}
                       <button
                         type="button"
                         onClick={() => onDeleteDay(day.date)}
-                        className="hidden md:group-hover:flex absolute right-2 top-1/2 -translate-y-1/2 items-center justify-center h-7 w-7 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                        className="hidden md:flex shrink-0 items-center justify-center h-9 w-9 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-400/10 opacity-0 group-hover:opacity-100 transition-opacity"
                         aria-label="Delete day"
+                        tabIndex={-1}
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   );
