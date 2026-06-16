@@ -4,6 +4,7 @@ export interface SessionOption {
   value: SessionType;
   label: string;
   focus?: string;
+  source?: "ai" | "user";
 }
 
 export interface WorkoutItem {
@@ -32,6 +33,7 @@ export interface DayData {
 export type TemplateSectionKey = "warmup" | "main";
 
 export interface TemplateData {
+  source?: "ai" | "user";
   focus?: string;
   warmup: { text: string; target?: string; equipment?: string; description?: string; videoUrl?: string; id?: string }[];
   main: { text: string; target?: string; equipment?: string; description?: string; videoUrl?: string; id?: string }[];

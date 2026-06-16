@@ -197,11 +197,25 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
               }}
               className="flex-1 min-w-0 bg-background/70 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
             >
-              {sessionOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
+              {(() => {
+                const userOpts = sessionOptions.filter((o) => o.source !== "ai");
+                const aiOpts = sessionOptions.filter((o) => o.source === "ai");
+                if (aiOpts.length === 0) {
+                  return sessionOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>);
+                }
+                return (
+                  <>
+                    {userOpts.length > 0 && (
+                      <optgroup label="My Sessions">
+                        {userOpts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </optgroup>
+                    )}
+                    <optgroup label="AI Generated">
+                      {aiOpts.map((o) => <option key={o.value} value={o.value}>{o.label} [AI]</option>)}
+                    </optgroup>
+                  </>
+                );
+              })()}
             </select>
             {isCustomSession && (
               <>

@@ -205,7 +205,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
       const meta: GeneratedPlanMeta | undefined = split && schedule && progression
         ? { split, schedule, progression, notes }
         : undefined;
-      await onComplete(templates, params, meta);
+      const stamped = Object.fromEntries(
+        Object.entries(templates).map(([k, v]) => [k, { ...v, source: "ai" as const }])
+      ) as typeof templates;
+      await onComplete(stamped, params, meta);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {

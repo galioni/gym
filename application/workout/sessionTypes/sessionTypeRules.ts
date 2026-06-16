@@ -61,6 +61,7 @@ export function getSessionOptions(templates: Templates): SessionOption[] {
     value: sessionType,
     label: getSessionLabel(sessionType),
     focus: templates[sessionType]?.focus,
+    source: templates[sessionType]?.source,
   });
   const builtIns = BUILT_IN_ORDER
     .filter((v) => templates[v] !== undefined)
@@ -114,7 +115,7 @@ export function createSessionType(templates: Templates, label: string): CreateSe
     message: `Session type "${getSessionLabel(sessionType)}" added.`,
     templates: {
       ...templates,
-      [sessionType]: cloneTemplateData(EMPTY_TEMPLATE),
+      [sessionType]: { ...cloneTemplateData(EMPTY_TEMPLATE), source: "user" as const },
     },
   };
 }

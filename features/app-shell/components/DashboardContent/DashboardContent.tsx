@@ -40,6 +40,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   const activeOption = sessionOptions.find((o) => o.value === currentDay.sessionType);
   const sessionLabel = activeOption?.label ?? currentDay.sessionType;
   const sessionFocus = activeOption?.focus;
+  const isAiSession = activeOption?.source === "ai";
 
   return (
     <main
@@ -57,9 +58,16 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
       />
 
       <div>
-        <h1 className="display-title text-2xl sm:text-3xl text-white leading-tight">
-          {sessionLabel}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="display-title text-2xl sm:text-3xl text-white leading-tight">
+            {sessionLabel}
+          </h1>
+          {isAiSession && (
+            <span className="text-[10px] font-semibold tracking-wider text-primary border border-primary/30 bg-primary/10 px-1.5 py-0.5 rounded self-center">
+              AI
+            </span>
+          )}
+        </div>
         {sessionFocus && (
           <p className="text-sm text-slate-400 mt-0.5">{sessionFocus}</p>
         )}

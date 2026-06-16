@@ -60,7 +60,12 @@ function sanitizeSessionTemplate(
     ? ((safeSession as { focus: string }).focus.trim() || undefined)
     : undefined;
 
+  const rawSource = (safeSession as { source?: unknown })?.source;
+  const source: "ai" | "user" | undefined =
+    rawSource === "ai" || rawSource === "user" ? rawSource : undefined;
+
   return {
+    source,
     focus,
     warmup: warmup.length > 0 ? warmup : fallbackTemplate.warmup,
     main: main.length > 0 ? main : fallbackTemplate.main,
