@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Pencil, Plus, RotateCcw, Save, Trash2, Undo2, X } from "lucide-react";
+import { Check, Pencil, Plus, RotateCcw, Save, Sparkles, Trash2, Undo2, X } from "lucide-react";
 import { Card } from "../../../../components/ui/Card";
 import { Button } from "../../../../components/ui/Button";
 import { SessionOption, SessionType, TemplateData, TemplateSectionKey, Templates } from "../../../../types";
@@ -249,6 +249,22 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
           </>
         )}
       </div>
+
+      {/* Source badge */}
+      {!isRenaming && currentOption?.source && (
+        <div className="flex items-center gap-1.5 mb-3 -mt-1">
+          {currentOption.source === "ai" ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-wider text-primary border border-primary/30 bg-primary/10 px-1.5 py-0.5 rounded">
+              <Sparkles size={9} />
+              AI Generated
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-wider text-slate-400 border border-white/10 bg-white/5 px-1.5 py-0.5 rounded">
+              User Created
+            </span>
+          )}
+        </div>
+      )}
 
       {/* New session inline form */}
       {isCreating && !isRenaming && (
