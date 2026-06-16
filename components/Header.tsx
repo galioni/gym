@@ -107,9 +107,25 @@ export const Header: React.FC<HeaderProps> = ({
                 onChange={onSessionTypeChange}
                 className="bg-background/70 border border-white/10 rounded-lg px-2 py-1 text-xs text-slate-200 focus:ring-1 focus:ring-primary outline-none w-40 hover:border-primary/60 transition-colors"
               >
-                {sessionOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
+                {(() => {
+                  const userOpts = sessionOptions.filter((o) => o.source !== "ai");
+                  const aiOpts = sessionOptions.filter((o) => o.source === "ai");
+                  if (aiOpts.length === 0) {
+                    return sessionOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>);
+                  }
+                  return (
+                    <>
+                      {userOpts.length > 0 && (
+                        <optgroup label="My Sessions">
+                          {userOpts.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                        </optgroup>
+                      )}
+                      <optgroup label="AI Generated">
+                        {aiOpts.map((o) => <option key={o.value} value={o.value}>{o.label} [AI]</option>)}
+                      </optgroup>
+                    </>
+                  );
+                })()}
               </select>
             </div>
 
