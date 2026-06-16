@@ -63,8 +63,10 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, initialIsRunning = fals
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMs(initialMs);
     msRef.current = initialMs;
+     
     setIsRunning(false);
     isRunningRef.current = false;
     onRunningChangeRef.current?.(false);
@@ -119,11 +121,12 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, initialIsRunning = fals
         size="icon"
         variant={isRunning ? "secondary" : "primary"}
         onClick={toggle}
-        className="h-8 w-8 rounded-lg"
+        className="h-8 w-auto px-3 gap-1.5 rounded-lg text-xs"
         aria-label={isRunning ? "Pause timer" : "Start timer"}
         title={isRunning ? "Pause" : "Start"}
       >
         {isRunning ? <Pause size={14} /> : <Play size={14} />}
+        {isRunning ? "Pause" : "Start"}
       </Button>
       <Button
         size="icon"
