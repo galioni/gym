@@ -121,12 +121,12 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, initialIsRunning = fals
         size="icon"
         variant={isRunning ? "secondary" : "primary"}
         onClick={toggle}
-        className="h-8 w-auto px-3 gap-1.5 rounded-lg text-xs"
+        className="h-8 w-auto px-3 md:w-8 md:px-0 gap-1.5 rounded-lg text-xs"
         aria-label={isRunning ? "Pause timer" : "Start timer"}
         title={isRunning ? "Pause" : "Start"}
       >
         {isRunning ? <Pause size={14} /> : <Play size={14} />}
-        {isRunning ? "Pause" : "Start"}
+        <span className="md:hidden">{isRunning ? "Pause" : "Start"}</span>
       </Button>
       <Button
         size="icon"
