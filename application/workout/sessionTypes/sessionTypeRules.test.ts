@@ -15,7 +15,7 @@ describe("sessionTypeRules", () => {
 
     expect(result.status).toBe("success");
     expect(result.sessionType).toBe("mobility-flow");
-    expect(result.templates?.["mobility-flow"]).toEqual({ warmup: [], main: [] });
+    expect(result.templates?.["mobility-flow"]).toEqual({ source: "user", warmup: [], main: [] });
   });
 
   it("rejects duplicate session type ids", () => {

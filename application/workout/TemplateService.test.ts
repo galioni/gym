@@ -86,7 +86,7 @@ describe("TemplateService", () => {
 
     expect(result.status).toBe("success");
     expect(result.sessionType).toBe("yoga-flow");
-    expect(result.templates?.["yoga-flow"]).toEqual({ warmup: [], main: [] });
+    expect(result.templates?.["yoga-flow"]).toEqual({ source: "user", warmup: [], main: [] });
   });
 
   it("createSessionType returns error when label normalizes to an existing key", () => {
