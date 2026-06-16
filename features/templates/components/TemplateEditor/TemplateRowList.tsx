@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { GripVertical, Trash2, AlertCircle } from "lucide-react";
+import { GripVertical, Trash2, AlertCircle, Link } from "lucide-react";
 
 const YOUTUBE_URL_RE = /^https?:\/\/(www\.|m\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[\w-]{11}/;
 
@@ -27,6 +27,7 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
 }) => {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [isCoarsePointer, setIsCoarsePointer] = useState(false);
+  const [expandedUrlRows, setExpandedUrlRows] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -127,25 +128,39 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
           >
             <Trash2 size={13} />
           </Button>
-          <div className="col-span-full sm:col-start-2 sm:col-span-2 flex flex-col gap-1">
-            <input
-              type="url"
-              value={row.videoUrl ?? ""}
-              onChange={(event) => handleRowChange(index, "videoUrl", event.target.value)}
-              placeholder="YouTube URL (optional)"
-              className={`w-full bg-background/60 border rounded-lg px-2.5 py-1.5 text-[11px] text-slate-400 outline-none focus:ring-2 placeholder:text-slate-600 ${
-                row.videoUrl && !isValidYouTubeUrl(row.videoUrl)
-                  ? "border-red-500/60 focus:ring-red-500/40"
-                  : "border-white/10 focus:ring-primary/50"
-              }`}
-            />
-            {row.videoUrl && !isValidYouTubeUrl(row.videoUrl) && (
-              <p className="flex items-center gap-1 text-xs text-red-400 pl-1">
-                <AlertCircle size={11} />
-                Must be a valid YouTube URL
-              </p>
-            )}
-          </div>
+          {(expandedUrlRows.has(row.id ?? `${section}-${index}`) || Boolean(row.videoUrl)) ? (
+            <div className="col-span-full sm:col-start-2 sm:col-span-2 flex flex-col gap-1">
+              <input
+                type="url"
+                value={row.videoUrl ?? ""}
+                onChange={(event) => handleRowChange(index, "videoUrl", event.target.value)}
+                placeholder="YouTube URL (optional)"
+                autoFocus={!row.videoUrl}
+                className={`w-full bg-background/60 border rounded-lg px-2.5 py-1.5 text-[11px] text-slate-400 outline-none focus:ring-2 placeholder:text-slate-600 ${
+                  row.videoUrl && !isValidYouTubeUrl(row.videoUrl)
+                    ? "border-red-500/60 focus:ring-red-500/40"
+                    : "border-white/10 focus:ring-primary/50"
+                }`}
+              />
+              {row.videoUrl && !isValidYouTubeUrl(row.videoUrl) && (
+                <p className="flex items-center gap-1 text-xs text-red-400 pl-1">
+                  <AlertCircle size={11} />
+                  Must be a valid YouTube URL
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="col-span-full sm:col-start-2 sm:col-span-2">
+              <button
+                type="button"
+                onClick={() => setExpandedUrlRows((prev) => new Set(prev).add(row.id ?? `${section}-${index}`))}
+                className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                <Link size={11} />
+                Add YT Link
+              </button>
+            </div>
+          )}
         </div>
       ))}
     </div>
