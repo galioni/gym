@@ -59,7 +59,7 @@ export function getSessionOptions(templates: Templates): SessionOption[] {
   const builtInSet = new Set(BUILT_IN_ORDER);
   const toOption = (sessionType: string) => ({
     value: sessionType,
-    label: getSessionLabel(sessionType),
+    label: templates[sessionType]?.label ?? getSessionLabel(sessionType),
     focus: templates[sessionType]?.focus,
     source: templates[sessionType]?.source,
   });
@@ -154,47 +154,35 @@ export function renameSessionType(
   oldType: SessionType,
   newLabel: string
 ): RenameSessionTypeResult {
-  if (isBuiltInSessionType(oldType)) {
-    return {
-      status: "error",
-      message: `Cannot rename built-in session type "${getSessionLabel(oldType)}".`,
-    };
-  }
-  const newType = normalizeSessionTypeId(newLabel);
-  if (!newType) {
-    return {
-      status: "error",
-      message: "Enter a session type name using letters or numbers.",
-    };
-  }
-  if (newType === oldType) {
-    return { status: "error", message: "New name is the same as the current name." };
-  }
-  if (templates[newType]) {
-    return {
-      status: "error",
-      message: `Session type "${getSessionLabel(newType)}" already exists.`,
-    };
+  const trimmed = newLabel.trim();
+  if (trimmed.length === 0 || !/[a-zA-Z0-9]/.test(trimmed)) {
+    return { status: "error", message: "Enter a session type name using letters or numbers." };
   }
 
-  const derivedLabel = getSessionLabel(newType);
+  const currentLabel = templates[oldType]?.label ?? getSessionLabel(oldType);
+  if (trimmed.toLowerCase() === currentLabel.toLowerCase()) {
+    return { status: "error", message: "New name is the same as the current name." };
+  }
+
   const existingLabels = getSessionOptions(templates)
     .filter((o) => o.value !== oldType)
     .map((o) => o.label.toLowerCase());
-  if (existingLabels.includes(derivedLabel.toLowerCase())) {
+  if (existingLabels.includes(trimmed.toLowerCase())) {
     return {
       status: "error",
-      message: `Session type "${derivedLabel}" already exists.`,
+      message: `Session type "${trimmed}" already exists.`,
     };
   }
 
-  const { [oldType]: data, ...remaining } = templates;
   return {
     status: "success",
     oldSessionType: oldType,
-    newSessionType: newType,
-    message: `Session type renamed to "${getSessionLabel(newType)}".`,
-    templates: { ...remaining, [newType]: data } as Templates,
+    newSessionType: oldType,
+    message: `Session type renamed to "${trimmed}".`,
+    templates: {
+      ...templates,
+      [oldType]: { ...templates[oldType], label: trimmed },
+    },
   };
 }
 

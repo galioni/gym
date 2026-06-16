@@ -62,57 +62,59 @@ describe("renameSessionType", () => {
     return r2.templates as Templates;
   })();
 
-  it("renames a custom session type and moves its template data", () => {
+  it("renames a custom session type by setting a label override — ID unchanged", () => {
     const result = renameSessionType(baseTemplates, "mobility-flow", "Active Recovery");
 
     expect(result.status).toBe("success");
     expect(result.oldSessionType).toBe("mobility-flow");
-    expect(result.newSessionType).toBe("active-recovery");
-    expect(result.templates?.["active-recovery"]).toBeDefined();
-    expect(result.templates?.["mobility-flow"]).toBeUndefined();
+    expect(result.newSessionType).toBe("mobility-flow");
+    expect(result.templates?.["mobility-flow"]?.label).toBe("Active Recovery");
+    expect(result.templates?.["active-recovery"]).toBeUndefined();
   });
 
-  it("rejects renaming a built-in session type", () => {
+  it("renames a built-in session type by setting a label override", () => {
     const result = renameSessionType(TEMPLATES, "gym", "My Gym");
 
-    expect(result.status).toBe("error");
-    expect(result.message).toContain("Cannot rename built-in");
+    expect(result.status).toBe("success");
+    expect(result.newSessionType).toBe("gym");
+    expect(result.templates?.["gym"]?.label).toBe("My Gym");
   });
 
-  it("rejects rename when new name normalises to the same id", () => {
+  it("rejects rename when new label matches the current display label", () => {
     const result = renameSessionType(baseTemplates, "mobility-flow", "Mobility Flow");
 
     expect(result.status).toBe("error");
     expect(result.message).toContain("same as the current name");
   });
 
-  it("rejects rename when new id already exists", () => {
-    // "strength-block" already exists; renaming mobility-flow to it must fail
+  it("rejects rename when new label matches an existing session label", () => {
     const result = renameSessionType(baseTemplates, "mobility-flow", "Strength Block");
 
     expect(result.status).toBe("error");
     expect(result.message).toContain("already exists");
   });
 
-  it("rejects rename when new label matches an existing custom type label", () => {
-    // "strength block" normalises to "strength-block" which exists → ID check fires.
-    // Verify the label check fires too by using a contrived templates map where
-    // an entry has a label that cannot collide via the ID path.
+  it("rejects rename when new label collides with an existing label override", () => {
     const contrived: Templates = {
       ...TEMPLATES,
       "my-session": { warmup: [], main: [] },
-      // "yoga" exists so label "Yoga" is taken; renaming "my-session" → "yoga"
-      // is caught by the ID check, confirming both guards are active.
-      yoga: { warmup: [], main: [] },
+      yoga: { warmup: [], main: [], label: "Yoga Flow" },
     };
-    const result = renameSessionType(contrived, "my-session", "yoga");
+    const result = renameSessionType(contrived, "my-session", "Yoga Flow");
 
     expect(result.status).toBe("error");
     expect(result.message).toContain("already exists");
   });
 
-  it("rejects renaming with an invalid (empty/special-char-only) label", () => {
+  it("rejects renaming with a special-char-only label", () => {
     const result = renameSessionType(baseTemplates, "mobility-flow", "!!!");
+
+    expect(result.status).toBe("error");
+    expect(result.message).toContain("letters or numbers");
+  });
+
+  it("rejects renaming with an empty label", () => {
+    const result = renameSessionType(baseTemplates, "mobility-flow", "   ");
 
     expect(result.status).toBe("error");
     expect(result.message).toContain("letters or numbers");

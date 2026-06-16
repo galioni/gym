@@ -217,25 +217,23 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                 );
               })()}
             </select>
+            <button
+              type="button"
+              onClick={() => { setIsRenaming(true); setRenameLabel(currentOption?.label ?? ""); }}
+              className="text-slate-500 hover:text-slate-300 transition-colors p-1"
+              title="Rename session type"
+            >
+              <Pencil size={15} />
+            </button>
             {isCustomSession && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => { setIsRenaming(true); setRenameLabel(currentOption?.label ?? ""); }}
-                  className="text-slate-500 hover:text-slate-300 transition-colors p-1"
-                  title="Rename session type"
-                >
-                  <Pencil size={15} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleDeleteSession()}
-                  className="text-slate-500 hover:text-red-400 transition-colors p-1"
-                  title="Delete session type"
-                >
-                  <Trash2 size={15} />
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={() => void handleDeleteSession()}
+                className="text-slate-500 hover:text-red-400 transition-colors p-1"
+                title="Delete session type"
+              >
+                <Trash2 size={15} />
+              </button>
             )}
             <button
               type="button"

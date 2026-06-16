@@ -64,8 +64,14 @@ function sanitizeSessionTemplate(
   const source: "ai" | "user" | undefined =
     rawSource === "ai" || rawSource === "user" ? rawSource : undefined;
 
+  const rawLabel = (safeSession as { label?: unknown })?.label;
+  const label = typeof rawLabel === "string" && rawLabel.trim().length > 0
+    ? rawLabel.trim().slice(0, 50)
+    : undefined;
+
   return {
     source,
+    label,
     focus,
     warmup: warmup.length > 0 ? warmup : fallbackTemplate.warmup,
     main: main.length > 0 ? main : fallbackTemplate.main,
