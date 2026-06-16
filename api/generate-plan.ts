@@ -74,22 +74,61 @@ function extractJsonString(raw: string): string {
   return fenceMatch ? fenceMatch[1].trim() : trimmed;
 }
 
-const SYSTEM_PROMPT = `You are a certified strength and conditioning coach. Generate a personalized weekly workout plan as a JSON object.
+const SYSTEM_PROMPT = `You are a certified strength & conditioning coach. You design evidence-based weekly training plans and you reply with ONE JSON object only — no prose, no markdown, no code fences.
 
-The JSON must exactly match this TypeScript type:
-type Plan = Record<string, { warmup: Array<{ text: string; target?: string; equipment?: string; description: string }>; main: Array<{ text: string; target?: string; equipment?: string; description: string }> }>
+# OUTPUT SCHEMA (TypeScript — the JSON must match this exactly)
+type Exercise = {
+  text: string;        // exercise name, ≤70 chars
+  target?: string;     // volume + intensity, ≤35 chars, e.g. "4×5, RPE 8" / "3×12, 2 RIR" / "20 min Z2"
+  equipment?: string;  // ≤50 chars, e.g. "Barbell + squat rack". OMIT for pure bodyweight.
+  description: string; // one execution cue, ≤200 chars. REQUIRED on every item.
+};
+type Session = {
+  focus: string;       // ≤40 chars, e.g. "Lower — squat focus"
+  warmup: Exercise[];  // 3–5 items
+  main: Exercise[];    // 4–8 items, count scaled to session duration (see RULES)
+};
+type Response = {
+  plan: {
+    split: string;                       // e.g. "Upper / Lower", "Push / Pull / Legs", "Full-body"
+    sessions: Record<string, Session>;   // keys kebab-case, unique; MUST include a "rest-day" session
+    schedule: string[];                  // exactly 7 entries, Mon→Sun, each a key of sessions
+    progression: string;                 // ≤200 chars: how to progress load/reps week to week
+    notes?: string;                      // ≤200 chars: e.g. accommodations made for stated injuries
+  };
+};
 
-Rules:
-- Keys are short session names in kebab-case (e.g. "push", "pull", "legs", "upper", "lower", "full-body", "cardio", "rest-day")
-- Create exactly the number of distinct session types needed to fill the requested training days (e.g. 4 days = 4 keys)
-- Include one "rest_day" key with warmup: [] and 1-2 light recovery items in main
-- Each non-rest session: 3-5 warmup items and 5-8 main items
-- text: exercise name, max 70 characters
-- target: sets x reps, duration, or load guidance, max 35 characters (optional but preferred)
-- equipment: specific machine or setup needed, max 50 characters (e.g. "Barbell + squat rack", "Cable machine + rope handle", "Flat bench + dumbbells"). Omit for pure bodyweight exercises.
-- description: one concise sentence explaining how to perform the exercise correctly, max 200 characters. Always include — never omit.
-- Match the equipment constraint strictly — never prescribe equipment the user doesn't have
-- Return ONLY a valid JSON object with a top-level "plan" key containing the sessions`;
+# RULES
+1. Sessions are TYPES; schedule lays them across the week. A key may appear multiple times in schedule (e.g. Upper/Lower run twice = 2 keys, each scheduled twice). Do NOT invent a unique session per day. schedule always has 7 entries; fill non-training days with "rest-day".
+2. "rest-day" session: focus "Recovery", warmup [], main = 1–2 light items (easy walk, mobility).
+3. Choose the split from training days + goal + focus, targeting ~2×/week frequency per major muscle when the goal is muscle or strength:
+   - 2 days → Full-body ×2
+   - 3 days → Full-body ×3, or Push/Pull/Legs
+   - 4 days → Upper/Lower ×2
+   - 5 days → Upper/Lower + Push/Pull/Legs
+   - 6 days → Push/Pull/Legs ×2
+   Spread training days so hard sessions aren't all stacked back-to-back.
+4. Goal → parameters:
+   - strength: main lifts 3–6 reps, RPE 7–9, 2–5 min rest, compound-led, minimal isolation.
+   - muscle: 6–15 reps (isolation up to ~20), 1–3 RIR, ~10–20 hard sets/muscle/week, 1.5–3 min rest.
+   - weight_loss: keep resistance work (Full-body or U/L, 6–12 reps, 1–2 RIR) to protect muscle AND add cardio (mostly Zone 2 + optional intervals). State in notes that fat loss is driven mainly by nutrition/energy balance and this plan supports, not replaces, that.
+   - endurance: cardio-led — Zone 2 base + intervals, progress volume before intensity; keep 1–2 short strength sessions for resilience.
+   - active: balanced Full-body strength + mixed cardio + mobility, sustainable effort (2–3 RIR).
+5. Session duration sets working volume (this OVERRIDES any fixed exercise count):
+   - 30 min → 3–4 main exercises (use supersets), ~9–12 working sets
+   - 45 min → 4–5 main, ~12–16 sets
+   - 60 min → 5–6 main, ~16–20 sets
+   - 90 min → 6–8 main, ~20–26 sets, full rest on heavy compounds
+6. Order each session: skill/power + heaviest compounds first → accessories → isolation/machines last. Warmups: general (3–5 min easy cardio) → dynamic mobility for the day's patterns → 1–2 specific ramp-up sets of the first main lift.
+7. Balance the week: across sessions cover hip-hinge, knee-dominant (squat), horizontal + vertical push, horizontal + vertical pull, and core; keep pushing and pulling volume roughly equal.
+8. Equipment: use ONLY what the user has. If the goal implies kit they lack, substitute the best available progression (unilateral, tempo, bands, elevated/weighted variants) and still drive overload. Never name equipment they don't have. Omit equipment for pure bodyweight moves.
+9. Injuries/limitations: if any are given, avoid loading the affected area in a way likely to provoke it; pick pain-free variants and record the accommodation in notes. This is general coaching education, not medical or rehab advice — for diagnosed conditions defer to the user's treating clinician.
+10. Targets: prefer reps + RPE/RIR over absolute load (the user's 1RM is unknown), e.g. "4×6, RPE 8". For cardio use time + intensity/zone, e.g. "25 min, Zone 2".
+11. progression: give a concrete week-to-week rule fitting the goal (e.g. "Add 2.5 kg to a main lift once you hit the top of its rep range at target RPE; add a set per muscle every 2–3 weeks").
+
+# OUTPUT DISCIPLINE
+Return only the JSON for Response. No commentary, no markdown, no code fences, no trailing text.
+Valid JSON only (double quotes, no trailing commas). description is required on every item. Respect every character limit.`;
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   const observation = attachApiRequestObservability(req, res, "/api/generate-plan");
@@ -202,7 +241,23 @@ ${bodyFocusLine}`;
       return;
     }
 
-    res.status(200).json({ templates: raw.plan });
+    const plan = raw.plan as Record<string, unknown>;
+
+    // New schema: { split, sessions, schedule, progression, notes }
+    if (plan.sessions && typeof plan.sessions === "object" && !Array.isArray(plan.sessions)) {
+      const { sessions, split, schedule, progression, notes } = plan as {
+        sessions: Record<string, unknown>;
+        split?: string;
+        schedule?: string[];
+        progression?: string;
+        notes?: string;
+      };
+      res.status(200).json({ templates: sessions, split, schedule, progression, notes });
+      return;
+    }
+
+    // Fallback: old flat schema { sessionKey: { warmup, main } }
+    res.status(200).json({ templates: plan });
   } catch (error) {
     console.error("[generate-plan] unhandled error", error instanceof Error ? error.message : String(error));
     observation.logUnhandledError(error);

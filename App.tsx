@@ -4,7 +4,7 @@ import { StickyFooter } from "./components/StickyFooter";
 import { useWorkoutTracker } from "./features/workout/state/useWorkoutTracker";
 import { QASmokePanel } from "./features/qa/components/QASmokePanel/QASmokePanel";
 import { useTemplates } from "./features/templates/state/useTemplates";
-import { PlanParams, SessionType } from "./types";
+import { GeneratedPlanMeta, PlanParams, SessionType } from "./types";
 import { createWorkoutServices } from "./infrastructure/workout/factory/createWorkoutServices";
 import { useSyncSettings } from "./features/sync/state/useSyncSettings";
 import { useWorkoutKeyboardShortcuts } from "./features/app-shell/hooks/useWorkoutKeyboardShortcuts";
@@ -13,7 +13,7 @@ import { OfflineBanner } from "./components/OfflineBanner";
 import { useFeedback } from "./features/feedback/hooks/useFeedback";
 import { getSessionLabel, getSessionOptions } from "./application/workout/sessionTypes/sessionTypeRules";
 import { usePlans } from "./features/plans/state/usePlans";
-import { ONBOARDING_STORAGE_KEY, PLAN_PARAMS_STORAGE_KEY } from "./constants";
+import { ONBOARDING_STORAGE_KEY, PLAN_META_STORAGE_KEY, PLAN_PARAMS_STORAGE_KEY } from "./constants";
 import { buildExerciseLibrary } from "./application/workout/exerciseLibrary";
 import { useAuthSession } from "./features/auth/hooks/useAuthSession";
 import { useSubscription } from "./features/billing/hooks/useSubscription";
@@ -114,6 +114,14 @@ function App() {
     try {
       const raw = localStorage.getItem(PLAN_PARAMS_STORAGE_KEY);
       return raw ? (JSON.parse(raw) as PlanParams) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [savedPlanMeta, setSavedPlanMeta] = useState<GeneratedPlanMeta | null>(() => {
+    try {
+      const raw = localStorage.getItem(PLAN_META_STORAGE_KEY);
+      return raw ? (JSON.parse(raw) as GeneratedPlanMeta) : null;
     } catch {
       return null;
     }
@@ -253,11 +261,15 @@ function App() {
       <React.Suspense fallback={null}>
         <OnboardingWizard
           initialValues={savedPlanParams ?? undefined}
-          onComplete={async (generatedTemplates, params) => {
+          onComplete={async (generatedTemplates, params, meta) => {
             await replaceTemplates(generatedTemplates);
             localStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
             localStorage.setItem(PLAN_PARAMS_STORAGE_KEY, JSON.stringify(params));
             setSavedPlanParams(params);
+            if (meta) {
+              localStorage.setItem(PLAN_META_STORAGE_KEY, JSON.stringify(meta));
+              setSavedPlanMeta(meta);
+            }
             setHasOnboarded(true);
           }}
           onSkip={() => {
@@ -347,6 +359,7 @@ function App() {
             onDeletePlan={deletePlan}
             onSetActivePlan={setActivePlan}
             planParams={savedPlanParams ?? undefined}
+            planMeta={savedPlanMeta ?? undefined}
             exerciseLibrary={exerciseLibrary}
             onRegeneratePlan={() => void handleRegeneratePlan()}
           />

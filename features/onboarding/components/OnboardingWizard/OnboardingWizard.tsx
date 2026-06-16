@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { Dumbbell, Loader2, Sparkles } from "lucide-react";
-import { PlanParams, Templates } from "../../../../types";
+import { GeneratedPlanMeta, PlanParams, Templates } from "../../../../types";
 import { Button } from "../../../../components/ui/Button";
 import { useAuthSession } from "../../../auth/hooks/useAuthSession";
 import { cn } from "../../../../utils";
 
 interface OnboardingWizardProps {
-  onComplete: (templates: Templates, params: PlanParams) => Promise<void>;
+  onComplete: (templates: Templates, params: PlanParams, meta?: GeneratedPlanMeta) => Promise<void>;
   onSkip: () => void;
   initialValues?: PlanParams;
 }
@@ -194,9 +194,18 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         throw new Error(body.error ?? "Plan generation failed. Please try again.");
       }
 
-      const { templates } = await res.json() as { templates: Templates };
+      const { templates, split, schedule, progression, notes } = await res.json() as {
+        templates: Templates;
+        split?: string;
+        schedule?: string[];
+        progression?: string;
+        notes?: string;
+      };
       const params: PlanParams = { goal: goal!, experience: experience!, daysPerWeek: daysPerWeek!, equipment: equipment!, duration: duration!, bodyFocus };
-      await onComplete(templates, params);
+      const meta: GeneratedPlanMeta | undefined = split && schedule && progression
+        ? { split, schedule, progression, notes }
+        : undefined;
+      await onComplete(templates, params, meta);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {

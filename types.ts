@@ -3,6 +3,7 @@ export type SessionType = string;
 export interface SessionOption {
   value: SessionType;
   label: string;
+  focus?: string;
 }
 
 export interface WorkoutItem {
@@ -29,8 +30,16 @@ export interface DayData {
 }
 
 export interface TemplateData {
+  focus?: string;
   warmup: { text: string; target?: string; equipment?: string; description?: string; videoUrl?: string; id?: string }[];
   main: { text: string; target?: string; equipment?: string; description?: string; videoUrl?: string; id?: string }[];
+}
+
+export interface GeneratedPlanMeta {
+  split: string;
+  schedule: string[];
+  progression: string;
+  notes?: string;
 }
 
 export type Templates = Record<SessionType, TemplateData>;

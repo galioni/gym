@@ -5,7 +5,7 @@ import { SyncSettingsPanel } from "../../../sync/components/SyncSettingsPanel/Sy
 import { PlansEditor } from "../../../plans/components/PlansEditor/PlansEditor";
 import { Card } from "../../../../components/ui/Card";
 import { Button } from "../../../../components/ui/Button";
-import { Plan, PlanParams, SessionOption, SessionType, TemplateData, Templates } from "../../../../types";
+import { GeneratedPlanMeta, Plan, PlanParams, SessionOption, SessionType, TemplateData, Templates } from "../../../../types";
 import { SyncConflict, SyncNowResult, SyncRestorePoint } from "../../../../application/sync/syncTypes";
 import { TemplateValidationError } from "../../../../application/workout/templates/templateRules";
 import {
@@ -56,6 +56,7 @@ interface SettingsPageProps {
   onRollback: (id: string) => Promise<SyncNowResult>;
   onPruneRestorePoints: () => Promise<void>;
   planParams?: PlanParams;
+  planMeta?: GeneratedPlanMeta;
   onRegeneratePlan: () => void;
   plans: Plan[];
   activePlanId: string | null;
@@ -88,6 +89,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   onRollback,
   onPruneRestorePoints,
   planParams,
+  planMeta,
   onRegeneratePlan,
   plans,
   activePlanId,
@@ -238,6 +240,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       {/* AI Plan */}
       <Card title="AI Plan">
         <AiProviderSelector />
+        {planMeta && (
+          <div className="space-y-2 mb-3">
+            <div className="text-xs font-semibold text-slate-300">{planMeta.split}</div>
+            <div className="text-xs text-slate-400 leading-relaxed">{planMeta.progression}</div>
+            {planMeta.notes && (
+              <div className="text-xs text-slate-500 italic">{planMeta.notes}</div>
+            )}
+          </div>
+        )}
         {planParams && (
           <div className="text-xs text-slate-500 mb-3">
             {[

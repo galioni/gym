@@ -57,15 +57,17 @@ export function getSessionLabel(sessionType: SessionType): string {
 
 export function getSessionOptions(templates: Templates): SessionOption[] {
   const builtInSet = new Set(BUILT_IN_ORDER);
-  const all = Object.keys(templates).map((sessionType) => ({
+  const toOption = (sessionType: string) => ({
     value: sessionType,
     label: getSessionLabel(sessionType),
-  }));
+    focus: templates[sessionType]?.focus,
+  });
   const builtIns = BUILT_IN_ORDER
     .filter((v) => templates[v] !== undefined)
-    .map((v) => ({ value: v, label: getSessionLabel(v) }));
-  const custom = all
-    .filter((o) => !builtInSet.has(o.value))
+    .map(toOption);
+  const custom = Object.keys(templates)
+    .filter((v) => !builtInSet.has(v))
+    .map(toOption)
     .sort((a, b) => a.label.localeCompare(b.label));
   return [...builtIns, ...custom];
 }

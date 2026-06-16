@@ -37,9 +37,9 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   onLoadTemplate,
   onJumpToday,
 }) => {
-  const sessionLabel =
-    sessionOptions.find((o) => o.value === currentDay.sessionType)?.label ??
-    currentDay.sessionType;
+  const activeOption = sessionOptions.find((o) => o.value === currentDay.sessionType);
+  const sessionLabel = activeOption?.label ?? currentDay.sessionType;
+  const sessionFocus = activeOption?.focus;
 
   return (
     <main
@@ -56,9 +56,14 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
         onJumpToday={onJumpToday}
       />
 
-      <h1 className="display-title text-2xl sm:text-3xl text-white leading-tight">
-        {sessionLabel}
-      </h1>
+      <div>
+        <h1 className="display-title text-2xl sm:text-3xl text-white leading-tight">
+          {sessionLabel}
+        </h1>
+        {sessionFocus && (
+          <p className="text-sm text-slate-400 mt-0.5">{sessionFocus}</p>
+        )}
+      </div>
 
       <DashboardWorkoutGrid
         currentDay={currentDay}
