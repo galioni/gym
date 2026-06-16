@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { GripVertical, Trash2, AlertCircle, Link } from "lucide-react";
+import { GripVertical, Trash2, AlertCircle, Link, Info } from "lucide-react";
 
 const YOUTUBE_URL_RE = /^https?:\/\/(www\.|m\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[\w-]{11}/;
 
@@ -28,6 +28,7 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [isCoarsePointer, setIsCoarsePointer] = useState(false);
   const [expandedUrlRows, setExpandedUrlRows] = useState<Set<string>>(new Set());
+  const [expandedDetailRows, setExpandedDetailRows] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -44,7 +45,7 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
     return () => pointerMedia.removeListener(syncPointerMode);
   }, []);
 
-  const handleRowChange = (index: number, field: "text" | "target" | "videoUrl", value: string) => {
+  const handleRowChange = (index: number, field: "text" | "target" | "equipment" | "description" | "videoUrl", value: string) => {
     onRowsChange((previous) =>
       previous.map((row, rowIndex) => (rowIndex === index ? { ...row, [field]: value } : row))
     );
@@ -158,6 +159,37 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
               >
                 <Link size={11} />
                 Add YT Link
+              </button>
+            </div>
+          )}
+          {(expandedDetailRows.has(row.id ?? `${section}-${index}`) || Boolean(row.equipment) || Boolean(row.description)) ? (
+            <div className="col-span-full sm:col-start-2 sm:col-span-2 flex flex-col gap-1.5">
+              <input
+                type="text"
+                value={row.equipment ?? ""}
+                onChange={(event) => handleRowChange(index, "equipment", event.target.value)}
+                placeholder="Equipment (e.g. Barbell + squat rack)"
+                maxLength={50}
+                className="w-full bg-background/60 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-400 outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-slate-600"
+              />
+              <textarea
+                value={row.description ?? ""}
+                onChange={(event) => handleRowChange(index, "description", event.target.value)}
+                placeholder="How to perform (e.g. Feet shoulder-width apart, descend until thighs parallel, drive through heels)"
+                maxLength={200}
+                rows={2}
+                className="w-full bg-background/60 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-400 outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-slate-600 resize-none"
+              />
+            </div>
+          ) : (
+            <div className="col-span-full sm:col-start-2 sm:col-span-2">
+              <button
+                type="button"
+                onClick={() => setExpandedDetailRows((prev) => new Set(prev).add(row.id ?? `${section}-${index}`))}
+                className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                <Info size={11} />
+                Add equipment &amp; description
               </button>
             </div>
           )}

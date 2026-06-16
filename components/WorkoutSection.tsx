@@ -1,5 +1,5 @@
 import React, { useState, useRef, memo } from 'react';
-import { Trash2, Check, Youtube } from 'lucide-react';
+import { Trash2, Check, Youtube, Dumbbell, ChevronDown } from 'lucide-react';
 import { WorkoutItem } from '../types';
 import { Card } from './ui/Card';
 import { Timer } from './Timer';
@@ -20,11 +20,12 @@ interface WorkoutSectionProps {
 }
 
 // Internal component for handling swipe logic - MEMOIZED for performance
-const SwipeableWorkoutItem: React.FC<{ 
-  item: WorkoutItem; 
+const SwipeableWorkoutItem: React.FC<{
+  item: WorkoutItem;
   onToggle: (id: string, done: boolean) => void;
   onDelete: (id: string) => Promise<boolean>;
 }> = memo(({ item, onToggle, onDelete }) => {
+  const [showDescription, setShowDescription] = useState(false);
   const [translateX, setTranslateX] = useState(0);
   const [animate, setAnimate] = useState(false);
   const startX = useRef<number | null>(null);
@@ -150,6 +151,29 @@ const SwipeableWorkoutItem: React.FC<{
             <div className="text-xs font-medium text-accent/80 mt-1.5 flex items-center gap-1">
               <span className="w-1 h-1 rounded-full bg-accent inline-block" />
               {item.target}
+            </div>
+          )}
+          {item.equipment && (
+            <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+              <Dumbbell size={11} />
+              {item.equipment}
+            </div>
+          )}
+          {item.description && (
+            <div className="pointer-events-auto">
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); setShowDescription((prev) => !prev); }}
+                className="mt-1.5 flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                How to
+                <ChevronDown size={10} className={`transition-transform ${showDescription ? "rotate-180" : ""}`} />
+              </button>
+              {showDescription && (
+                <p className="mt-1 text-xs text-slate-400 leading-relaxed pr-2">
+                  {item.description}
+                </p>
+              )}
             </div>
           )}
           {item.videoUrl && (

@@ -77,7 +77,7 @@ function extractJsonString(raw: string): string {
 const SYSTEM_PROMPT = `You are a certified strength and conditioning coach. Generate a personalized weekly workout plan as a JSON object.
 
 The JSON must exactly match this TypeScript type:
-type Plan = Record<string, { warmup: Array<{ text: string; target?: string }>; main: Array<{ text: string; target?: string }> }>
+type Plan = Record<string, { warmup: Array<{ text: string; target?: string; equipment?: string; description: string }>; main: Array<{ text: string; target?: string; equipment?: string; description: string }> }>
 
 Rules:
 - Keys are short session names in kebab-case (e.g. "push", "pull", "legs", "upper", "lower", "full-body", "cardio", "rest-day")
@@ -86,6 +86,8 @@ Rules:
 - Each non-rest session: 3-5 warmup items and 5-8 main items
 - text: exercise name, max 70 characters
 - target: sets x reps, duration, or load guidance, max 35 characters (optional but preferred)
+- equipment: specific machine or setup needed, max 50 characters (e.g. "Barbell + squat rack", "Cable machine + rope handle", "Flat bench + dumbbells"). Omit for pure bodyweight exercises.
+- description: one concise sentence explaining how to perform the exercise correctly, max 200 characters. Always include — never omit.
 - Match the equipment constraint strictly — never prescribe equipment the user doesn't have
 - Return ONLY a valid JSON object with a top-level "plan" key containing the sessions`;
 
