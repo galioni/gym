@@ -65,6 +65,7 @@ function App() {
     toggleItem,
     deleteItem,
     changeSessionType,
+    deleteDay,
     clearCurrentDay,
     jumpToToday,
     duplicatePreviousDayNotesAndWeight,
@@ -305,6 +306,10 @@ function App() {
           <HistoryPage
             allData={allData}
             onSelectDay={(dateKey) => { setCurrentDate(dateKey); setPage("dashboard"); }}
+            onDeleteDay={(dateKey) => {
+              deleteDay(dateKey);
+              showToast({ tone: "info", title: "Day removed from history" });
+            }}
             onBack={() => setPage("dashboard")}
           />
         </React.Suspense>

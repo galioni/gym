@@ -4,10 +4,12 @@ import { DayData } from "../../../../types";
 import { getProgress, fromLocalDateKey, toLocalDateKey, cn } from "../../../../utils";
 import { getSessionLabel } from "../../../../application/workout/sessionTypes/sessionTypeRules";
 import { WeightChart } from "../WeightChart/WeightChart";
+import { SwipeToDeleteRow } from "./SwipeToDeleteRow";
 
 interface HistoryPageProps {
   allData: Record<string, DayData>;
   onSelectDay: (dateKey: string) => void;
+  onDeleteDay: (dateKey: string) => void;
   onBack: () => void;
 }
 
@@ -111,7 +113,7 @@ function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string
   );
 }
 
-export function HistoryPage({ allData, onSelectDay, onBack }: HistoryPageProps) {
+export function HistoryPage({ allData, onSelectDay, onDeleteDay, onBack }: HistoryPageProps) {
   const worthyDays = useMemo(
     () => Object.values(allData).filter(isWorthyDay).sort((a, b) => b.date.localeCompare(a.date)),
     [allData]
@@ -197,32 +199,33 @@ export function HistoryPage({ allData, onSelectDay, onBack }: HistoryPageProps) 
                     month: "short",
                   });
                   return (
-                    <button
-                      key={day.date}
-                      onClick={() => onSelectDay(day.date)}
-                      className="w-full flex items-center gap-3 px-4 py-3 bg-surface/40 hover:bg-surface/70 border border-white/[0.08] hover:border-white/15 rounded-xl transition-colors text-left"
-                    >
-                      <div className="min-w-0 flex-1 space-y-1.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-medium text-white">{dateStr}</span>
-                          <span className="text-xs text-slate-400 shrink-0">{sessionLabel}</span>
-                        </div>
-                        {pct > 0 && (
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                              <div
-                                className={cn("h-full rounded-full", progressBarColor(pct))}
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                            <span className="text-[10px] text-slate-500 shrink-0 w-7 text-right">{pct}%</span>
+                    <SwipeToDeleteRow key={day.date} onDelete={() => onDeleteDay(day.date)}>
+                      <button
+                        onClick={() => onSelectDay(day.date)}
+                        className="w-full flex items-center gap-3 px-4 py-3 bg-surface/40 hover:bg-surface/70 border border-white/[0.08] hover:border-white/15 rounded-xl transition-colors text-left"
+                      >
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-medium text-white">{dateStr}</span>
+                            <span className="text-xs text-slate-400 shrink-0">{sessionLabel}</span>
                           </div>
+                          {pct > 0 && (
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                <div
+                                  className={cn("h-full rounded-full", progressBarColor(pct))}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <span className="text-[10px] text-slate-500 shrink-0 w-7 text-right">{pct}%</span>
+                            </div>
+                          )}
+                        </div>
+                        {day.weight.trim().length > 0 && (
+                          <span className="text-xs text-slate-500 shrink-0">{day.weight} kg</span>
                         )}
-                      </div>
-                      {day.weight.trim().length > 0 && (
-                        <span className="text-xs text-slate-500 shrink-0">{day.weight} kg</span>
-                      )}
-                    </button>
+                      </button>
+                    </SwipeToDeleteRow>
                   );
                 })}
               </div>

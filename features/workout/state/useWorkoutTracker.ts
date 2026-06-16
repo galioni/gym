@@ -25,6 +25,7 @@ interface UseWorkoutTrackerResult {
   toggleItem: (section: WorkoutSectionKey, id: string, done: boolean) => void;
   deleteItem: (section: WorkoutSectionKey, id: string) => void;
   changeSessionType: (sessionType: SessionType) => void;
+  deleteDay: (dateKey: string) => void;
   clearCurrentDay: () => void;
   jumpToToday: () => void;
   duplicatePreviousDayNotesAndWeight: () => boolean;
@@ -174,6 +175,17 @@ export function useWorkoutTracker(service: WorkoutDataService, templates: Templa
     [currentDate, currentDay, templates, updateDay]
   );
 
+  const deleteDay = useCallback(
+    (dateKey: string) => {
+      setAllData((previousData) => {
+        const { [dateKey]: _removed, ...nextData } = previousData;
+        schedulePersist(nextData, 0);
+        return nextData;
+      });
+    },
+    [schedulePersist]
+  );
+
   const clearCurrentDay = useCallback(() => {
     const freshDay = clearDayKeepingSession(currentDate, currentDay.sessionType, templates);
     updateDay({ ...freshDay, sessionType: currentDay.sessionType }, 0);
@@ -230,6 +242,7 @@ export function useWorkoutTracker(service: WorkoutDataService, templates: Templa
     toggleItem,
     deleteItem,
     changeSessionType,
+    deleteDay,
     clearCurrentDay,
     jumpToToday,
     duplicatePreviousDayNotesAndWeight,
