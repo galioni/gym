@@ -83,7 +83,7 @@ export const WeekPlanBar: React.FC<WeekPlanBarProps> = ({
                   ? "bg-green-500/10 border-green-500/20 text-green-500/70"
                   : isNext
                   ? "bg-primary/15 border-primary/30 text-primary"
-                  : "bg-white/[0.03] border-white/8 text-slate-600"
+                  : "border-slate-700 text-slate-500"
               }`}
             >
               {slot.done && <Check size={9} className="shrink-0" />}
