@@ -13,6 +13,8 @@ interface WeekPlanBarProps {
   allData: Record<string, DayData>;
   sessionOptions: SessionOption[];
   currentDate: string;
+  currentSessionType: string;
+  onSelectSession?: (sessionType: string) => void;
 }
 
 function getWeekDates(dateStr: string): string[] {
@@ -30,11 +32,58 @@ function isDayDone(day: DayData): boolean {
   return [...day.warmup, ...day.main].some((item) => item.done);
 }
 
+function Pill({
+  done,
+  isCurrent,
+  isNext,
+  dayLabel,
+  sessionLabel,
+  onSelect,
+}: {
+  done: boolean;
+  isCurrent: boolean;
+  isNext: boolean;
+  dayLabel?: string;
+  sessionLabel: string;
+  onSelect?: () => void;
+}) {
+  const className = [
+    "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border whitespace-nowrap transition-colors",
+    done
+      ? "bg-green-500/10 border-green-500/20 text-green-500/70"
+      : isCurrent
+      ? "bg-primary/25 border-primary/50 text-primary cursor-pointer hover:bg-primary/35"
+      : isNext
+      ? "bg-primary/15 border-primary/30 text-primary cursor-pointer hover:bg-primary/25"
+      : onSelect
+      ? "border-slate-700 text-slate-500 cursor-pointer hover:border-slate-500 hover:text-slate-400"
+      : "border-slate-700 text-slate-500",
+  ].join(" ");
+
+  return (
+    <span
+      className={className}
+      onClick={!done && onSelect ? () => onSelect() : undefined}
+      role={!done && onSelect ? "button" : undefined}
+      tabIndex={!done && onSelect ? 0 : undefined}
+      onKeyDown={!done && onSelect ? (e) => e.key === "Enter" && onSelect() : undefined}
+    >
+      {done && <Check size={9} className="shrink-0" />}
+      {!done && isCurrent && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
+      {!done && !isCurrent && isNext && <ChevronRight size={9} className="shrink-0" />}
+      {dayLabel && <span className="opacity-60 text-[10px] mr-0.5">{dayLabel}</span>}
+      {sessionLabel}
+    </span>
+  );
+}
+
 export const WeekPlanBar: React.FC<WeekPlanBarProps> = ({
   plan,
   allData,
   sessionOptions,
   currentDate,
+  currentSessionType,
+  onSelectSession,
 }) => {
   const labelFor = (sessionType: string) =>
     sessionOptions.find((o) => o.value === sessionType)?.label ?? sessionType;
@@ -103,26 +152,17 @@ export const WeekPlanBar: React.FC<WeekPlanBarProps> = ({
             Week complete
           </span>
         ) : (
-          scheduleSlots.map((slot, i) => {
-            const isNext = i === scheduleNextIndex;
-            return (
-              <span
-                key={slot.day}
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border whitespace-nowrap transition-colors ${
-                  slot.done
-                    ? "bg-green-500/10 border-green-500/20 text-green-500/70"
-                    : isNext
-                    ? "bg-primary/15 border-primary/30 text-primary"
-                    : "border-slate-700 text-slate-500"
-                }`}
-              >
-                {slot.done && <Check size={9} className="shrink-0" />}
-                {isNext && <ChevronRight size={9} className="shrink-0" />}
-                <span className="opacity-60 text-[10px] mr-0.5">{DAY_ABBR[slot.day]}</span>
-                {labelFor(slot.sessionType)}
-              </span>
-            );
-          })
+          scheduleSlots.map((slot, i) => (
+            <Pill
+              key={slot.day}
+              done={slot.done}
+              isCurrent={!slot.done && slot.sessionType === currentSessionType}
+              isNext={i === scheduleNextIndex}
+              dayLabel={DAY_ABBR[slot.day]}
+              sessionLabel={labelFor(slot.sessionType)}
+              onSelect={onSelectSession ? () => onSelectSession(slot.sessionType) : undefined}
+            />
+          ))
         )}
       </div>
     );
@@ -144,25 +184,16 @@ export const WeekPlanBar: React.FC<WeekPlanBarProps> = ({
           Week complete
         </span>
       ) : (
-        orderedSlots.map((slot, i) => {
-          const isNext = i === nextIndex;
-          return (
-            <span
-              key={i}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border whitespace-nowrap transition-colors ${
-                slot.done
-                  ? "bg-green-500/10 border-green-500/20 text-green-500/70"
-                  : isNext
-                  ? "bg-primary/15 border-primary/30 text-primary"
-                  : "border-slate-700 text-slate-500"
-              }`}
-            >
-              {slot.done && <Check size={9} className="shrink-0" />}
-              {isNext && <ChevronRight size={9} className="shrink-0" />}
-              {labelFor(slot.sessionType)}
-            </span>
-          );
-        })
+        orderedSlots.map((slot, i) => (
+          <Pill
+            key={i}
+            done={slot.done}
+            isCurrent={!slot.done && slot.sessionType === currentSessionType}
+            isNext={i === nextIndex}
+            sessionLabel={labelFor(slot.sessionType)}
+            onSelect={onSelectSession ? () => onSelectSession(slot.sessionType) : undefined}
+          />
+        ))
       )}
     </div>
   );

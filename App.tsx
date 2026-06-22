@@ -4,7 +4,8 @@ import { StickyFooter } from "./components/StickyFooter";
 import { useWorkoutTracker } from "./features/workout/state/useWorkoutTracker";
 import { QASmokePanel } from "./features/qa/components/QASmokePanel/QASmokePanel";
 import { useTemplates } from "./features/templates/state/useTemplates";
-import { GeneratedPlanMeta, PlanParams, SessionType } from "./types";
+import { GeneratedPlanMeta, PlanParams, SessionType, WeekDay } from "./types";
+import { toLocalDateKey } from "./utils";
 import { createWorkoutServices } from "./infrastructure/workout/factory/createWorkoutServices";
 import { useSyncSettings } from "./features/sync/state/useSyncSettings";
 import { useWorkoutKeyboardShortcuts } from "./features/app-shell/hooks/useWorkoutKeyboardShortcuts";
@@ -91,6 +92,19 @@ function App() {
     () => plans.find((p) => p.id === activePlanId) ?? null,
     [plans, activePlanId]
   );
+  // Auto-set session type from plan schedule when starting a fresh day
+  useEffect(() => {
+    if (!activePlan?.schedule || !isLoaded) return;
+    if (allData[currentDate] !== undefined) return; // day already has data — respect user's choice
+    const today = toLocalDateKey(new Date());
+    if (currentDate !== today) return; // only auto-set for today
+    const dow = new Date().getDay();
+    const monIdx = (dow === 0 ? 6 : dow - 1) as WeekDay;
+    const scheduled = activePlan.schedule[monIdx];
+    if (!scheduled) return;
+    changeSessionType(scheduled);
+  }, [currentDate, activePlan, allData, isLoaded, changeSessionType]);
+
   const sessionOptions = useMemo(() => {
     if (!activePlan || activePlan.sessionIds.length === 0) return allSessionOptions;
     return allSessionOptions.filter((o) => activePlan.sessionIds.includes(o.value));
@@ -305,6 +319,7 @@ function App() {
           sessionVideoUrl={templates[currentDay.sessionType]?.videoUrl}
           activePlan={activePlan}
           allData={allData}
+          onSelectSessionType={changeSessionType}
         />
       )}
 

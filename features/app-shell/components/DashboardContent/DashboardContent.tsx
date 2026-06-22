@@ -23,6 +23,7 @@ interface DashboardContentProps {
   sessionVideoUrl?: string;
   activePlan?: Plan | null;
   allData?: Record<string, DayData>;
+  onSelectSessionType?: (sessionType: string) => void;
 }
 
 export const DashboardContent: React.FC<DashboardContentProps> = ({
@@ -42,6 +43,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   sessionVideoUrl,
   activePlan,
   allData,
+  onSelectSessionType,
 }) => {
   const activeOption = sessionOptions.find((o) => o.value === currentDay.sessionType);
   const sessionLabel = activeOption?.label ?? currentDay.sessionType;
@@ -94,6 +96,8 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
               allData={allData}
               sessionOptions={sessionOptions}
               currentDate={currentDate}
+              currentSessionType={currentDay.sessionType}
+              onSelectSession={onSelectSessionType}
             />
           </div>
         )}
