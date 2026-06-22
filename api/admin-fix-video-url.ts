@@ -80,5 +80,16 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     await store.writeDocument(workoutKey, wDoc?.days ? { ...wDoc, days } : days);
   }
 
-  res.status(200).json({ ok: true, removed });
+  // Debug: find all videoUrls actually present
+  const found: string[] = [];
+  for (const [session, tpl] of Object.entries(templates)) {
+    if ((tpl as Record<string, unknown>).videoUrl) found.push(`t:${session}:session="${(tpl as Record<string, unknown>).videoUrl}"`);
+    for (const section of ["warmup", "main"] as const) {
+      for (const item of (tpl[section] as Array<Record<string, unknown>> | undefined) ?? []) {
+        if (item.videoUrl) found.push(`t:${session}:${section}:"${item.text}"="${item.videoUrl}"`);
+      }
+    }
+  }
+
+  res.status(200).json({ ok: true, removed, found, brokenUrl: BROKEN_URL, match: found.some(f => f.includes(BROKEN_URL)) });
 }
