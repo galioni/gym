@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Pencil, Plus, RotateCcw, Save, Sparkles, Trash2, Undo2, X } from "lucide-react";
+import { Check, Pencil, Plus, RotateCcw, Save, Sparkles, Trash2, Undo2, X, Youtube } from "lucide-react";
 import { Card } from "../../../../components/ui/Card";
 import { Button } from "../../../../components/ui/Button";
 import { SessionOption, SessionType, TemplateData, TemplateSectionKey, Templates } from "../../../../types";
@@ -24,6 +24,7 @@ interface TemplateEditorProps {
     section: TemplateSectionKey,
     rows: TemplateData[TemplateSectionKey]
   ) => TemplateValidationError[];
+  onSaveVideoUrl: (session: SessionType, videoUrl: string | undefined) => void;
   onUndoSection: (session: SessionType, section: TemplateSectionKey) => void;
   onResetSection: (session: SessionType, section: TemplateSectionKey) => void;
   onCreateSessionType: (label: string) => Promise<CreateSessionTypeResult>;
@@ -37,6 +38,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
   sessionOptions,
   saveError,
   onSaveSection,
+  onSaveVideoUrl,
   onUndoSection,
   onResetSection,
   onCreateSessionType,
@@ -62,6 +64,9 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
   const [renameLabel, setRenameLabel] = useState("");
   const renameLabelRef = useRef<HTMLInputElement>(null);
 
+  // Session video URL
+  const [videoUrl, setVideoUrl] = useState(templates[sessionOptions[0]?.value ?? "gym"]?.videoUrl ?? "");
+
   useEffect(() => {
     if (sessionOptions.some((option) => option.value === session)) {
       return;
@@ -80,9 +85,14 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRows(sectionRows.map((row) => ({ ...row })));
-     
+
     setErrors([]);
   }, [sectionRows]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setVideoUrl(templates[session]?.videoUrl ?? "");
+  }, [session, templates]);
 
   useEffect(() => {
     if (saveError && saveError !== previousSaveErrorRef.current) {
@@ -98,6 +108,14 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
   useEffect(() => {
     if (isRenaming) renameLabelRef.current?.focus();
   }, [isRenaming]);
+
+  const YOUTUBE_URL_RE = /^https?:\/\/(www\.|m\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[\w-]{11}/;
+
+  const handleVideoUrlBlur = () => {
+    const trimmed = videoUrl.trim();
+    if (trimmed === (templates[session]?.videoUrl ?? "")) return;
+    onSaveVideoUrl(session, trimmed.length > 0 ? trimmed : undefined);
+  };
 
   const handleSave = () => {
     const validationErrors = onSaveSection(session, section, rows);
@@ -262,6 +280,31 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
             <span className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-wider text-slate-400 border border-white/10 bg-white/5 px-1.5 py-0.5 rounded">
               User Created
             </span>
+          )}
+        </div>
+      )}
+
+      {/* Session-level YouTube URL */}
+      {!isRenaming && (
+        <div className="mb-4">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Youtube size={12} className="text-red-400/70" />
+            <span className="text-[11px] text-slate-500 font-medium">Session video URL</span>
+          </div>
+          <input
+            type="url"
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+            onBlur={handleVideoUrlBlur}
+            placeholder="https://youtube.com/watch?v=..."
+            className={`w-full bg-background/70 border rounded-xl px-3 py-2 text-sm text-slate-200 outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-slate-600 ${
+              videoUrl.trim().length > 0 && !YOUTUBE_URL_RE.test(videoUrl.trim())
+                ? "border-danger/50"
+                : "border-white/10"
+            }`}
+          />
+          {videoUrl.trim().length > 0 && !YOUTUBE_URL_RE.test(videoUrl.trim()) && (
+            <p className="mt-1 text-[11px] text-red-400">Must be a valid YouTube URL</p>
           )}
         </div>
       )}

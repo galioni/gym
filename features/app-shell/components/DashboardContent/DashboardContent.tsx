@@ -1,4 +1,5 @@
 import React from "react";
+import { Youtube } from "lucide-react";
 import { DayData, SessionOption, SessionType } from "../../../../types";
 import { DashboardWorkoutGrid } from "./DashboardWorkoutGrid";
 import { MobileSessionControls } from "./MobileSessionControls";
@@ -18,6 +19,7 @@ interface DashboardContentProps {
   sessionOptions: SessionOption[];
   onSessionTypeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onJumpToday: () => void;
+  sessionVideoUrl?: string;
 }
 
 export const DashboardContent: React.FC<DashboardContentProps> = ({
@@ -34,6 +36,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   sessionOptions,
   onSessionTypeChange,
   onJumpToday,
+  sessionVideoUrl,
 }) => {
   const activeOption = sessionOptions.find((o) => o.value === currentDay.sessionType);
   const sessionLabel = activeOption?.label ?? currentDay.sessionType;
@@ -63,6 +66,17 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
             <span className="text-[10px] font-semibold tracking-wider text-primary border border-primary/30 bg-primary/10 px-1.5 py-0.5 rounded self-center">
               AI
             </span>
+          )}
+          {sessionVideoUrl && (
+            <a
+              href={sessionVideoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 self-center px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors text-xs font-medium"
+            >
+              <Youtube size={13} />
+              Watch
+            </a>
           )}
         </div>
         {sessionFocus && (

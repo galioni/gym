@@ -14,6 +14,7 @@ interface UseTemplatesResult {
     section: TemplateSectionKey,
     rows: TemplateData[TemplateSectionKey]
   ) => TemplateValidationError[];
+  saveTemplateVideoUrl: (session: SessionType, videoUrl: string | undefined) => void;
   undoSectionTemplate: (session: SessionType, section: TemplateSectionKey) => void;
   resetSectionTemplate: (session: SessionType, section: TemplateSectionKey) => void;
   replaceTemplates: (templates: Templates) => Promise<void>;
@@ -156,6 +157,26 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
     [service]
   );
 
+  const saveTemplateVideoUrl = useCallback(
+    (session: SessionType, videoUrl: string | undefined) => {
+      setLastError(null);
+      setTemplates((previous) => {
+        const next = {
+          ...previous,
+          [session]: {
+            ...previous[session],
+            videoUrl: videoUrl || undefined,
+          },
+        };
+        void service.saveTemplates(next).catch(() => {
+          setLastError("Failed to save template changes.");
+        });
+        return next;
+      });
+    },
+    [service]
+  );
+
   const replaceTemplates = useCallback(
     async (newTemplates: Templates): Promise<void> => {
       setTemplates(newTemplates);
@@ -235,6 +256,7 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
     isLoaded,
     lastError,
     saveSectionTemplate,
+    saveTemplateVideoUrl,
     undoSectionTemplate,
     resetSectionTemplate,
     replaceTemplates,

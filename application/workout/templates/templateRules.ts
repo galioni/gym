@@ -69,10 +69,16 @@ function sanitizeSessionTemplate(
     ? rawLabel.trim().slice(0, 50)
     : undefined;
 
+  const rawVideoUrl = (safeSession as { videoUrl?: unknown })?.videoUrl;
+  const videoUrl = typeof rawVideoUrl === "string" && rawVideoUrl.trim().length > 0
+    ? rawVideoUrl.trim().slice(0, 500)
+    : undefined;
+
   return {
     source,
     label,
     focus,
+    videoUrl,
     warmup: warmup.length > 0 ? warmup : fallbackTemplate.warmup,
     main: main.length > 0 ? main : fallbackTemplate.main,
   };

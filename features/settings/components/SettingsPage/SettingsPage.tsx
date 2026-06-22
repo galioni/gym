@@ -44,6 +44,7 @@ interface SettingsPageProps {
     section: TemplateSectionKey,
     rows: TemplateData[TemplateSectionKey]
   ) => TemplateValidationError[];
+  onSaveTemplateVideoUrl: (session: SessionType, videoUrl: string | undefined) => void;
   onUndoSectionTemplate: (session: SessionType, section: TemplateSectionKey) => void;
   onResetSectionTemplate: (session: SessionType, section: TemplateSectionKey) => void;
   onCreateSessionType: (label: string) => Promise<CreateSessionTypeResult>;
@@ -79,6 +80,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   restorePoints,
   isSyncing,
   onSaveSectionTemplate,
+  onSaveTemplateVideoUrl,
   onUndoSectionTemplate,
   onResetSectionTemplate,
   onCreateSessionType,
@@ -164,6 +166,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         sessionOptions={sessionOptions}
         saveError={templateSaveError}
         onSaveSection={onSaveSectionTemplate}
+        onSaveVideoUrl={onSaveTemplateVideoUrl}
         onUndoSection={onUndoSectionTemplate}
         onResetSection={onResetSectionTemplate}
         onCreateSessionType={onCreateSessionType}

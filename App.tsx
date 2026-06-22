@@ -44,6 +44,7 @@ function App() {
     isLoaded: areTemplatesLoaded,
     lastError: templateSaveError,
     saveSectionTemplate,
+    saveTemplateVideoUrl,
     undoSectionTemplate,
     resetSectionTemplate,
     replaceTemplates,
@@ -298,6 +299,7 @@ function App() {
           sessionOptions={sessionOptions}
           onSessionTypeChange={(event) => changeSessionType(event.target.value as SessionType)}
           onJumpToday={jumpToToday}
+          sessionVideoUrl={templates[currentDay.sessionType]?.videoUrl}
         />
       )}
 
@@ -330,6 +332,7 @@ function App() {
             isSyncing={isSyncing}
             isUpgradeRequired={isUpgradeRequired}
             onSaveSectionTemplate={saveSectionTemplate}
+            onSaveTemplateVideoUrl={saveTemplateVideoUrl}
             onUndoSectionTemplate={undoSectionTemplate}
             onResetSectionTemplate={resetSectionTemplate}
             onCreateSessionType={addSessionType}
