@@ -1,7 +1,7 @@
 // One-time admin endpoint — will be removed after use.
 // Auth: Authorization: Bearer <CRON_SECRET>
 import { VercelKvCloudDocumentStore } from "./_lib/vercelKvCloudDocumentStore.js";
-import { getRequiredVercelKvEnv, getCronSecret } from "./_lib/apiEnv.js";
+import { getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
 import { ApiRequest, ApiResponse, setCorsHeaders } from "./_lib/http.js";
 
 const USER_ID = "26cdb4b3-c5aa-4c49-a8b5-58c800ca11a0";
@@ -15,7 +15,7 @@ function isValid(url: string) {
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   setCorsHeaders(req, res);
 
-  const secret = getCronSecret();
+  const secret = process.env.SYNC_API_KEY ?? process.env.VITE_SYNC_API_KEY ?? "";
   const auth = (req.headers?.["authorization"] as string | undefined) ?? "";
   if (!secret || auth !== `Bearer ${secret}`) {
     res.status(401).json({ error: "Unauthorized" });
