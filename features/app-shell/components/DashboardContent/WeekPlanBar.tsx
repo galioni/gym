@@ -62,7 +62,7 @@ export const WeekPlanBar: React.FC<WeekPlanBarProps> = ({
   if (slots.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+    <div className="flex flex-wrap items-center gap-1.5">
       <span className="text-[10px] font-semibold tracking-wider text-slate-600 uppercase shrink-0 mr-0.5">
         {plan.label}
       </span>
@@ -78,7 +78,7 @@ export const WeekPlanBar: React.FC<WeekPlanBarProps> = ({
           return (
             <span
               key={i}
-              className={`inline-flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-full text-[11px] font-medium border whitespace-nowrap transition-colors ${
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border whitespace-nowrap transition-colors ${
                 slot.done
                   ? "bg-green-500/10 border-green-500/20 text-green-500/70"
                   : isNext
