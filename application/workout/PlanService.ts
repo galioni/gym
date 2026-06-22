@@ -12,15 +12,16 @@ export class PlanService {
     return this.repository.readActivePlanId();
   }
 
-  public async createPlan(label: string, sessionIds: string[]): Promise<Plan> {
+  public async createPlan(label: string, sessionIds: string[], schedule?: Plan["schedule"]): Promise<Plan> {
     const plans = await this.repository.readPlans();
     const id = `plan_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     const newPlan: Plan = { id, label: label.trim(), sessionIds };
+    if (schedule && Object.keys(schedule).length > 0) newPlan.schedule = schedule;
     await this.repository.writePlans([...plans, newPlan]);
     return newPlan;
   }
 
-  public async updatePlan(id: string, updates: Partial<Pick<Plan, "label" | "sessionIds">>): Promise<void> {
+  public async updatePlan(id: string, updates: Partial<Pick<Plan, "label" | "sessionIds" | "schedule">>): Promise<void> {
     const plans = await this.repository.readPlans();
     const next = plans.map((p) => (p.id === id ? { ...p, ...updates } : p));
     await this.repository.writePlans(next);

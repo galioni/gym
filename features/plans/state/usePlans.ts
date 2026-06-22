@@ -6,8 +6,8 @@ interface UsePlansResult {
   plans: Plan[];
   activePlanId: string | null;
   isLoaded: boolean;
-  createPlan: (label: string, sessionIds: string[]) => Promise<Plan>;
-  updatePlan: (id: string, updates: Partial<Pick<Plan, "label" | "sessionIds">>) => Promise<void>;
+  createPlan: (label: string, sessionIds: string[], schedule?: Plan["schedule"]) => Promise<Plan>;
+  updatePlan: (id: string, updates: Partial<Pick<Plan, "label" | "sessionIds" | "schedule">>) => Promise<void>;
   deletePlan: (id: string) => Promise<void>;
   setActivePlan: (id: string | null) => Promise<void>;
 }
@@ -34,13 +34,13 @@ export function usePlans(service: PlanService): UsePlansResult {
     return () => { cancelled = true; };
   }, [service]);
 
-  const createPlan = useCallback(async (label: string, sessionIds: string[]) => {
-    const newPlan = await service.createPlan(label, sessionIds);
+  const createPlan = useCallback(async (label: string, sessionIds: string[], schedule?: Plan["schedule"]) => {
+    const newPlan = await service.createPlan(label, sessionIds, schedule);
     setPlans((prev) => [...prev, newPlan]);
     return newPlan;
   }, [service]);
 
-  const updatePlan = useCallback(async (id: string, updates: Partial<Pick<Plan, "label" | "sessionIds">>) => {
+  const updatePlan = useCallback(async (id: string, updates: Partial<Pick<Plan, "label" | "sessionIds" | "schedule">>) => {
     await service.updatePlan(id, updates);
     setPlans((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
   }, [service]);

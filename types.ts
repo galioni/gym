@@ -50,11 +50,20 @@ export interface GeneratedPlanMeta {
 
 export type Templates = Record<SessionType, TemplateData>;
 
+/** 0 = Monday … 6 = Sunday */
+export type WeekDay = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
 export interface Plan {
   id: string;
   label: string;
   /** References session types from the shared templates pool */
   sessionIds: SessionType[];
+  /**
+   * Optional day assignments. When present, WeekPlanBar shows a day-column
+   * view instead of ordered pills, and "next" is computed by actual day.
+   * sessionIds remains the canonical session list (used for header filtering).
+   */
+  schedule?: Partial<Record<WeekDay, SessionType>>;
 }
 
 export interface PlanParams {

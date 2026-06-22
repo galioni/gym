@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, CalendarDays } from "lucide-react";
 import { Plan, SessionOption } from "../../../../types";
 import { Button } from "../../../../components/ui/Button";
 import { cn } from "../../../../utils";
@@ -8,11 +8,22 @@ interface PlansEditorProps {
   plans: Plan[];
   activePlanId: string | null;
   sessionOptions: SessionOption[];
-  onCreatePlan: (label: string, sessionIds: string[]) => Promise<Plan>;
-  onUpdatePlan: (id: string, updates: Partial<Pick<Plan, "label" | "sessionIds">>) => Promise<void>;
+  onCreatePlan: (label: string, sessionIds: string[], schedule?: Plan["schedule"]) => Promise<Plan>;
+  onUpdatePlan: (id: string, updates: Partial<Pick<Plan, "label" | "sessionIds" | "schedule">>) => Promise<void>;
   onDeletePlan: (id: string) => Promise<void>;
   onSetActivePlan: (id: string | null) => Promise<void>;
 }
+
+const DAY_LABELS: Record<number, string> = {
+  0: "Monday", 1: "Tuesday", 2: "Wednesday", 3: "Thursday",
+  4: "Friday", 5: "Saturday", 6: "Sunday",
+};
+
+const DAY_ABBR: Record<number, string> = {
+  0: "Mo", 1: "Tu", 2: "We", 3: "Th", 4: "Fr", 5: "Sa", 6: "Su",
+};
+
+const WEEK_DAYS = [0, 1, 2, 3, 4, 5, 6] as const;
 
 function SessionToggle({
   option,
@@ -39,6 +50,54 @@ function SessionToggle({
   );
 }
 
+function DayScheduleGrid({
+  selectedSessions,
+  sessionOptions,
+  schedule,
+  onChange,
+}: {
+  selectedSessions: string[];
+  sessionOptions: SessionOption[];
+  schedule: Partial<Record<number, string>>;
+  onChange: (schedule: Partial<Record<number, string>>) => void;
+}) {
+  return (
+    <div>
+      <p className="text-[11px] uppercase tracking-widest text-slate-500 mb-2">Day schedule</p>
+      <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 items-center max-w-xs">
+        {WEEK_DAYS.map((day) => (
+          <React.Fragment key={day}>
+            <span className="text-xs text-slate-400 w-20">{DAY_LABELS[day]}</span>
+            <select
+              value={schedule[day] ?? ""}
+              onChange={(e) => {
+                const next = { ...schedule };
+                if (e.target.value) {
+                  next[day] = e.target.value;
+                } else {
+                  delete next[day];
+                }
+                onChange(next);
+              }}
+              className="bg-background/70 border border-white/10 rounded-lg px-2 py-1 text-xs text-slate-300 outline-none focus:ring-1 focus:ring-primary/50"
+            >
+              <option value="">—</option>
+              {selectedSessions.map((id) => {
+                const opt = sessionOptions.find((o) => o.value === id);
+                return (
+                  <option key={id} value={id}>
+                    {opt?.label ?? id}
+                  </option>
+                );
+              })}
+            </select>
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PlanRow({
   plan,
   isActive,
@@ -51,28 +110,49 @@ function PlanRow({
   isActive: boolean;
   sessionOptions: SessionOption[];
   onSetActive: () => Promise<void>;
-  onUpdate: (updates: Partial<Pick<Plan, "label" | "sessionIds">>) => Promise<void>;
+  onUpdate: (updates: Partial<Pick<Plan, "label" | "sessionIds" | "schedule">>) => Promise<void>;
   onDelete: () => Promise<void>;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [label, setLabel] = useState(plan.label);
   const [selectedSessions, setSelectedSessions] = useState<string[]>(plan.sessionIds);
+  const [isScheduleEnabled, setIsScheduleEnabled] = useState(
+    () => plan.schedule != null && Object.keys(plan.schedule).length > 0
+  );
+  const [schedule, setSchedule] = useState<Partial<Record<number, string>>>(plan.schedule ?? {});
+
+  const labelFor = (id: string) => sessionOptions.find((o) => o.value === id)?.label ?? id;
 
   const toggleSession = (id: string) => {
-    setSelectedSessions((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
+    setSelectedSessions((prev) => {
+      const next = prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id];
+      // Remove schedule entries for sessions no longer selected
+      setSchedule((prevSchedule) => {
+        const cleaned = { ...prevSchedule };
+        for (const [day, session] of Object.entries(cleaned)) {
+          if (session && !next.includes(session)) delete cleaned[Number(day)];
+        }
+        return cleaned;
+      });
+      return next;
+    });
   };
 
   const handleSave = async () => {
     if (!label.trim()) return;
-    await onUpdate({ label: label.trim(), sessionIds: selectedSessions });
+    const finalSchedule =
+      isScheduleEnabled && Object.keys(schedule).length > 0
+        ? (schedule as Plan["schedule"])
+        : undefined;
+    await onUpdate({ label: label.trim(), sessionIds: selectedSessions, schedule: finalSchedule });
     setIsEditing(false);
   };
 
   const handleCancel = () => {
     setLabel(plan.label);
     setSelectedSessions(plan.sessionIds);
+    setSchedule(plan.schedule ?? {});
+    setIsScheduleEnabled(plan.schedule != null && Object.keys(plan.schedule).length > 0);
     setIsEditing(false);
   };
 
@@ -87,16 +167,40 @@ function PlanRow({
           autoFocus
           maxLength={40}
         />
-        <div className="flex flex-wrap gap-2">
-          {sessionOptions.map((opt) => (
-            <SessionToggle
-              key={opt.value}
-              option={opt}
-              selected={selectedSessions.includes(opt.value)}
-              onToggle={() => toggleSession(opt.value)}
-            />
-          ))}
+        <div>
+          <p className="text-[11px] uppercase tracking-widest text-slate-500 mb-2">Sessions</p>
+          <div className="flex flex-wrap gap-2">
+            {sessionOptions.map((opt) => (
+              <SessionToggle
+                key={opt.value}
+                option={opt}
+                selected={selectedSessions.includes(opt.value)}
+                onToggle={() => toggleSession(opt.value)}
+              />
+            ))}
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={() => setIsScheduleEnabled((v) => !v)}
+          className={cn(
+            "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition-all",
+            isScheduleEnabled
+              ? "border-primary/40 bg-primary/10 text-primary"
+              : "border-white/10 bg-white/5 text-slate-500 hover:text-slate-300 hover:border-white/20"
+          )}
+        >
+          <CalendarDays size={11} />
+          Assign sessions to days
+        </button>
+        {isScheduleEnabled && (
+          <DayScheduleGrid
+            selectedSessions={selectedSessions}
+            sessionOptions={sessionOptions}
+            schedule={schedule}
+            onChange={setSchedule}
+          />
+        )}
         <div className="flex gap-2">
           <Button size="sm" variant="primary" className="gap-1" onClick={() => void handleSave()} disabled={!label.trim()}>
             <Check size={13} />
@@ -111,9 +215,16 @@ function PlanRow({
     );
   }
 
-  const sessionLabels = plan.sessionIds
-    .map((id) => sessionOptions.find((o) => o.value === id)?.label ?? id)
-    .join(", ");
+  // Read view
+  const hasSchedule = plan.schedule != null && Object.keys(plan.schedule).length > 0;
+  const sessionSummary = hasSchedule
+    ? (Object.entries(plan.schedule!) as [string, string][])
+        .sort(([a], [b]) => Number(a) - Number(b))
+        .map(([day, session]) => `${DAY_ABBR[Number(day)]}: ${labelFor(session)}`)
+        .join(" · ")
+    : plan.sessionIds.length === 0
+    ? "No sessions"
+    : plan.sessionIds.map(labelFor).join(", ");
 
   return (
     <div className={cn(
@@ -131,10 +242,13 @@ function PlanRow({
               Active
             </span>
           )}
+          {hasSchedule && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-slate-500">
+              <CalendarDays size={9} />
+            </span>
+          )}
         </div>
-        <div className="text-xs text-slate-500 truncate">
-          {plan.sessionIds.length === 0 ? "No sessions" : sessionLabels}
-        </div>
+        <div className="text-xs text-slate-500 truncate">{sessionSummary}</div>
       </div>
       <div className="flex items-center gap-1 shrink-0">
         <Button
@@ -173,20 +287,34 @@ function CreatePlanForm({
 }: {
   sessionOptions: SessionOption[];
   onCancel: () => void;
-  onCreate: (label: string, sessionIds: string[]) => Promise<void>;
+  onCreate: (label: string, sessionIds: string[], schedule?: Plan["schedule"]) => Promise<void>;
 }) {
   const [label, setLabel] = useState("");
   const [selectedSessions, setSelectedSessions] = useState<string[]>([]);
+  const [isScheduleEnabled, setIsScheduleEnabled] = useState(false);
+  const [schedule, setSchedule] = useState<Partial<Record<number, string>>>({});
 
   const toggleSession = (id: string) => {
-    setSelectedSessions((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
+    setSelectedSessions((prev) => {
+      const next = prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id];
+      setSchedule((prevSchedule) => {
+        const cleaned = { ...prevSchedule };
+        for (const [day, session] of Object.entries(cleaned)) {
+          if (session && !next.includes(session)) delete cleaned[Number(day)];
+        }
+        return cleaned;
+      });
+      return next;
+    });
   };
 
   const handleCreate = async () => {
     if (!label.trim()) return;
-    await onCreate(label.trim(), selectedSessions);
+    const finalSchedule =
+      isScheduleEnabled && Object.keys(schedule).length > 0
+        ? (schedule as Plan["schedule"])
+        : undefined;
+    await onCreate(label.trim(), selectedSessions, finalSchedule);
   };
 
   return (
@@ -213,6 +341,27 @@ function CreatePlanForm({
           ))}
         </div>
       </div>
+      <button
+        type="button"
+        onClick={() => setIsScheduleEnabled((v) => !v)}
+        className={cn(
+          "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition-all",
+          isScheduleEnabled
+            ? "border-primary/40 bg-primary/10 text-primary"
+            : "border-white/10 bg-white/5 text-slate-500 hover:text-slate-300 hover:border-white/20"
+        )}
+      >
+        <CalendarDays size={11} />
+        Assign sessions to days
+      </button>
+      {isScheduleEnabled && (
+        <DayScheduleGrid
+          selectedSessions={selectedSessions}
+          sessionOptions={sessionOptions}
+          schedule={schedule}
+          onChange={setSchedule}
+        />
+      )}
       <div className="flex gap-2">
         <Button size="sm" variant="primary" className="gap-1" onClick={() => void handleCreate()} disabled={!label.trim()}>
           <Check size={13} />
@@ -238,8 +387,8 @@ export const PlansEditor: React.FC<PlansEditorProps> = ({
 }) => {
   const [isCreating, setIsCreating] = useState(false);
 
-  const handleCreate = async (label: string, sessionIds: string[]) => {
-    await onCreatePlan(label, sessionIds);
+  const handleCreate = async (label: string, sessionIds: string[], schedule?: Plan["schedule"]) => {
+    await onCreatePlan(label, sessionIds, schedule);
     setIsCreating(false);
   };
 

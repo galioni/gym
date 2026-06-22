@@ -43,7 +43,8 @@ export class CloudPlansRepository implements PlansRepository {
         typeof p.id === "string" &&
         p.id.length > 0 &&
         typeof p.label === "string" &&
-        Array.isArray(p.sessionIds)
+        // sessionIds may be empty for schedule-only plans; schedule is optional overlay
+        (Array.isArray(p.sessionIds) || (typeof p.schedule === "object" && p.schedule !== null))
     );
     return {
       version: typeof payload.version === "number" ? payload.version : 1,
