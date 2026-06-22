@@ -86,9 +86,28 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     await store.writeDocument(workoutKey, next);
   }
 
+  // Also report all existing videoUrls to help diagnose
+  const allLinks: string[] = [];
+  for (const [session, tpl] of Object.entries(rawTemplates)) {
+    if ((tpl as Record<string, unknown>).videoUrl) allLinks.push(`template:${session}:session = "${(tpl as Record<string, unknown>).videoUrl}"`);
+    for (const section of ["warmup", "main"] as const) {
+      for (const item of ((tpl as Record<string, unknown>)[section] as Array<Record<string, unknown>> | undefined) ?? []) {
+        if (item.videoUrl) allLinks.push(`template:${session}:${section}:"${item.text}" = "${item.videoUrl}"`);
+      }
+    }
+  }
+  for (const [date, day] of Object.entries(rawDays)) {
+    for (const section of ["warmup", "main"] as const) {
+      for (const item of ((day as Record<string, unknown>)[section] as Array<Record<string, unknown>> | undefined) ?? []) {
+        if (item.videoUrl) allLinks.push(`workout:${date}:${section}:"${item.text}" = "${item.videoUrl}"`);
+      }
+    }
+  }
+
   res.status(200).json({
     ok: true,
     fixes,
+    allLinks,
     correctedTo: CORRECT_URL,
   });
 }
