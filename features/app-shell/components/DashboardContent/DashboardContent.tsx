@@ -1,8 +1,9 @@
 import React from "react";
 import { Youtube } from "lucide-react";
-import { DayData, SessionOption, SessionType } from "../../../../types";
+import { DayData, Plan, SessionOption, SessionType } from "../../../../types";
 import { DashboardWorkoutGrid } from "./DashboardWorkoutGrid";
 import { MobileSessionControls } from "./MobileSessionControls";
+import { WeekPlanBar } from "./WeekPlanBar";
 
 interface DashboardContentProps {
   currentDay: DayData;
@@ -20,6 +21,8 @@ interface DashboardContentProps {
   onSessionTypeChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
   onJumpToday: () => void;
   sessionVideoUrl?: string;
+  activePlan?: Plan | null;
+  allData?: Record<string, DayData>;
 }
 
 export const DashboardContent: React.FC<DashboardContentProps> = ({
@@ -37,6 +40,8 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
   onSessionTypeChange,
   onJumpToday,
   sessionVideoUrl,
+  activePlan,
+  allData,
 }) => {
   const activeOption = sessionOptions.find((o) => o.value === currentDay.sessionType);
   const sessionLabel = activeOption?.label ?? currentDay.sessionType;
@@ -81,6 +86,16 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
         </div>
         {sessionFocus && (
           <p className="text-sm text-slate-400 mt-0.5">{sessionFocus}</p>
+        )}
+        {activePlan && allData && (
+          <div className="mt-2">
+            <WeekPlanBar
+              plan={activePlan}
+              allData={allData}
+              sessionOptions={sessionOptions}
+              currentDate={currentDate}
+            />
+          </div>
         )}
       </div>
 

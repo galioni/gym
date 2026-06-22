@@ -87,11 +87,14 @@ function App() {
 
   const exerciseLibrary = useMemo(() => buildExerciseLibrary(allData), [allData]);
   const allSessionOptions = useMemo(() => getSessionOptions(templates), [templates]);
+  const activePlan = useMemo(
+    () => plans.find((p) => p.id === activePlanId) ?? null,
+    [plans, activePlanId]
+  );
   const sessionOptions = useMemo(() => {
-    const activePlan = plans.find((p) => p.id === activePlanId);
     if (!activePlan || activePlan.sessionIds.length === 0) return allSessionOptions;
     return allSessionOptions.filter((o) => activePlan.sessionIds.includes(o.value));
-  }, [allSessionOptions, plans, activePlanId]);
+  }, [allSessionOptions, activePlan]);
   const [stickyFooterHeight, setStickyFooterHeight] = useState(124);
   const [page, setPage] = useState<"dashboard" | "settings" | "history">("dashboard");
   const [activeTimer, setActiveTimer] = useState<{ section: "warmup" | "main"; scrollTo: () => void } | null>(null);
@@ -300,6 +303,8 @@ function App() {
           onSessionTypeChange={(event) => changeSessionType(event.target.value as SessionType)}
           onJumpToday={jumpToToday}
           sessionVideoUrl={templates[currentDay.sessionType]?.videoUrl}
+          activePlan={activePlan}
+          allData={allData}
         />
       )}
 
