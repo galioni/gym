@@ -22,6 +22,10 @@ vi.mock("./_lib/subscriptionGuard.js", () => ({
   markStripeEventProcessed: vi.fn(),
 }));
 
+vi.mock("./_lib/stripeClient.js", () => ({
+  getStripeSubscription: vi.fn(),
+}));
+
 // ── import after mocks ────────────────────────────────────────────────────────
 
 import handler from "./stripe-webhook";
@@ -32,12 +36,14 @@ import {
   setStripeCustomerMappingAndSubscription,
   setSubscription,
 } from "./_lib/subscriptionGuard.js";
+import { getStripeSubscription } from "./_lib/stripeClient.js";
 
 const mockGetStripeCustomerUserId = vi.mocked(getStripeCustomerUserId);
 const mockSetStripeCustomerMappingAndSubscription = vi.mocked(setStripeCustomerMappingAndSubscription);
 const mockSetSubscription = vi.mocked(setSubscription);
 const mockIsStripeEventProcessed = vi.mocked(isStripeEventProcessed);
 const mockMarkStripeEventProcessed = vi.mocked(markStripeEventProcessed);
+const mockGetStripeSubscription = vi.mocked(getStripeSubscription);
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -80,12 +86,20 @@ function stripeEvent(type: string, object: Record<string, unknown>, id = "evt_te
 
 // ── tests ─────────────────────────────────────────────────────────────────────
 
+const DEFAULT_SUB_PERIOD_END_UNIX = 1893456000; // 2030-01-01
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockIsStripeEventProcessed.mockResolvedValue(false);
   mockMarkStripeEventProcessed.mockResolvedValue(undefined);
   mockSetStripeCustomerMappingAndSubscription.mockResolvedValue(undefined);
   mockSetSubscription.mockResolvedValue(undefined);
+  mockGetStripeSubscription.mockResolvedValue({
+    id: "sub_456",
+    status: "active",
+    current_period_end: DEFAULT_SUB_PERIOD_END_UNIX,
+    customer: "cus_123",
+  });
 });
 
 describe("POST /api/stripe-webhook — request validation", () => {
@@ -148,7 +162,7 @@ describe("POST /api/stripe-webhook — request validation", () => {
 });
 
 describe("POST /api/stripe-webhook — checkout.session.completed", () => {
-  it("writes customer mapping and pro subscription to KV", async () => {
+  it("fetches the subscription directly and writes its real status/period end to KV", async () => {
     const body = stripeEvent("checkout.session.completed", {
       client_reference_id: "user-abc",
       customer: "cus_123",
@@ -161,11 +175,64 @@ describe("POST /api/stripe-webhook — checkout.session.completed", () => {
 
     expect(state.statusCode).toBe(200);
     expect((state.jsonPayload as { received: boolean }).received).toBe(true);
+    expect(mockGetStripeSubscription).toHaveBeenCalledWith("sub_456");
     expect(mockSetStripeCustomerMappingAndSubscription).toHaveBeenCalledOnce();
     expect(mockSetStripeCustomerMappingAndSubscription).toHaveBeenCalledWith(
       "cus_123",
       "user-abc",
-      expect.objectContaining({ plan: "pro", status: "active", stripeCustomerId: "cus_123" }),
+      expect.objectContaining({
+        plan: "pro",
+        status: "active",
+        stripeCustomerId: "cus_123",
+        currentPeriodEnd: new Date(DEFAULT_SUB_PERIOD_END_UNIX * 1000).toISOString(),
+      }),
+      expect.any(Object)
+    );
+  });
+
+  it("does not depend on delivery order vs. customer.subscription.updated — period end is set immediately", async () => {
+    // Regression test: previously currentPeriodEnd was hardcoded to null here and
+    // only filled in by a later customer.subscription.updated event. If that event
+    // happened to arrive first, the customer→user mapping didn't exist yet, so it was
+    // silently dropped and currentPeriodEnd stayed null — putting the KV record on a
+    // flat 30-day TTL instead of one tied to the real billing period.
+    const body = stripeEvent("checkout.session.completed", {
+      client_reference_id: "user-abc",
+      customer: "cus_123",
+      subscription: "sub_456",
+    });
+    const req = makeRequest(body);
+    const { res } = createMockResponse();
+
+    await handler(req, res);
+
+    const writtenInfo = mockSetStripeCustomerMappingAndSubscription.mock.calls[0][2];
+    expect(writtenInfo.currentPeriodEnd).not.toBeNull();
+  });
+
+  it("falls back to session defaults when fetching subscription details fails", async () => {
+    mockGetStripeSubscription.mockRejectedValue(new Error("network error"));
+
+    const body = stripeEvent("checkout.session.completed", {
+      client_reference_id: "user-abc",
+      customer: "cus_123",
+      subscription: "sub_456",
+    });
+    const req = makeRequest(body);
+    const { res, state } = createMockResponse();
+
+    await handler(req, res);
+
+    expect(state.statusCode).toBe(200);
+    expect(mockSetStripeCustomerMappingAndSubscription).toHaveBeenCalledWith(
+      "cus_123",
+      "user-abc",
+      expect.objectContaining({
+        plan: "pro",
+        status: "active",
+        stripeCustomerId: "cus_123",
+        currentPeriodEnd: null,
+      }),
       expect.any(Object)
     );
   });
