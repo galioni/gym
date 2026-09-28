@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { Check, ChevronRight } from "lucide-react";
 import { DayData, Plan, SessionOption } from "../../../../types";
+import { toLocalDateKey } from "../../../../utils";
 
 const DAY_ABBR: Record<number, string> = {
   0: "Mo", 1: "Tu", 2: "We", 3: "Th", 4: "Fr", 5: "Sa", 6: "Su",
@@ -24,7 +25,7 @@ function getWeekDates(dateStr: string): string[] {
   return Array.from({ length: 7 }, (_, i) => {
     const date = new Date(d);
     date.setDate(d.getDate() + mondayOffset + i);
-    return date.toISOString().slice(0, 10);
+    return toLocalDateKey(date);
   });
 }
 
@@ -36,6 +37,7 @@ function Pill({
   done,
   isCurrent,
   isNext,
+  isOverdue,
   dayLabel,
   sessionLabel,
   onSelect,
@@ -43,10 +45,13 @@ function Pill({
   done: boolean;
   isCurrent: boolean;
   isNext: boolean;
+  isOverdue?: boolean;
   dayLabel?: string;
   sessionLabel: string;
   onSelect?: () => void;
 }) {
+  const interactive = !done && Boolean(onSelect);
+
   const className = [
     "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border whitespace-nowrap transition-colors",
     done
@@ -55,24 +60,46 @@ function Pill({
       ? "bg-primary/25 border-primary/50 text-primary cursor-pointer hover:bg-primary/35"
       : isNext
       ? "bg-primary/15 border-primary/30 text-primary cursor-pointer hover:bg-primary/25"
+      : isOverdue
+      ? "bg-amber-500/10 border-amber-500/30 text-amber-500 cursor-pointer hover:bg-amber-500/20"
       : onSelect
       ? "border-slate-700 text-slate-500 cursor-pointer hover:border-slate-500 hover:text-slate-400"
       : "border-slate-700 text-slate-500",
   ].join(" ");
 
+  const statusText = done
+    ? "completed"
+    : isCurrent
+    ? "today"
+    : isNext
+    ? "next"
+    : isOverdue
+    ? "overdue"
+    : undefined;
+
   return (
     <span
       className={className}
-      onClick={!done && onSelect ? () => onSelect() : undefined}
-      role={!done && onSelect ? "button" : undefined}
-      tabIndex={!done && onSelect ? 0 : undefined}
-      onKeyDown={!done && onSelect ? (e) => e.key === "Enter" && onSelect() : undefined}
+      onClick={interactive ? () => onSelect!() : undefined}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+                e.preventDefault();
+                onSelect!();
+              }
+            }
+          : undefined
+      }
     >
       {done && <Check size={9} className="shrink-0" />}
       {!done && isCurrent && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
       {!done && !isCurrent && isNext && <ChevronRight size={9} className="shrink-0" />}
       {dayLabel && <span className="opacity-60 text-[10px] mr-0.5">{dayLabel}</span>}
       {sessionLabel}
+      {statusText && <span className="sr-only"> ({statusText})</span>}
     </span>
   );
 }
@@ -108,14 +135,17 @@ export const WeekPlanBar: React.FC<WeekPlanBarProps> = ({
       });
   }, [hasSchedule, plan.schedule, allData, currentDate]);
 
+  const todayMonIdx = useMemo(() => {
+    const todayDow = new Date(currentDate + "T00:00:00").getDay();
+    return todayDow === 0 ? 6 : todayDow - 1;
+  }, [currentDate]);
+
   const scheduleNextIndex = useMemo(() => {
     if (!scheduleSlots) return -1;
-    const todayDow = new Date(currentDate + "T00:00:00").getDay();
-    const todayMonIdx = todayDow === 0 ? 6 : todayDow - 1;
     const fromToday = scheduleSlots.findIndex((s) => !s.done && s.day >= todayMonIdx);
     if (fromToday !== -1) return fromToday;
     return scheduleSlots.findIndex((s) => !s.done);
-  }, [scheduleSlots, currentDate]);
+  }, [scheduleSlots, todayMonIdx]);
 
   // ── Ordered-pills mode (no schedule) ──────────────────────────────────────
   const orderedSlots = useMemo(() => {
@@ -158,6 +188,7 @@ export const WeekPlanBar: React.FC<WeekPlanBarProps> = ({
               done={slot.done}
               isCurrent={!slot.done && slot.sessionType === currentSessionType}
               isNext={i === scheduleNextIndex}
+              isOverdue={!slot.done && i !== scheduleNextIndex && slot.day < todayMonIdx}
               dayLabel={DAY_ABBR[slot.day]}
               sessionLabel={labelFor(slot.sessionType)}
               onSelect={onSelectSession ? () => onSelectSession(slot.sessionType) : undefined}

@@ -8,7 +8,9 @@ import {
   markStripeEventProcessed,
   setSubscription,
   setStripeCustomerMappingAndSubscription,
+  SubscriptionInfo,
 } from "./_lib/subscriptionGuard.js";
+import { getStripeSubscription } from "./_lib/stripeClient.js";
 
 // Disable Vercel's body parser so we get the raw body for signature verification
 export const config = {
@@ -112,7 +114,7 @@ export default async function handler(req: IncomingMessage, res: ApiResponse): P
     if (event.type === "checkout.session.completed") {
       const userId = obj["client_reference_id"] as string | null;
       const customerId = obj["customer"] as string | null;
-      const _subscriptionId = obj["subscription"] as string | null;
+      const subscriptionId = obj["subscription"] as string | null;
 
       if (!userId || !customerId) {
         console.warn("[stripe-webhook] checkout.session.completed missing userId or customerId", {
@@ -123,15 +125,43 @@ export default async function handler(req: IncomingMessage, res: ApiResponse): P
         return;
       }
 
+      // Fetch the subscription directly rather than waiting for a
+      // customer.subscription.updated event: Stripe does not guarantee
+      // delivery order between the two, and if updated arrived first it
+      // would silently no-op (no customer→user mapping yet), leaving
+      // currentPeriodEnd null and the KV record on a short, non-renewing
+      // TTL until the next lifecycle event happens to fix it.
+      let subscriptionInfo: SubscriptionInfo = {
+        plan: "pro",
+        status: "active",
+        stripeCustomerId: customerId,
+        currentPeriodEnd: null,
+      };
+
+      if (subscriptionId) {
+        try {
+          const sub = await getStripeSubscription(subscriptionId);
+          const isActive = sub.status === "active" || sub.status === "trialing";
+          subscriptionInfo = {
+            plan: isActive ? "pro" : "free",
+            status: sub.status,
+            stripeCustomerId: customerId,
+            currentPeriodEnd: sub.current_period_end
+              ? new Date(sub.current_period_end * 1000).toISOString()
+              : null,
+          };
+        } catch (err) {
+          console.warn(
+            "[stripe-webhook] Failed to fetch subscription details; falling back to session data",
+            { subscriptionId, err }
+          );
+        }
+      }
+
       await setStripeCustomerMappingAndSubscription(
         customerId,
         userId,
-        {
-          plan: "pro",
-          status: "active",
-          stripeCustomerId: customerId,
-          currentPeriodEnd: null, // will be updated by subscription.updated event
-        },
+        subscriptionInfo,
         kvEnv
       );
     }

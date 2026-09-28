@@ -88,6 +88,12 @@ export async function deleteStripeCustomer(stripeCustomerId: string): Promise<vo
   await stripeRequest(`/customers/${stripeCustomerId}`, "DELETE");
 }
 
+export async function getStripeSubscription(
+  subscriptionId: string
+): Promise<StripeSubscription> {
+  return stripeRequest(`/subscriptions/${subscriptionId}`, "GET") as Promise<StripeSubscription>;
+}
+
 export async function createBillingPortalSession(
   stripeCustomerId: string,
   returnUrl: string
