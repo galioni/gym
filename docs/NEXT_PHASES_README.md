@@ -36,8 +36,9 @@ intentionally left behind.
   and the team's preview wildcard (`localhost` removed), Google callback URI confirmed
   - Accepted warning: leaked-password protection needs the Pro plan; mitigated by the stronger password policy
   - Accepted warning: GraphQL lists the table names to signed-in users; RLS still limits rows to their owner
-  - **Launch blocker:** the built-in email service only delivers to organisation members and is heavily rate
-    limited. Set up custom SMTP before real users sign up. Not needed for the preview test with an address we control.
+  - Custom SMTP is set up (2026-10-01): Resend, domain `gym.solutionsnot.ltd` (DKIM + two CNAMEs at the DNS host),
+    sender `no-reply@gym.solutionsnot.ltd`, Supabase rate limit 30 emails/hour. Verified with a real sign-up:
+    delivered to the inbox in about 2 seconds with a correct confirmation link. Resend free tier: 3,000 emails/month.
 - [x] Apply `supabase/migrations` to the hosted project (2026-10-01, three migrations, history names match the files)
 - [x] Deploy a Vercel preview against the hosted project; sign in with a real account; verify upload, a second browser, a delete
   (2026-10-01: passed with Google sign-in on branch `phase-14-postgres-sync`; test rows removed)
