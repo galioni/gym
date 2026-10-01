@@ -220,7 +220,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         ) : (
           <div className="space-y-3">
             <div className="text-sm text-labelSecondary">
-              You're on the <span className="font-semibold text-label">free plan</span>. Your workouts sync automatically across your devices; Pro adds a choice of AI models.
+              You're on the <span className="font-semibold text-label">free plan</span>. Free includes 1 AI-generated plan per day. Pro allows 10 per hour and lets you choose the AI model.
             </div>
             <Button variant="primary" size="sm" className="gap-2" onClick={() => void startCheckout().catch(() => showToast({ tone: "error", title: "Could not start checkout. Try again." }))}>
               Upgrade to Pro

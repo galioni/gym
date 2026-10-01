@@ -206,24 +206,43 @@ try {
   res = await api("GET");
   check((await res.json()).aiProvider === "google", "AI settings: but a free user is still reported (and served) the default provider");
 
-  // Rate limiting: counted in Postgres (rate_events), shared by every server instance, exact retry-after.
+  // Rate limiting: counted in Postgres (rate_events), shared by every server instance, with limits that depend on the plan.
   const gen = (n) => fetch(`${API}/api/generate-plan`, {
     method: "POST",
     // A distinct forwarded-for per call keeps the in-memory per-IP burst limit out of the way; this checks the per-user limit.
     headers: { Authorization: `Bearer ${a.token}`, "Content-Type": "application/json", "x-forwarded-for": `10.9.${tag % 250}.${n}` },
     body: JSON.stringify({}),
   });
-  const statuses = [];
-  let last;
-  for (let n = 1; n <= 11; n += 1) {
-    last = await gen(n);
-    statuses.push(last.status);
+  const eventCount = async () =>
+    (await call("GET", `/rest/v1/rate_events?user_id=eq.${a.id}&route=eq.generate-plan`, { token: SERVICE, apikey: SERVICE })).json?.length;
+
+  // Free: 1 plan per rolling day.
+  const freeFirst = await gen(1);
+  const freeSecond = await gen(2);
+  const freeBody = await freeSecond.json().catch(() => ({}));
+  check(freeFirst.status === 400, "plan limits: a free account's first call of the day is let through (then rejected as a bad request)", `(${freeFirst.status})`);
+  check(freeSecond.status === 429 && freeBody.plan === "free" && freeBody.retryAfter >= 86390 && freeBody.retryAfter <= 86400,
+    "plan limits: a free account's second call is refused with an exact wait of about a day", `(${freeSecond.status} ${JSON.stringify(freeBody)})`);
+  check(/Free plan includes 1 AI plan per day/.test(freeBody.error ?? ""), "plan limits: and the message says what Free includes");
+  check((await eventCount()) === 1, "plan limits: only the allowed call is recorded");
+
+  // Upgrade to Pro (what the Stripe webhook does) and the allowance becomes 10 per hour.
+  res = await call("POST", "/rest/v1/subscriptions?on_conflict=user_id", {
+    token: SERVICE, apikey: SERVICE, headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: { user_id: a.id, plan: "pro", status: "active" },
+  });
+  check(res.status === 201 || res.status === 204 || res.status === 200, "plan limits: the account is upgraded to Pro", `(${res.status} ${res.text.slice(0, 100)})`);
+  const proStatuses = [];
+  let proLast;
+  for (let n = 3; n <= 12; n += 1) {
+    proLast = await gen(n);
+    proStatuses.push(proLast.status);
   }
-  check(statuses.slice(0, 10).every((x) => x === 400), "rate limit: the first 10 calls in the hour are let through (then rejected as a bad request)", statuses.join(","));
-  const refused = await last.json().catch(() => ({}));
-  check(statuses[10] === 429 && refused.retryAfter >= 3590 && refused.retryAfter <= 3600, "rate limit: the 11th is refused with 429 and an exact retry-after", `${statuses[10]} ${JSON.stringify(refused)}`);
-  res = await call("GET", `/rest/v1/rate_events?user_id=eq.${a.id}&route=eq.generate-plan`, { token: SERVICE, apikey: SERVICE });
-  check(res.status === 200 && res.json?.length === 10, "rate limit: the 10 allowed calls are recorded in Postgres and the refused one is not", `(${res.json?.length})`);
+  // One call is already inside the hour, so a Pro account has 9 left before the 10th is refused.
+  check(proStatuses.slice(0, 9).every((x) => x === 400) && proStatuses[9] === 429, "plan limits: a Pro account gets 10 per hour (9 more after the one already used, then refused)", proStatuses.join(","));
+  const proBody = await proLast.json().catch(() => ({}));
+  check(proBody.plan === "pro" && proBody.retryAfter > 0 && proBody.retryAfter <= 3600 && !/Upgrade|Pro allows/.test(proBody.error ?? ""),
+    "plan limits: and a Pro account is not pitched an upgrade", JSON.stringify(proBody));
+  check((await eventCount()) === 10, "plan limits: 10 allowed calls recorded in total, none for refused ones");
 
   res = await call("POST", "/rest/v1/rpc/consume_rate_limit", { token: a.token, body: { p_user: a.id, p_route: "x", p_max: 1000, p_window_seconds: 60 } });
   check(res.status === 401 || res.status === 403, "rate limit: a signed-in user cannot call the limiter to hand themselves allowance", `(${res.status})`);

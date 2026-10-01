@@ -32,9 +32,11 @@ vi.mock("./_lib/userSettingsStore.js", () => ({
 import handler from "./generate-plan";
 import { requireAuth } from "./_lib/authContext.js";
 import { checkRateLimit } from "./_lib/rateLimiter.js";
+import { hasProAccess } from "./_lib/subscriptionGuard.js";
 
 const mockRequireAuth = vi.mocked(requireAuth);
 const mockCheckRateLimit = vi.mocked(checkRateLimit);
+const mockHasPro = vi.mocked(hasProAccess);
 
 const VALID_BODY = {
   goal: "strength",
@@ -93,6 +95,51 @@ describe("POST /api/generate-plan", () => {
 
     expect(state.statusCode).toBe(429);
     expect((state.jsonPayload as { retryAfter: number }).retryAfter).toBe(30);
+  });
+
+  describe("limits depend on the plan", () => {
+    const post = () =>
+      createMockRequest({ method: "POST", headers: { "x-forwarded-for": uniqueIp() }, body: VALID_BODY });
+
+    it("allows a free account 1 plan per rolling day", async () => {
+      mockRequireAuth.mockResolvedValue({ userId: "free-user", email: null, accessToken: "tok" });
+      mockHasPro.mockReturnValue(false);
+      const { res } = createMockResponse();
+      await handler(post(), res);
+      expect(mockCheckRateLimit).toHaveBeenCalledWith("free-user", "generate-plan", 1, 86_400);
+    });
+
+    it("allows a Pro account 10 plans per rolling hour", async () => {
+      mockRequireAuth.mockResolvedValue({ userId: "pro-user", email: null, accessToken: "tok" });
+      mockHasPro.mockReturnValue(true);
+      const { res } = createMockResponse();
+      await handler(post(), res);
+      expect(mockCheckRateLimit).toHaveBeenCalledWith("pro-user", "generate-plan", 10, 3_600);
+    });
+
+    it("tells a free account what the Free plan includes and what Pro adds", async () => {
+      mockRequireAuth.mockResolvedValue({ userId: "free-user", email: null, accessToken: "tok" });
+      mockHasPro.mockReturnValue(false);
+      mockCheckRateLimit.mockResolvedValueOnce({ allowed: false, retryAfterSeconds: 82_800 });
+      const { res, state } = createMockResponse();
+      await handler(post(), res);
+      expect(state.statusCode).toBe(429);
+      expect(state.jsonPayload).toEqual({
+        error: "The Free plan includes 1 AI plan per day. Pro allows 10 per hour.",
+        retryAfter: 82_800,
+        plan: "free",
+      });
+    });
+
+    it("does not pitch an upgrade to someone who is already on Pro", async () => {
+      mockRequireAuth.mockResolvedValue({ userId: "pro-user", email: null, accessToken: "tok" });
+      mockHasPro.mockReturnValue(true);
+      mockCheckRateLimit.mockResolvedValueOnce({ allowed: false, retryAfterSeconds: 600 });
+      const { res, state } = createMockResponse();
+      await handler(post(), res);
+      expect((state.jsonPayload as { error: string; plan: string }).plan).toBe("pro");
+      expect((state.jsonPayload as { error: string }).error).not.toMatch(/Upgrade|Pro allows/);
+    });
   });
 
   it("blocks at IP limiter before auth when burst threshold exceeded", async () => {

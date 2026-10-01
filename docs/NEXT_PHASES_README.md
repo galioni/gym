@@ -58,7 +58,8 @@ can stay in place.
 
 KV is still used for billing state, user settings, push subscriptions and rate limits.
 
-- [ ] **Plan tiers** (see the Free/Pro table under "Decisions"): plan-aware `row_limit()`, a sync allowance for free
+- [ ] **Plan tiers** (see the Free/Pro table under "Decisions"). Slice 1 **done** (2026-10-01): `generate-plan` is plan-aware (Free 1 per rolling day, Pro 10 per rolling
+  hour; numbers in `api/_lib/planLimits.ts`, refusal says what Free includes, wait shown in hours/days). Remaining slices 2 to 5 as listed above. Original scope: plan-aware `row_limit()`, a sync allowance for free
   accounts with clear status text ("next sync available on …"), the cloud-only 7-day window, a plan-aware AI rate limit, and
   upgrade prompts at each limit. Build after subscriptions are in Postgres
 - [x] Subscriptions (slice 15.1, 2026-10-01): billing state is in Postgres. `subscriptions` holds the plan and, through a unique
@@ -119,7 +120,7 @@ Decided 2026-10-01:
   | | Free | Pro |
   |---|---|---|
   | Cloud sync | one sync per rolling 30 days (manual "Sync now"; automatic sync off) | automatic, unlimited |
-  | Templates | 1 | 200 |
+  | Templates | 5 (the 4 built-in starters + 1 of your own) | 200 |
   | Cloud history | last 7 days | all (up to the row limit) |
   | Plans | 20 (one fifth of Pro) | 100 |
   | Workout days (safety cap) | 1,000 (one fifth of Pro) | 5,000 |
@@ -128,6 +129,16 @@ Decided 2026-10-01:
   Everything stays fully usable **locally** on a free account; the limits apply to what is stored and synced in the cloud.
   Known consequences, accepted by the owner: low retention is likely; with 1 template the plans cap is mostly moot and with
   a 7-day window the 1,000-day cap never binds; free users can lose up to a month of unsynced work if a device is lost.
+  **Design decisions (owner, 2026-10-01):**
+  - *Templates:* "1 template" became a cap of **5** (4 starters + 1 of your own). The app saves all four built-in templates together the
+    first time anything is edited, so a literal cap of 1 would reject that whole batch and no free account could ever sync templates.
+  - *Sync allowance:* **enforced by the database.** A free account gets one 10-minute write window per 30 days; Postgres refuses writes
+    outside it. Reads stay free. The app shows "next sync available on …" and runs no automatic sync for free accounts.
+  - *7-day window:* cloud-only and **out of scope on both sides** for free accounts (days older than 7 days are never uploaded, compared or
+    deleted by the sync; a daily job removes old cloud rows), so local history is never erased.
+  - *Build order:* (1) AI limit per plan, (2) plan-aware row limits, (3) sync allowance, (4) 7-day window, (5) upgrade prompts, copy and
+    downgrade rules. Each is a separate PR; schema PRs merge first because migrations apply on merge.
+
   Open design questions before building (Phase 15, "Plan tiers"):
   - What counts as "a sync"? Proposal: one successful upload+download cycle; the first pull on a brand-new device does not count.
   - The 7-day window must be a **cloud-only** rule. Rows older than 7 days are neither uploaded nor treated as deleted, or the
