@@ -6,6 +6,12 @@ import { ExpirationPlugin } from 'workbox-expiration';
 
 declare const self: ServiceWorkerGlobalScope;
 
+// A new worker waits until the page asks it to take over (the "Update now" banner), so a reload never
+// happens under someone who is mid-set. Without this message a PWA would keep the old build until it is fully closed.
+self.addEventListener('message', (event) => {
+  if ((event.data as { type?: string } | undefined)?.type === 'SKIP_WAITING') void self.skipWaiting();
+});
+
 cleanupOutdatedCaches();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 precacheAndRoute((self as any).__WB_MANIFEST);

@@ -16,6 +16,9 @@ import { useWorkoutKeyboardShortcuts } from "./features/app-shell/hooks/useWorko
 import { useModalFocus } from "./features/app-shell/hooks/useModalFocus";
 import { DashboardContent } from "./features/app-shell/components/DashboardContent/DashboardContent";
 import { OfflineBanner } from "./components/OfflineBanner";
+import { UpdateBanner } from "./components/UpdateBanner";
+import { usePwaUpdate } from "./features/app-shell/pwa/usePwaUpdate";
+import { registerServiceWorker } from "./features/app-shell/pwa/registerServiceWorker";
 import { useFeedback } from "./features/feedback/hooks/useFeedback";
 import { getSessionLabel, getSessionOptions } from "./application/workout/sessionTypes/sessionTypeRules";
 import { usePlans } from "./features/plans/state/usePlans";
@@ -48,6 +51,7 @@ function App() {
   const { session, signOut, isWorking: isSigningOut } = useAuthSession();
   const { subscription, isLoading: isLoadingSubscription, startCheckout } = useSubscription();
   const { confirm, showToast } = useFeedback();
+  const { updateAvailable, applyUpdate } = usePwaUpdate(registerServiceWorker);
   // Bumped when storage changed underneath the in-memory state (a sync or another tab); hooks re-read it.
   const [dataRevision, setDataRevision] = useState(0);
   const services = useMemo(() => createWorkoutServices(), []);
@@ -403,6 +407,7 @@ function App() {
         syncStatus={syncStatus}
       />
       <OfflineBanner />
+      <UpdateBanner visible={updateAvailable} onUpdate={applyUpdate} />
 
       {page === "dashboard" && (
         <DashboardContent
