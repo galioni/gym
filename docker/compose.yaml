@@ -182,6 +182,9 @@ services:
       - ../.env.local
     environment:
       GYM_API_PORT: "3010"
+      # File events do not cross Windows bind mounts, so the watcher polls (same reason as `server.watch` in vite.config.ts).
+      CHOKIDAR_USEPOLLING: "1"
+      CHOKIDAR_INTERVAL: "300"
     command: ["npx", "tsx", "watch", "--clear-screen=false", "scripts/local/dev-api.ts"]
     ports:
       - "127.0.0.1:3010:3010"

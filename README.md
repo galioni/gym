@@ -182,6 +182,8 @@ npm run gym:up -- mail stripe studio   # ...plus any optional profiles
 npm run gym:down              # stop (data kept)    |  npm run gym:reset   # stop and delete all data
 npm run gym:ps | gym:logs [service] | gym:restart <service>
 npm run gym:migrate           # apply new files from supabase/migrations (also runs automatically on gym:up)
+npm run gym:psql              # psql into the local database (extra args go to psql, e.g. -c "select count(*) from workout_days")
+npm run gym:seed -- you@example.com   # 4 weeks of demo workout days for an account you signed up with locally
 npm run gym:test-db           # RLS/constraint tests + end-to-end API smoke test against the running stack
 npm run gym:test-sync         # two real browsers, one account: automatic sync, new-browser pull, clash handling, deletes
                               #   GYM_BROWSER=webkit|firefox  GYM_DEVICE="iPhone 13"  GYM_SCENARIOS=sync,delete
@@ -200,6 +202,8 @@ npm run gym:test-sync         # two real browsers, one account: automatic sync, 
 | `mail` (profile) | SMTP provider | `axllent/mailpit` |
 | `stripe` (profile) | api.stripe.com | `stripe/stripe-mock` |
 | `studio`, `meta` (profile) | Supabase Studio | `public.ecr.aws/supabase/studio`, `postgres-meta` |
+
+**Schema types.** `infrastructure/supabase/database.types.ts` is the hosted schema as TypeScript. It is not used to talk to the database; `databaseTypes.testSupport.ts` compares it with the hand-written row types in `postgresRows.ts` during `tsc`, so a migration that adds, renames or retypes a column fails the type-check until both are updated. Regenerate it after a migration (`supabase gen types typescript --project-id <ref>`, or the Supabase MCP `generate_typescript_types`), keeping only the tables and functions the app uses. `supabase/config.toml` lets the Supabase CLI `link` and `db push` the same migrations.
 
 Database schema lives in `supabase/migrations` (Supabase CLI layout, so the same files can later be pushed to the hosted project). Every table has row level security; `gym:test-db` proves users cannot read or change each other's rows and that billing state is read-only for clients.
 

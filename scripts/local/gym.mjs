@@ -11,6 +11,8 @@
  *   node scripts/local/gym.mjs migrate            apply new files from supabase/migrations
  *   node scripts/local/gym.mjs test-db            run the database (RLS) tests against the running stack
  *   node scripts/local/gym.mjs test-sync          two-browser end-to-end sync test (stack must be up)
+ *   node scripts/local/gym.mjs psql [args]        open psql in the running database (as the admin role); extra args go to psql
+ *   node scripts/local/gym.mjs seed <email>       add 4 weeks of demo workout days to an existing local account
  *   node scripts/local/gym.mjs ps | logs [service] | restart <service>
  */
 import { createHmac, randomBytes } from "node:crypto";
@@ -96,7 +98,7 @@ function init(force) {
   return 0;
 }
 
-function compose(args, profiles = []) {
+function compose(args, profiles = [], input) {
   const full = [
     "compose",
     "--env-file", ENV_FILE,
@@ -105,7 +107,8 @@ function compose(args, profiles = []) {
     ...profiles.flatMap((p) => ["--profile", p]),
     ...args,
   ];
-  return spawnSync("docker", full, { stdio: "inherit", cwd: ROOT }).status ?? 1;
+  const options = input === undefined ? { stdio: "inherit", cwd: ROOT } : { stdio: ["pipe", "inherit", "inherit"], cwd: ROOT, input };
+  return spawnSync("docker", full, options).status ?? 1;
 }
 
 function requireEnv() {
@@ -164,6 +167,22 @@ switch (command) {
     if (!requireEnv()) { code = 1; break; }
     code = spawnSync(process.execPath, [path.join(ROOT, "scripts", "local", "e2e-sync.mjs")], { stdio: "inherit", cwd: ROOT }).status ?? 1;
     break;
+  case "psql":
+    if (!requireEnv()) { code = 1; break; }
+    code = compose(["exec", "db", "psql", "-U", "supabase_admin", "-d", "postgres", ...rest]);
+    break;
+  case "seed": {
+    if (!requireEnv()) { code = 1; break; }
+    const email = rest[0];
+    if (!email || !email.includes("@")) {
+      console.error("Usage: npm run gym:seed -- <email of an existing local account>");
+      code = 1;
+      break;
+    }
+    const sql = readFileSync(path.join(ROOT, "supabase", "seed", "demo_days.sql"), "utf8");
+    code = compose(["exec", "-T", "db", "psql", "-U", "supabase_admin", "-d", "postgres", "-v", `email=${email}`], [], sql);
+    break;
+  }
   case "ps":
     if (!requireEnv()) { code = 1; break; }
     code = compose(["ps", "--all"], PROFILES);
@@ -177,7 +196,7 @@ switch (command) {
     code = compose(["restart", ...rest], PROFILES);
     break;
   default:
-    console.log("Usage: npm run gym:<init|up|down|reset|ps|logs|restart> [-- args]");
+    console.log("Usage: npm run gym:<init|up|down|reset|psql|seed|ps|logs|restart> [-- args]");
     console.log(`Profiles for up: ${PROFILES.join(", ")}  (e.g. npm run gym:up -- mail studio)`);
 }
 

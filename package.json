@@ -20,6 +20,8 @@
     "gym:migrate": "node scripts/local/gym.mjs migrate",
     "gym:test-db": "node scripts/local/gym.mjs test-db",
     "gym:test-sync": "node scripts/local/gym.mjs test-sync",
+    "gym:psql": "node scripts/local/gym.mjs psql",
+    "gym:seed": "node scripts/local/gym.mjs seed",
     "gym:ps": "node scripts/local/gym.mjs ps",
     "gym:logs": "node scripts/local/gym.mjs logs",
     "gym:restart": "node scripts/local/gym.mjs restart"
