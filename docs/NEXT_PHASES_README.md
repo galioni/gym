@@ -73,9 +73,13 @@ KV is still used for billing state, user settings, push subscriptions and rate l
 
 - [ ] Incremental pull (`updated_at > cursor` with a small overlap window) instead of reading every row each sync
 - [ ] Faster cross-device updates: Supabase Realtime or a lighter poll (today: on focus, on reconnect, every 5 minutes)
-- [ ] **Retention (decided: 90 days).** Blank the content of a day when it is soft-deleted (client write plus a database
-  trigger as a backstop), and a scheduled purge (`pg_cron` on the hosted project, plus a local equivalent) that deletes
-  days soft-deleted more than 90 days ago. Do this before Phase 15 ends: it is a privacy commitment, not an optimisation
+- [x] **Retention (decided: 90 days). Done and live (2026-10-01).** A trigger blanks a deleted day's content; the client
+  stores the content hash in `deleted_hash` so cross-device deletes still work; `purge_deleted_days()` runs daily via
+  `pg_cron` (03:17 UTC, job `purge-deleted-days`), executable only by `postgres`. Verified on production with a rolled-back
+  delete (content blank, hash kept), privileges and advisors. Migration `20261001110000_deleted_day_retention`.
+  - **Operational finding:** merging to `main` applied this migration to the hosted project **automatically** (the Supabase
+    GitHub integration is deploying migrations). A migration therefore reaches production when its PR merges, so review the
+    SQL in the PR and make the client code tolerate the old schema, or merge the migration PR before the client PR
 - [ ] Bound the size of local restore points (each one stores a full snapshot, up to 10 of them)
 
 ## Phase 17 — Tooling and developer experience  _(size: S to M)_
