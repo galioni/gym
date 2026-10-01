@@ -12,6 +12,9 @@ import { EMPTY_SYNC_BASE, SyncBase } from "../../application/sync/syncMerge";
 /**
  * Local persistence for sync mode/status metadata.
  */
+/** Roughly 2 MB of the ~5 MB a browser grants an origin. */
+export const RESTORE_POINTS_BUDGET_CHARS = 2_000_000;
+
 export class LocalStorageSyncSettingsRepository
   implements SyncSettingsRepository
 {
@@ -95,6 +98,26 @@ export class LocalStorageSyncSettingsRepository
       plans?: unknown;
     }>
   ): Promise<void> {
-    localStorage.setItem(SYNC_RESTORE_POINTS_STORAGE_KEY, JSON.stringify(points));
+    // Every restore point holds full copies of the data, and the browser keeps only a few MB for the whole app. So the
+    // newest points are kept within a budget and older ones are dropped first; the newest is always kept, because a sync
+    // that is about to change data needs the point it just took.
+    let kept = points;
+    let serialized = JSON.stringify(kept);
+    while (kept.length > 1 && serialized.length > RESTORE_POINTS_BUDGET_CHARS) {
+      kept = kept.slice(0, -1);
+      serialized = JSON.stringify(kept);
+    }
+    for (;;) {
+      try {
+        localStorage.setItem(SYNC_RESTORE_POINTS_STORAGE_KEY, serialized);
+        return;
+      } catch (error) {
+        // Storage is fuller than the budget assumed (other app data lives there too): drop the oldest and retry. If even the
+        // newest point alone does not fit, fail the sync step rather than carry on without a way back.
+        if (kept.length <= 1) throw error;
+        kept = kept.slice(0, -1);
+        serialized = JSON.stringify(kept);
+      }
+    }
   }
 }
