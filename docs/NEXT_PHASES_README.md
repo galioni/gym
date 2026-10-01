@@ -145,6 +145,9 @@ Decided 2026-10-01:
     sync would read them as deletions and erase local history. This needs a change in `deletionReconciliation` and tests.
   - Downgrade behaviour: a Pro user who lapses with 30 templates keeps them locally and read-only in the cloud; nothing is deleted.
   - Free "1 template" is enforced in the client and by the database trigger (`row_limit` becomes plan-aware).
+- [x] **Pro price: £1.99 per month** (owner, 2026-10-01). The landing page shows it, but what is charged is the Stripe Price behind
+  `STRIPE_PRO_PRICE_ID` (Stripe prices cannot be edited): create a new recurring monthly GBP price of £1.99 in Stripe, set the
+  variable in Vercel for production and preview, redeploy, and only then show the new price on the landing page.
 - [x] **Soft-deleted data retention: 90 days.** A scheduled job permanently erases deleted days after 90 days, and the
   exercise content of a deleted day is blanked straight away so only the deletion marker syncs. New work, see Phase 16.
   A full data export was not decided; still open as a product question.
