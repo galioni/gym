@@ -1,7 +1,6 @@
 import { requireAuth } from "./_lib/authContext.js";
 import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight } from "./_lib/http.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
-import { getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
 import { getSubscription } from "./_lib/subscriptionGuard.js";
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
@@ -19,8 +18,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     if (!auth) return;
     observation.setUserId(auth.userId);
 
-    const kvEnv = getRequiredVercelKvEnv();
-    const subscription = await getSubscription(auth.userId, kvEnv);
+    const subscription = await getSubscription(auth.userId);
     res.setHeader("Cache-Control", "private, no-store");
     res.status(200).json(subscription);
   } catch (error) {

@@ -14,12 +14,6 @@ vi.mock("./_lib/observability.js", () => ({
 vi.mock("./_lib/subscriptionGuard.js", () => ({
   getSubscription: vi.fn(),
 }));
-vi.mock("./_lib/apiEnv.js", () => ({
-  getRequiredVercelKvEnv: vi.fn(() => ({
-    kvRestApiUrl: "https://kv.example.com",
-    kvRestApiToken: "test-token",
-  })),
-}));
 
 import handler from "./subscription";
 import { requireAuth } from "./_lib/authContext.js";
@@ -93,7 +87,7 @@ describe("GET /api/subscription", () => {
 
   it("returns 500 when subscription lookup throws", async () => {
     mockRequireAuth.mockResolvedValue({ userId: "user-3", email: null, accessToken: "tok" });
-    mockGetSubscription.mockRejectedValue(new Error("KV unavailable"));
+    mockGetSubscription.mockRejectedValue(new Error("database unavailable"));
     const req = createMockRequest({ method: "GET" });
     const { res, state } = createMockResponse();
 

@@ -42,28 +42,23 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 
     const kvEnv = getRequiredVercelKvEnv();
 
-    // Fetch subscription first so we can clean up the Stripe customer reverse-lookup key.
+    // Read the subscription first: it holds the Stripe customer id, which is gone once the auth user is deleted.
     let stripeCustomerId: string | null = null;
     try {
-      const subscription = await getSubscription(auth.userId, kvEnv);
+      const subscription = await getSubscription(auth.userId);
       stripeCustomerId = subscription.stripeCustomerId;
     } catch {
       // Non-fatal — proceed even if subscription lookup fails.
     }
 
     // Delete all server-side data for this user.
+    // Everything current (workouts, settings, subscription) lives in Postgres and goes with the auth user through the
+    // cascade below. Only legacy KV sync documents (no longer written) need deleting here.
     const keysToDelete = [
-      `subscription:${auth.userId}`,
-      // Legacy KV sync documents (no longer written). Current data lives in Postgres and is removed by the
-      // cascade when the auth user is deleted.
       `sync:${auth.userId}:workout-data`,
       `sync:${auth.userId}:templates`,
       `sync:${auth.userId}:plans`,
     ];
-    if (stripeCustomerId) {
-      keysToDelete.push(`stripe_customer:${stripeCustomerId}`);
-    }
-
     await deleteKvKeys(keysToDelete, kvEnv.kvRestApiUrl, kvEnv.kvRestApiToken);
 
     // Best-effort: delete the Stripe customer record. Non-fatal if it fails.

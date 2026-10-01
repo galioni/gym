@@ -59,8 +59,12 @@ KV is still used for billing state, user settings, push subscriptions and rate l
 - [ ] **Plan tiers** (see the Free/Pro table under "Decisions"): plan-aware `row_limit()`, a sync allowance for free
   accounts with clear status text ("next sync available on …"), the cloud-only 7-day window, a plan-aware AI rate limit, and
   upgrade prompts at each limit. Build after subscriptions are in Postgres
-- [ ] Subscriptions: read and write the `subscriptions` table (Stripe webhook writes it with the service role; the
-  client can read its own row under RLS); migrate `api/subscription`, `api/_lib/subscriptionGuard.ts`, the webhook
+- [x] Subscriptions (slice 15.1, 2026-10-01): billing state is in Postgres. `subscriptions` holds the plan and, through a unique
+  `stripe_customer_id`, the customer-to-user link; `stripe_events` de-duplicates webhooks (purged after 30 days by `pg_cron`).
+  `subscriptionGuard`, the webhook, checkout, billing portal, `user-settings` and delete-account use it; a webhook lookup that
+  hits a database error now answers 5xx so Stripe retries, instead of dropping the event. Shipped as two PRs because migrations
+  apply on merge: schema first, then code. Nothing was migrated from KV (no subscribers). The `subscription:*`,
+  `stripe_customer:*` and `stripe_event:*` KV keys are now unused
 - [ ] User settings (AI provider): use `user_settings`; migrate `api/user-settings` and `api/generate-plan`
 - [ ] Push subscriptions and reminder de-duplication: new table(s) plus a migration; the `/api/push-*` routes the client
   calls are not present in `api/` yet, confirm whether the feature is live before porting

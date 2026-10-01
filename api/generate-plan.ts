@@ -170,7 +170,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 
     const kvEnv = getRequiredVercelKvEnv();
     const [subscription, userSettings] = await Promise.all([
-      getSubscription(auth.userId, kvEnv),
+      getSubscription(auth.userId),
       getUserSettings(auth.userId, kvEnv),
     ]);
 

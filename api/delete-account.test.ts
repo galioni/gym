@@ -55,7 +55,7 @@ describe("DELETE /api/delete-account", () => {
     expect(state.statusCode).toBe(405);
   });
 
-  it("returns 200 and calls KV + Supabase delete on success", async () => {
+  it("returns 200, deletes the legacy KV sync keys and the Supabase user on success", async () => {
     mockRequireAuth.mockResolvedValue({ userId: "user-abc", email: "test@test.com", accessToken: "tok" });
     mockGetSubscription.mockResolvedValue({
       plan: "pro",
@@ -72,22 +72,24 @@ describe("DELETE /api/delete-account", () => {
     expect(state.statusCode).toBe(200);
     expect((state.jsonPayload as { ok: boolean }).ok).toBe(true);
 
-    // KV pipeline was called with correct keys including stripe customer
+    // Only the legacy KV sync documents are deleted there. Billing lives in Postgres and goes with the user (cascade).
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("/pipeline"),
       expect.objectContaining({
         method: "POST",
-        body: expect.stringContaining("subscription:user-abc"),
+        body: expect.stringContaining("sync:user-abc:workout-data"),
       })
     );
-    expect(mockFetch.mock.calls[0][1].body).toContain("stripe_customer:cus_123");
+    const kvBody = mockFetch.mock.calls[0][1].body as string;
+    expect(kvBody).not.toContain("subscription:");
+    expect(kvBody).not.toContain("stripe_customer:");
 
     // Supabase admin deleteUser was called
     const supabaseInstance = mockCreateClient.mock.results[0].value;
     expect(supabaseInstance.auth.admin.deleteUser).toHaveBeenCalledWith("user-abc");
   });
 
-  it("skips stripe customer key when subscription has no stripeCustomerId", async () => {
+  it("does not look for billing keys in KV when the user has no Stripe customer", async () => {
     mockRequireAuth.mockResolvedValue({ userId: "user-free", email: null, accessToken: "tok" });
     mockGetSubscription.mockResolvedValue({
       plan: "free",

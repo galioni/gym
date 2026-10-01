@@ -1,13 +1,12 @@
 import crypto from "crypto";
 import type { IncomingMessage } from "node:http";
 import { ApiResponse } from "./_lib/http.js";
-import { getRequiredVercelKvEnv, getStripeWebhookSecret } from "./_lib/apiEnv.js";
+import { getStripeWebhookSecret } from "./_lib/apiEnv.js";
 import {
   getStripeCustomerUserId,
   isStripeEventProcessed,
   markStripeEventProcessed,
   setSubscription,
-  setStripeCustomerMappingAndSubscription,
   SubscriptionInfo,
 } from "./_lib/subscriptionGuard.js";
 import { getStripeSubscription } from "./_lib/stripeClient.js";
@@ -100,11 +99,9 @@ export default async function handler(req: IncomingMessage, res: ApiResponse): P
   }
 
   try {
-    const kvEnv = getRequiredVercelKvEnv();
-
     // Idempotency: skip events already processed (Stripe retries on non-2xx).
     const eventId = typeof event.id === "string" && event.id.length > 0 ? event.id : null;
-    if (eventId && await isStripeEventProcessed(eventId, kvEnv)) {
+    if (eventId && await isStripeEventProcessed(eventId)) {
       res.status(200).json({ received: true });
       return;
     }
@@ -128,9 +125,9 @@ export default async function handler(req: IncomingMessage, res: ApiResponse): P
       // Fetch the subscription directly rather than waiting for a
       // customer.subscription.updated event: Stripe does not guarantee
       // delivery order between the two, and if updated arrived first it
-      // would silently no-op (no customer→user mapping yet), leaving
-      // currentPeriodEnd null and the KV record on a short, non-renewing
-      // TTL until the next lifecycle event happens to fix it.
+      // would find no customer→user link yet (that link is written here, as the
+      // stripe_customer_id on the subscription row) and no-op, leaving
+      // currentPeriodEnd null until the next lifecycle event happens to fix it.
       let subscriptionInfo: SubscriptionInfo = {
         plan: "pro",
         status: "active",
@@ -158,12 +155,8 @@ export default async function handler(req: IncomingMessage, res: ApiResponse): P
         }
       }
 
-      await setStripeCustomerMappingAndSubscription(
-        customerId,
-        userId,
-        subscriptionInfo,
-        kvEnv
-      );
+      // One row carries both the subscription and the customer→user link, so they cannot disagree.
+      await setSubscription(userId, subscriptionInfo);
     }
 
     if (
@@ -176,7 +169,7 @@ export default async function handler(req: IncomingMessage, res: ApiResponse): P
         return;
       }
 
-      const userId = await getStripeCustomerUserId(customerId, kvEnv);
+      const userId = await getStripeCustomerUserId(customerId);
       if (!userId) {
         res.status(200).json({ received: true });
         return;
@@ -187,22 +180,18 @@ export default async function handler(req: IncomingMessage, res: ApiResponse): P
       const isActive =
         subStatus === "active" || subStatus === "trialing";
 
-      await setSubscription(
-        userId,
-        {
-          plan: isActive ? "pro" : "free",
-          status: subStatus,
-          stripeCustomerId: customerId,
-          currentPeriodEnd: periodEnd
-            ? new Date(periodEnd * 1000).toISOString()
-            : null,
-        },
-        kvEnv
-      );
+      await setSubscription(userId, {
+        plan: isActive ? "pro" : "free",
+        status: subStatus,
+        stripeCustomerId: customerId,
+        currentPeriodEnd: periodEnd
+          ? new Date(periodEnd * 1000).toISOString()
+          : null,
+      });
     }
 
     if (eventId) {
-      await markStripeEventProcessed(eventId, kvEnv);
+      await markStripeEventProcessed(eventId);
     }
 
     res.status(200).json({ received: true });
