@@ -3,6 +3,8 @@ import {
   SyncAllowance,
   SyncAllowanceError,
   SyncAllowanceStatus,
+  SyncGrant,
+  historyDaysFor,
   parseNextAvailable,
 } from "../../application/sync/syncAllowance";
 
@@ -27,12 +29,16 @@ interface AllowanceRow {
 export class PostgrestSyncAllowance implements SyncAllowance {
   public constructor(private readonly client: PostgrestClient) {}
 
-  public async begin(): Promise<void> {
+  public async begin(): Promise<SyncGrant> {
     const { error } = await this.client.rpc("begin_sync");
-    if (!error) return;
-    if (error.code === ALLOWANCE_USED_CODE) throw new SyncAllowanceError(parseNextAvailable(error.details));
-    if (error.code === FUNCTION_MISSING_CODE) return;
-    throw new Error(`Could not start the sync: ${error.message}`);
+    if (error) {
+      if (error.code === ALLOWANCE_USED_CODE) throw new SyncAllowanceError(parseNextAvailable(error.details));
+      if (error.code === FUNCTION_MISSING_CODE) return { historyDays: null };
+      throw new Error(`Could not start the sync: ${error.message}`);
+    }
+    // The plan decides what may be uploaded. If it cannot be read the sync does not run: guessing "no limit" could upload
+    // days the plan does not keep, and guessing "limited" could hold back days a paying account is entitled to.
+    return { historyDays: historyDaysFor(await this.status()) };
   }
 
   public async status(): Promise<SyncAllowanceStatus> {

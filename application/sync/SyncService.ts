@@ -20,6 +20,7 @@ import { DayData } from "../../types";
 import { stableSerialize } from "./contentHash";
 import { CloudLimitError } from "./syncErrors";
 import { SyncAllowance, SyncAllowanceError } from "./syncAllowance";
+import { HistoryLimitedCloudWorkout, historyCutoff } from "./historyWindow";
 import { reconcileDeletions } from "./deletionReconciliation";
 import {
   agreedBase,
@@ -195,6 +196,8 @@ export class SyncService {
    * refusal (what arrived is kept, what both sides agree on is recorded), so local data and pending deletions are untouched.
    */
   private uploadsHeld = false;
+  /** For a plan that keeps a limited history in the cloud: the cloud with older days filtered out of every upload. */
+  private limitedCloud: WorkoutDataRepository | null = null;
   private run: SyncRun = { expected: { workout: null, templates: null, plans: null, settings: null }, applied: false };
 
   public constructor(private readonly deps: SyncServiceDeps) {}
@@ -323,14 +326,18 @@ export class SyncService {
     try {
       // Permission first, before any read: a sync is both directions, so a refusal means nothing is read or written.
       this.run = { expected: { workout: null, templates: null, plans: null, settings: null }, applied: false };
-      await this.deps.allowance?.begin();
+      this.limitedCloud = null;
+      const grant = await this.deps.allowance?.begin();
+      if (grant?.historyDays && this.deps.cloudWorkoutRepository) {
+        this.limitedCloud = new HistoryLimitedCloudWorkout(this.deps.cloudWorkoutRepository, historyCutoff(grant.historyDays));
+      }
 
       const base: SyncBase = (await this.deps.settingsRepository.readSyncBase?.()) ?? EMPTY_SYNC_BASE;
       const localWorkout = await this.deps.localWorkoutRepository.readSnapshot();
       const localTemplates = await this.deps.localTemplateRepository.readSnapshot();
       const localPlans = this.deps.localPlansRepository ? await this.deps.localPlansRepository.readSnapshot() : null;
       const localAccount = this.deps.localSettingsRepository ? await this.deps.localSettingsRepository.readSnapshot() : null;
-      const cloudWorkout = await this.deps.cloudWorkoutRepository.readSnapshot();
+      const cloudWorkout = await this.cloudWorkout().readSnapshot();
       const cloudTemplates = await this.deps.cloudTemplateRepository.readSnapshot();
       const cloudPlans = this.deps.cloudPlansRepository ? await this.deps.cloudPlansRepository.readSnapshot() : null;
       const cloudAccount = this.deps.cloudSettingsRepository ? await this.deps.cloudSettingsRepository.readSnapshot() : null;
@@ -679,8 +686,8 @@ export class SyncService {
     cloudWorkout: WorkoutDataSnapshot | null
   ): Promise<void> {
     if (this.uploadsHeld) return;
-    if (Object.keys(deletions.deleteInCloud).length > 0 && this.deps.cloudWorkoutRepository) {
-      await this.deps.cloudWorkoutRepository.writeSnapshot({
+    if (Object.keys(deletions.deleteInCloud).length > 0) {
+      await this.cloudWorkout().writeSnapshot({
         version: cloudWorkout?.version ?? 1,
         updatedAt: new Date().toISOString(),
         data: deletions.cloud,
@@ -714,6 +721,13 @@ export class SyncService {
     }
   }
 
+  /** The cloud workout repository for this run: limited to the plan's history window when it has one. */
+  private cloudWorkout(): WorkoutDataRepository {
+    const cloud = this.limitedCloud ?? this.deps.cloudWorkoutRepository;
+    if (!cloud) throw new Error("Cloud sync is not configured.");
+    return cloud;
+  }
+
   /** Every write to the cloud goes through here first. */
   private assertUploadsAllowed(): void {
     if (this.uploadsHeld) throw new SyncAllowanceError(null, "Uploads are held back for this sync.");
@@ -722,7 +736,7 @@ export class SyncService {
   /** After a refused write of workout days: the base from what the cloud and this device really hold now. */
   private async daysBaseAfterPartialWrite(previous: Record<string, string>): Promise<Record<string, string>> {
     const [cloud, local] = await Promise.all([
-      this.deps.cloudWorkoutRepository?.readSnapshot() ?? null,
+      this.cloudWorkout()?.readSnapshot() ?? null,
       this.deps.localWorkoutRepository.readSnapshot(),
     ]);
     return baseAfterPartialWrite(previous, baseDaysFrom(cloud?.data ?? {}), baseDaysFrom(local?.data ?? {}));
@@ -764,13 +778,13 @@ export class SyncService {
     cloud: WorkoutDataSnapshot | null,
     merge: { merged: Record<string, DayData> } | null
   ): Promise<Record<string, DayData>> {
-    if (!this.deps.cloudWorkoutRepository) {
+    if (!this.cloudWorkout()) {
       return {};
     }
 
     if (local && !cloud) {
       this.assertUploadsAllowed();
-      await this.deps.cloudWorkoutRepository.writeSnapshot(local);
+      await this.cloudWorkout().writeSnapshot(local);
       return local.data;
     }
     if (!local && cloud) {
@@ -790,7 +804,7 @@ export class SyncService {
     if (stableSerialize(merge.merged) !== stableSerialize(cloud.data)) {
       try {
         this.assertUploadsAllowed();
-        await this.deps.cloudWorkoutRepository.writeSnapshot(merged);
+        await this.cloudWorkout().writeSnapshot(merged);
       } catch (error) {
         if (!(error instanceof CloudLimitError)) throw error;
         refused = error;
