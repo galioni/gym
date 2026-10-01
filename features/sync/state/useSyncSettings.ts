@@ -19,7 +19,7 @@ interface UseSyncSettingsResult {
   syncMessage: string;
   syncNow: (
     resolution?: Partial<Record<SyncEntity, ConflictResolution>>,
-    options?: { automatic?: boolean }
+    options?: { automatic?: boolean; downloadOnly?: boolean }
   ) => Promise<SyncNowResult>;
   rollbackToRestorePoint: (id: string) => Promise<SyncNowResult>;
   pruneRestorePoints: () => Promise<void>;
@@ -68,7 +68,7 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
       resolution: Partial<
         Record<SyncEntity, ConflictResolution>
       > = {},
-      options: { automatic?: boolean } = {}
+      options: { automatic?: boolean; downloadOnly?: boolean } = {}
     ) => {
       setIsSyncing(true);
       const result = await service.syncNow(resolution, options);

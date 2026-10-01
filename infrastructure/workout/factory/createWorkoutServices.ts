@@ -7,7 +7,9 @@ import { LocalStorageWorkoutDataRepository } from "../LocalStorageWorkoutDataRep
 import { LocalStorageSyncSettingsRepository } from "../../sync/LocalStorageSyncSettingsRepository";
 import { LocalStoragePlansRepository } from "../LocalStoragePlansRepository";
 import { SupabaseTokenProvider } from "../../auth/supabase/SupabaseTokenProvider";
-import { PostgrestRowGateway } from "../../supabase/PostgrestRowGateway";
+import { PostgrestRowGateway, createUserPostgrestClient } from "../../supabase/PostgrestRowGateway";
+import { PostgrestSyncAllowance } from "../../supabase/PostgrestSyncAllowance";
+import { SyncAllowance } from "../../../application/sync/syncAllowance";
 import { LocalStorageAccountSettingsRepository } from "../LocalStorageAccountSettingsRepository";
 import {
   PostgresAccountSettingsRepository,
@@ -21,6 +23,8 @@ interface WorkoutServices {
   templateService: TemplateService;
   syncService: SyncService;
   planService: PlanService;
+  /** The Free plan's monthly sync: asked before every sync, and read by the screen. */
+  syncAllowance: SyncAllowance;
 }
 
 /**
@@ -36,13 +40,16 @@ export function createWorkoutServices(): WorkoutServices {
 
   const tokenProvider = new SupabaseTokenProvider();
   const gateway = new PostgrestRowGateway(tokenProvider, tokenProvider);
+  const syncAllowance = new PostgrestSyncAllowance(createUserPostgrestClient(tokenProvider));
 
   return {
     workoutDataService: new WorkoutDataService(localWorkoutRepository),
     templateService: new TemplateService(localTemplateRepository),
     planService: new PlanService(plansRepository),
+    syncAllowance,
     syncService: new SyncService({
       settingsRepository: syncSettingsRepository,
+      allowance: syncAllowance,
       localWorkoutRepository,
       localTemplateRepository,
       cloudWorkoutRepository: new PostgresWorkoutDataRepository(gateway),

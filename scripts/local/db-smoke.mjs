@@ -264,6 +264,68 @@ try {
   check(res.status === 401 || res.status === 403, "rate limit: and cannot read the rate events", `(${res.status})`);
   res = await call("POST", "/rest/v1/rpc/consume_rate_limit", { token: SERVICE, apikey: SERVICE, body: { p_user: a.id, p_route: "svc", p_max: 1, p_window_seconds: 60 } });
   check(res.status === 200 && res.json?.[0]?.allowed === true, "rate limit: the server (service role) can use it", `(${res.status} ${res.text.slice(0, 100)})`);
+
+  // Free-plan sync allowance (one sync window per 30 days), over the real HTTP path. The switch ships off, so switch it on
+  // for this check and always off again.
+  const setFlag = (enabled) => call("PATCH", "/rest/v1/app_flags?name=eq.sync_allowance", { token: SERVICE, apikey: SERVICE, headers: { Prefer: "return=minimal" }, body: { enabled } });
+  const fUser = await signUp("f");
+  ids.push(fUser.id);
+  const rpc = (name, token = fUser.token) => call("POST", `/rest/v1/rpc/${name}`, { token, body: {} });
+  const writeDay = (d) => call("POST", "/rest/v1/workout_days", { token: fUser.token, headers: { Prefer: "return=minimal" }, body: { ...day, user_id: fUser.id, day: d } });
+  const setWindow = (minutesAgo) => call("POST", "/rest/v1/sync_windows?on_conflict=user_id", {
+    token: SERVICE, apikey: SERVICE, headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: { user_id: fUser.id, opened_at: new Date(Date.now() - minutesAgo * 60000).toISOString() },
+  });
+  try {
+    res = await setFlag(true);
+    check(res.status === 204 || res.status === 200, "allowance: switched on for this check", `(${res.status})`);
+
+    // Checking whether a sync may go ahead spends nothing: the month is spent by the first upload.
+    res = await rpc("begin_sync");
+    check(res.status === 200 && res.json?.[0]?.allowed === true, "allowance: begin_sync allows a Free account that has not synced this month", `(${res.status} ${res.text.slice(0, 120)})`);
+    res = await call("GET", `/rest/v1/sync_windows?user_id=eq.${fUser.id}`, { token: SERVICE, apikey: SERVICE });
+    check(res.status === 200 && res.json?.length === 0, "allowance: and checking opened no window (a sync that only downloads spends nothing)", res.text.slice(0, 120));
+    res = await call("GET", "/rest/v1/workout_days", { token: fUser.token });
+    check(res.status === 200 && Array.isArray(res.json), "allowance: reading is never refused by the database (a refusal would look like an empty account)");
+
+    res = await writeDay("2026-05-01");
+    check(res.status === 201, "allowance: the first upload is allowed and opens the window", `(${res.status} ${res.text.slice(0, 120)})`);
+    res = await writeDay("2026-05-02");
+    check(res.status === 201, "allowance: further uploads inside the window are the same sync", `(${res.status} ${res.text.slice(0, 120)})`);
+    res = await rpc("begin_sync");
+    check(res.status === 200 && res.json?.[0]?.allowed === true && res.json?.[0]?.window_ends_at, "allowance: begin_sync inside the window reports when it closes", res.text.slice(0, 160));
+
+    await setWindow(11);
+    res = await writeDay("2026-05-03");
+    check(res.status === 423 && res.json?.code === "PT423" && !Number.isNaN(Date.parse(res.json?.details)), "allowance: once the window has closed uploads are refused (HTTP 423, code PT423) with the date", `(${res.status} ${res.text.slice(0, 160)})`);
+    res = await rpc("begin_sync");
+    check(res.status === 423 && res.json?.code === "PT423" && !Number.isNaN(Date.parse(res.json?.details)), "allowance: and begin_sync refuses, naming the date the next sync opens", `(${res.status} ${res.text.slice(0, 160)})`);
+    res = await rpc("sync_allowance");
+    check(res.status === 200 && res.json?.[0]?.enforced === true && res.json?.[0]?.is_pro === false && res.json?.[0]?.next_available_at, "allowance: sync_allowance tells the app when the next sync opens", res.text.slice(0, 160));
+
+    await setWindow(31 * 24 * 60);
+    res = await rpc("begin_sync");
+    check(res.status === 200 && res.json?.[0]?.allowed === true, "allowance: thirty days later a sync is available again", `(${res.status} ${res.text.slice(0, 120)})`);
+    res = await writeDay("2026-05-03");
+    check(res.status === 201, "allowance: and its first upload opens the next window", `(${res.status} ${res.text.slice(0, 120)})`);
+
+    res = await rpc("begin_sync", ANON);
+    check(res.status === 401 || res.status === 403, "allowance: anon cannot begin a sync", `(${res.status})`);
+    res = await call("GET", "/rest/v1/sync_windows", { token: fUser.token });
+    check(res.status === 401 || res.status === 403, "allowance: a user cannot read or write the window table", `(${res.status})`);
+
+    // Pro: never limited.
+    await setWindow(60);
+    await call("POST", "/rest/v1/subscriptions?on_conflict=user_id", {
+      token: SERVICE, apikey: SERVICE, headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: { user_id: fUser.id, plan: "pro", status: "active" },
+    });
+    res = await writeDay("2026-05-05");
+    check(res.status === 201, "allowance: a Pro account uploads with no window", `(${res.status})`);
+  } finally {
+    await setFlag(false);
+  }
+  res = await writeDay("2026-05-04");
+  check(res.status === 201, "allowance: switched off again, nothing is limited", `(${res.status})`);
 } finally {
   for (const id of ids) {
     await call("DELETE", `/auth/v1/admin/users/${id}`, { token: SERVICE, apikey: SERVICE });

@@ -66,5 +66,7 @@ export interface SyncNowResult {
   /** True when this sync changed data in local storage, so in-memory state must be reloaded. */
   appliedToLocal?: boolean;
   /** Why an "error" result happened, when the user should be told something specific. */
-  reason?: "storageLimit";
+  reason?: "storageLimit" | "allowance";
+  /** With reason "allowance": when the next sync opens (ISO), if the database said. */
+  nextAvailableAt?: string | null;
 }

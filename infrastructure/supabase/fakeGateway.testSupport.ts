@@ -33,8 +33,11 @@ export class FakeGateway implements RowGateway {
 
   /** Per-table cap on live rows, like the database trigger (an unset table is unlimited). */
   public caps: Partial<Record<UserTable, number>> = {};
+  /** When set, every write is refused with this error (reads still work), like a Free account outside its sync window. */
+  public refuseWrites: Error | null = null;
 
   public async upsertRows(table: UserTable, rows: object[]) {
+    if (this.refuseWrites) throw this.refuseWrites;
     const cap = this.caps[table];
     if (cap !== undefined) {
       const isLive = (row: Row) => row.deleted_at == null;
@@ -50,6 +53,7 @@ export class FakeGateway implements RowGateway {
 
   // Mirrors the database: the deleted_hash comes from the client, and the trigger blanks the content.
   public async markDaysDeleted(days: Record<string, string>) {
+    if (this.refuseWrites) throw this.refuseWrites;
     for (const [day, hash] of Object.entries(days)) {
       const row = this.tables.workout_days.get(day);
       if (row && row.deleted_at === null) {
@@ -70,6 +74,7 @@ export class FakeGateway implements RowGateway {
   }
 
   public async deleteMissing(table: "templates" | "plans", keep: string[]) {
+    if (this.refuseWrites) throw this.refuseWrites;
     for (const key of [...this.tables[table].keys()]) {
       if (!keep.includes(key)) this.tables[table].delete(key);
     }

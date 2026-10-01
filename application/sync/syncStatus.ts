@@ -8,12 +8,16 @@ export interface SyncStatus {
   detail: string;
 }
 
+import { formatNextSync } from "./syncAllowance";
+
 export interface SyncStatusInput {
   isSyncing: boolean;
   isOnline: boolean;
   conflictCount: number;
   lastError: string | null;
   lastSyncedAt: string | null;
+  /** Present for a Free account under the monthly allowance. */
+  allowance?: { nextAvailableAt: string | null } | null;
   now?: number;
 }
 
@@ -36,6 +40,7 @@ export function deriveSyncStatus({
   conflictCount,
   lastError,
   lastSyncedAt,
+  allowance = null,
   now = Date.now(),
 }: SyncStatusInput): SyncStatus {
   if (conflictCount > 0) {
@@ -58,8 +63,21 @@ export function deriveSyncStatus({
   if (isSyncing) {
     return { kind: "syncing", label: "Syncing", detail: "Syncing your data…" };
   }
+  const freePlan = allowance
+    ? allowance.nextAvailableAt
+      ? ` Free plan: the next sync is available on ${formatNextSync(allowance.nextAvailableAt)}.`
+      : " Free plan: a sync is available now."
+    : "";
   if (lastSyncedAt) {
-    return { kind: "synced", label: "Synced", detail: `Everything is up to date. Last synced ${ago(lastSyncedAt, now)}.` };
+    return {
+      kind: "synced",
+      label: "Synced",
+      detail: `Everything is up to date. Last synced ${ago(lastSyncedAt, now)}.${freePlan}`,
+    };
   }
-  return { kind: "idle", label: "Not synced yet", detail: "Your data will sync automatically." };
+  return {
+    kind: "idle",
+    label: "Not synced yet",
+    detail: allowance ? `Sync from Settings when you want to back up.${freePlan}` : "Your data will sync automatically.",
+  };
 }

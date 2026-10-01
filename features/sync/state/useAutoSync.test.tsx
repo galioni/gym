@@ -25,7 +25,7 @@ function stubStorage(initial: Record<string, string> = {}) {
 }
 
 function setup(overrides: Partial<Parameters<typeof useAutoSync>[0]> = {}) {
-  const syncNow = vi.fn<(resolution?: unknown, options?: { automatic?: boolean }) => Promise<SyncNowResult>>(async () => SUCCESS);
+  const syncNow = vi.fn<(resolution?: unknown, options?: { automatic?: boolean; downloadOnly?: boolean }) => Promise<SyncNowResult>>(async () => SUCCESS);
   const handlers = {
     onLocalDataChanged: vi.fn(),
     onConflicts: vi.fn(),
@@ -67,7 +67,14 @@ describe("useAutoSync", () => {
       const { syncNow } = setup();
       await flush();
       expect(syncNow).toHaveBeenCalledTimes(1);
-      expect(syncNow).toHaveBeenCalledWith({}, { automatic: true });
+      expect(syncNow).toHaveBeenCalledWith({}, { automatic: true, downloadOnly: false });
+    });
+
+    it("a download-only hook (the Free plan) asks the sync to send nothing", async () => {
+      const { syncNow } = setup({ downloadOnly: true });
+      await flush();
+      expect(syncNow).toHaveBeenCalledWith({}, { automatic: true, downloadOnly: true });
+
     });
 
     it("does nothing until local data has loaded, then syncs as soon as it has", async () => {

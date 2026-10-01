@@ -7,6 +7,7 @@ import { Card } from "../../../../components/ui/Card";
 import { Button } from "../../../../components/ui/Button";
 import { GeneratedPlanMeta, Plan, PlanParams, SessionOption, SessionType, TemplateData, TemplateSectionKey, Templates } from "../../../../types";
 import { SyncConflict, SyncNowResult, SyncRestorePoint } from "../../../../application/sync/syncTypes";
+import { SyncAllowanceStatus } from "../../../../application/sync/syncAllowance";
 import { TemplateValidationError } from "../../../../application/workout/templates/templateRules";
 import {
   CreateSessionTypeResult,
@@ -40,6 +41,9 @@ interface SettingsPageProps {
   conflicts: SyncConflict[];
   restorePoints: SyncRestorePoint[];
   isSyncing: boolean;
+  /** The Free plan's monthly sync, when the person is on it. */
+  syncAllowance: SyncAllowanceStatus | null;
+  onUpgrade?: () => void;
   onSaveSectionTemplate: (
     session: SessionType,
     section: TemplateSectionKey,
@@ -79,6 +83,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   conflicts,
   restorePoints,
   isSyncing,
+  syncAllowance,
+  onUpgrade,
   onSaveSectionTemplate,
   onSaveTemplateVideoUrl,
   onUndoSectionTemplate,
@@ -236,6 +242,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         conflicts={conflicts}
         restorePoints={restorePoints}
         isSyncing={isSyncing}
+        allowance={syncAllowance}
+        onUpgrade={onUpgrade}
         onSyncNow={onSyncNow}
         onRollback={onRollback}
         onPruneRestorePoints={onPruneRestorePoints}

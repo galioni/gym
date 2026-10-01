@@ -13,8 +13,10 @@ interface UseAutoSyncOptions {
   userId: string | null;
   syncNow: (
     resolution?: Partial<Record<SyncEntity, ConflictResolution>>,
-    options?: { automatic?: boolean }
+    options?: { automatic?: boolean; downloadOnly?: boolean }
   ) => Promise<SyncNowResult>;
+  /** Automatic syncs only bring the cloud's data to this device and send nothing (the Free plan uploads by hand, once a month). */
+  downloadOnly?: boolean;
   /** Changes identity whenever local data changes; schedules a debounced sync. */
   changeSignal: unknown;
   /** A sync (or another tab) changed local storage: reload in-memory state from it. */
@@ -36,6 +38,7 @@ export function useAutoSync({
   ready,
   userId,
   syncNow,
+  downloadOnly = false,
   changeSignal,
   onLocalDataChanged,
   onConflicts,
@@ -71,7 +74,7 @@ export function useAutoSync({
     runningRef.current = true;
     lastRunRef.current = Date.now();
     try {
-      const result = await callbacks.current.syncNow({}, { automatic: true });
+      const result = await callbacks.current.syncNow({}, { automatic: true, downloadOnly });
       if (result.appliedToLocal) {
         callbacks.current.onLocalDataChanged();
       }
@@ -101,7 +104,7 @@ export function useAutoSync({
     } finally {
       runningRef.current = false;
     }
-  }, [ready, userId]);
+  }, [ready, userId, downloadOnly]);
 
   // After sign-in / once local data is loaded.
   useEffect(() => {

@@ -9,6 +9,8 @@ import { toLocalDateKey } from "./utils";
 import { createWorkoutServices } from "./infrastructure/workout/factory/createWorkoutServices";
 import { useSyncSettings } from "./features/sync/state/useSyncSettings";
 import { useAutoSync, useCrossTabReload } from "./features/sync/state/useAutoSync";
+import { useSyncAllowance } from "./features/sync/state/useSyncAllowance";
+import { isAllowanceLimited } from "./application/sync/syncAllowance";
 import { switchSyncOwner } from "./features/sync/state/syncOwner";
 import { useOnlineStatus } from "./features/sync/hooks/useOnlineStatus";
 import { deriveSyncStatus } from "./application/sync/syncStatus";
@@ -222,6 +224,14 @@ function App() {
     }
   }, [confirm, signOut, userId]);
 
+  // The Free plan syncs once every 30 days, by hand. Read again after every sync so the screen shows the next date.
+  const { status: allowanceStatus, loaded: allowanceLoaded } = useSyncAllowance(
+    services.syncAllowance,
+    userId,
+    `${syncSettings.lastSyncedAt ?? ""}|${isSyncing}`
+  );
+  const allowanceLimited = isAllowanceLimited(allowanceStatus);
+
   const isOnline = useOnlineStatus();
   const syncStatus = useMemo(
     () =>
@@ -231,15 +241,20 @@ function App() {
         conflictCount: conflicts.length,
         lastError: syncSettings.lastError,
         lastSyncedAt: syncSettings.lastSyncedAt,
+        allowance: allowanceLimited ? { nextAvailableAt: allowanceStatus?.nextAvailableAt ?? null } : null,
       }),
-    [isSyncing, isOnline, conflicts.length, syncSettings.lastError, syncSettings.lastSyncedAt]
+    [isSyncing, isOnline, conflicts.length, syncSettings.lastError, syncSettings.lastSyncedAt, allowanceLimited, allowanceStatus?.nextAvailableAt]
   );
 
   useCrossTabReload(reloadFromStorage);
   useAutoSync({
-    ready: isLoaded && areTemplatesLoaded,
+    // A Free account uploads by hand, once a month. Apart from that it gets one automatic sync on a device that has never
+    // synced, and that one only DOWNLOADS (so a new device restores right away without spending the month). Everyone else
+    // syncs automatically. Wait for the plan before deciding.
+    ready: isLoaded && areTemplatesLoaded && allowanceLoaded && (!allowanceLimited || syncSettings.lastSyncedAt === null),
     userId,
     syncNow,
+    downloadOnly: allowanceLimited,
     changeSignal,
     onLocalDataChanged: reloadFromStorage,
     onConflicts: handleSyncConflicts,
@@ -465,6 +480,8 @@ function App() {
             onCreateSessionType={addSessionType}
             onDeleteSessionType={handleDeleteSessionType}
             onRenameSessionType={renameSessionType}
+            syncAllowance={allowanceStatus}
+            onUpgrade={() => void startCheckout()}
             onSyncNow={syncNow}
             onRollback={rollbackToRestorePoint}
             onPruneRestorePoints={pruneRestorePoints}

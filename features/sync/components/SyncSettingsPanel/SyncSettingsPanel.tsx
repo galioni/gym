@@ -14,6 +14,7 @@ import {
 } from "../../../../application/sync/syncTypes";
 import { useFeedback } from "../../../feedback/hooks/useFeedback";
 import { useAuthSession } from "../../../auth/hooks/useAuthSession";
+import { canSyncNow, formatNextSync, isAllowanceLimited, SyncAllowanceStatus } from "../../../../application/sync/syncAllowance";
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -83,6 +84,9 @@ interface SyncSettingsPanelProps {
   conflicts: SyncConflict[];
   restorePoints: SyncRestorePoint[];
   isSyncing: boolean;
+  /** The Free plan's monthly sync, when the person is on it (null when there is no limit). */
+  allowance?: SyncAllowanceStatus | null;
+  onUpgrade?: () => void;
   onSyncNow: (
     resolution?: Partial<Record<SyncEntity, ConflictResolution>>
   ) => Promise<SyncNowResult>;
@@ -97,17 +101,29 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
   conflicts,
   restorePoints,
   isSyncing,
+  allowance = null,
+  onUpgrade,
   onSyncNow,
   onRollback,
   onPruneRestorePoints,
 }) => {
-  const { showToast } = useFeedback();
+  const { showToast, confirm } = useFeedback();
   const { session } = useAuthSession();
   const isAuthenticated = Boolean(session);
   const [resolutions, setResolutions] = useState<Partial<Record<SyncEntity, ConflictResolution>>>({});
 
   const isOnline = useOnlineStatus();
-  const status = deriveSyncStatus({ isSyncing, isOnline, conflictCount: conflicts.length, lastError, lastSyncedAt });
+  const limited = isAllowanceLimited(allowance);
+  const syncAvailable = canSyncNow(allowance);
+  const nextSync = allowance?.nextAvailableAt ?? null;
+  const status = deriveSyncStatus({
+    isSyncing,
+    isOnline,
+    conflictCount: conflicts.length,
+    lastError,
+    lastSyncedAt,
+    allowance: limited ? { nextAvailableAt: nextSync } : null,
+  });
   // The red banner below carries the error text; the headline only summarises it.
   const headlineDetail = lastError && status.detail === lastError ? "Sync hit a problem. Your data is safe on this device." : status.detail;
   const hasConflicts = conflicts.length > 0;
@@ -130,12 +146,33 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
       });
       return;
     }
+    if (result.status === "error" && result.reason === "allowance") {
+      showToast({
+        tone: "info",
+        title: "This month's sync has been used",
+        description: result.nextAvailableAt
+          ? `Nothing is lost: your data is safe on this device. The next sync is available on ${formatNextSync(result.nextAvailableAt)}.`
+          : "Nothing is lost: your data is safe on this device.",
+      });
+      return;
+    }
     if (result.status === "error") {
       showToast({ tone: "error", title: "Sync failed", description: result.message });
     }
   };
 
   const handleSyncNow = async () => {
+    // Starting a sync opens the month's window, so say so before it happens. Inside an open window it is the same sync.
+    if (limited && allowance?.windowEndsAt === null) {
+      const nextOpens = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const go = await confirm({
+        title: "Use this month's sync?",
+        description: `The Free plan syncs once every 30 days, in both directions. Syncing now uses it, and the next sync will be available on ${formatNextSync(nextOpens)}. Pro syncs automatically and without limit.`,
+        confirmLabel: "Sync now",
+        cancelLabel: "Not now",
+      });
+      if (!go) return;
+    }
     try {
       const result = await onSyncNow(hasConflicts ? resolutions : undefined);
       toastSyncResult(result);
@@ -169,7 +206,7 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
           size="sm"
           className="w-full sm:w-auto min-h-11 gap-2 justify-center"
           onClick={() => void handleSyncNow()}
-          disabled={isSyncing || !isAuthenticated || (hasConflicts && !canResolve)}
+          disabled={isSyncing || !isAuthenticated || (hasConflicts && !canResolve) || (limited && !syncAvailable)}
         >
           <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} />
           {isSyncing ? "Syncing..." : "Sync now"}
@@ -179,7 +216,7 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
       <div className="mb-4 flex items-start gap-3 rounded-xl border border-border bg-background/40 p-3">
         <SyncStatusIndicator status={status} onClick={() => undefined} className="-m-1 shrink-0 pointer-events-none" />
         <div className="min-w-0 space-y-0.5">
-          <div className="text-sm font-semibold text-label">Your data syncs automatically</div>
+          <div className="text-sm font-semibold text-label">{limited ? "Free plan: one sync every 30 days" : "Your data syncs automatically"}</div>
           <div className="text-xs text-labelSecondary">{headlineDetail}</div>
           <div className="text-xs text-labelTertiary break-words">
             {isAuthenticated ? `Signed in as ${session?.user.email ?? "Google"}` : "Not signed in — sync disabled"}
@@ -187,6 +224,21 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
           </div>
         </div>
       </div>
+
+      {limited && (
+        <div className="mb-3 flex flex-col gap-2 rounded-xl border border-border bg-background/40 p-3 text-xs text-labelSecondary sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            {syncAvailable
+              ? "A sync is available now. It sends and receives your changes in one go, then the next opens in 30 days."
+              : `Your sync for this period has been used. The next one is available on ${formatNextSync(nextSync ?? new Date().toISOString())}.`}
+          </span>
+          {onUpgrade && (
+            <Button variant="primary" size="sm" className="shrink-0" onClick={onUpgrade}>
+              Upgrade to Pro
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* The headline already says "synced" / "needs your decision" / the error; only show other messages
           (for example a rollback result) so nothing is said twice. */}
