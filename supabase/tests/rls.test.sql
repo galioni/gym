@@ -759,10 +759,12 @@ do $$
 declare removed bigint;
 begin
   removed := public.purge_free_history();
-  -- F's two old rows (40 and 20 days) go; F's 9-day row and recent rows stay; G (Pro) and H (paid once) keep everything.
-  if removed <> 2 then raise exception 'FAIL the purge should remove F''s two old days, removed %', removed; end if;
+  -- The purge covers every Free account in the database, including the other test users, so the total is not asserted:
+  -- it must have removed at least F's two old days (40 and 20 days), and the checks below look at F, G and H by name.
+  if removed < 2 then raise exception 'FAIL the purge should remove at least F''s two old days, removed %', removed; end if;
   raise notice 'ok   - the purge removes a Free account''s days older than 10 days';
 end $$;
+select gym_test.expect_count($$select 1 from public.workout_days where user_id = 'ffffffff-ffff-ffff-ffff-ffffffffffff' and day < current_date - 10$$, 0, 'the Free account has no day older than 10 days left');
 select gym_test.expect_count($$select 1 from public.workout_days where user_id = 'ffffffff-ffff-ffff-ffff-ffffffffffff'$$, 4, 'recent days of the Free account survive the purge');
 select gym_test.expect_count($$select 1 from public.workout_days where user_id in ('99999999-9999-9999-9999-999999999999', '88888888-8888-8888-8888-888888888888') and day = current_date - 40$$, 2, 'Pro and ex-Pro accounts keep their old days');
 
