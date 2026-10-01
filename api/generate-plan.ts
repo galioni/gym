@@ -2,7 +2,7 @@ import { generateText, APICallError, RetryError } from "ai";
 import { requireAuth } from "./_lib/authContext.js";
 import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight, parseJsonBody, getHeader } from "./_lib/http.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
-import { getAiModelForProvider, getEnabledProviders, getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
+import { getAiModelForProvider, getEnabledProviders } from "./_lib/apiEnv.js";
 import { getUserSettings } from "./_lib/userSettingsStore.js";
 import { resolveAiProvider } from "./_lib/aiProvider.js";
 import { getSubscription, hasProAccess } from "./_lib/subscriptionGuard.js";
@@ -142,7 +142,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     return;
   }
 
-  // IP-based burst check before touching auth or KV
+  // IP-based burst check before touching auth or the database
   const ip = getHeader(req, "x-forwarded-for") ?? getHeader(req, "x-real-ip") ?? "unknown";
   const ipCheck = ipLimiter.consume(ip);
   if (!ipCheck.allowed) {
@@ -161,8 +161,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     if (bypassUsers.has(auth.userId)) {
       console.log("[rate-limit] bypassed for user", auth.userId);
     } else {
-      const kvEnv = getRequiredVercelKvEnv();
-      const rateLimit = await checkRateLimit(auth.userId, "generate-plan", kvEnv.kvRestApiUrl, kvEnv.kvRestApiToken, 10, 3600);
+      const rateLimit = await checkRateLimit(auth.userId, "generate-plan", 10, 3600);
       if (!rateLimit.allowed) {
         res.status(429).json({ error: "Too many requests. Try again later.", retryAfter: rateLimit.retryAfterSeconds });
         return;

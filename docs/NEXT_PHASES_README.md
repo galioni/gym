@@ -75,7 +75,11 @@ KV is still used for billing state, user settings, push subscriptions and rate l
   `pushKv`, the VAPID helpers, the service worker push handlers and the `web-push` dependency are gone. To bring it back, build it on
   Postgres (a `push_subscriptions` table, subscribe and public-key routes, a daily reminder job) rather than restoring the old code from git.
   The `VAPID_*` and `CRON_SECRET` variables in Vercel are now unused and can be deleted there
-- [ ] Rate limiting: replace the KV counters (Postgres counter table or a hosted limiter)
+- [x] Rate limiting (slice 15.4, 2026-10-01): a Postgres sliding log. `rate_events` holds one row per allowed call and `consume_rate_limit(user, route,
+  max, window)` checks and records atomically (advisory lock), with exact windows and retry-after; refused calls are not recorded; server only; a
+  daily `pg_cron` job purges rows older than 2 days (keep this longer than the longest plan window). `generate-plan` keeps its 10/hour for
+  everyone for now (behaviour unchanged, fails open if the database is unreachable); the plan tiers only have to change the two numbers it
+  passes. Shipped as two PRs (schema, then code). KV is no longer used for any live feature
 - [ ] `delete-account`: drop the legacy KV key deletion once those keys are gone
 - [ ] Remove `STORAGE_KV_*` / `KV_REST_API_*` / `REDIS_URL` env vars and the `kv`, `kv-rest` services from `docker/compose.yaml`, then
   **delete the whole Upstash KV store in the Vercel dashboard** (Storage), which also removes every leftover key at once

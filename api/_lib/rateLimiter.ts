@@ -1,3 +1,6 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "./supabaseAdmin.js";
+
 const DEFAULT_MAX_REQUESTS = 30;
 const DEFAULT_WINDOW_SECONDS = 60;
 
@@ -20,7 +23,7 @@ interface WindowBucket {
 /**
  * In-memory fixed-window rate limiter. Suitable for process-local burst protection
  * (e.g. IP-based throttling at the edge). Not shared across serverless instances —
- * use the Redis-backed checkRateLimit for cross-instance per-user limits.
+ * use the Postgres-backed checkRateLimit for cross-instance per-user limits.
  */
 export class FixedWindowRateLimiter {
   private readonly maxRequests: number;
@@ -62,55 +65,38 @@ export class FixedWindowRateLimiter {
 }
 
 /**
- * Redis-backed fixed-window rate limiter using Upstash REST pipeline.
- * Keyed per authenticated user ID — immune to IP spoofing.
+ * Per-user rate limit shared by every server instance, kept in Postgres (a sliding log, see the
+ * `consume_rate_limit` migration). A call is allowed when fewer than `maxRequests` allowed calls happened in the last
+ * `windowSeconds`; the check and the record are one atomic step. Keyed by the authenticated user id, so it is immune to
+ * IP spoofing. The caller chooses the limit and window, typically from the plan of the user.
+ *
+ * Fails open (allows the call, logs an error) if the database cannot be reached: a failed check must not block people,
+ * and an outage that reaches this call would already break most of the app.
  */
 export async function checkRateLimit(
   userId: string,
   routeKey: string,
-  kvRestApiUrl: string,
-  kvRestApiToken: string,
   maxRequests = DEFAULT_MAX_REQUESTS,
-  windowSeconds = DEFAULT_WINDOW_SECONDS
+  windowSeconds = DEFAULT_WINDOW_SECONDS,
+  db: SupabaseClient = getSupabaseAdmin()
 ): Promise<RateLimitDecision> {
-  const windowSlot = Math.floor(Date.now() / (windowSeconds * 1000));
-  const key = `ratelimit:${routeKey}:${userId}:${windowSlot}`;
-
   try {
-    const response = await fetch(`${kvRestApiUrl}/pipeline`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${kvRestApiToken}`,
-      },
-      body: JSON.stringify([
-        ["INCR", key],
-        ["EXPIRE", key, String(windowSeconds * 2)],
-      ]),
+    const { data, error } = await db.rpc("consume_rate_limit", {
+      p_user: userId,
+      p_route: routeKey,
+      p_max: maxRequests,
+      p_window_seconds: windowSeconds,
     });
+    if (error) throw new Error(error.message);
 
-    if (!response.ok) {
-      // If Redis is unavailable, fail open rather than blocking all users.
-      console.error("[rateLimiter] KV returned non-OK status, failing open", {
-        status: response.status,
-        routeKey,
-      });
-      return { allowed: true, retryAfterSeconds: 0 };
-    }
+    const row = (Array.isArray(data) ? data[0] : data) as { allowed?: boolean; retry_after_seconds?: number } | undefined;
+    if (typeof row?.allowed !== "boolean") throw new Error("unexpected response from consume_rate_limit");
 
-    const results = (await response.json()) as [{ result: number }, unknown];
-    const count = results[0]?.result ?? 0;
-
-    if (count <= maxRequests) {
-      return { allowed: true, retryAfterSeconds: 0 };
-    }
-
-    const windowEndMs = (windowSlot + 1) * windowSeconds * 1000;
-    const retryAfterSeconds = Math.ceil((windowEndMs - Date.now()) / 1000);
-    return { allowed: false, retryAfterSeconds };
+    return row.allowed
+      ? { allowed: true, retryAfterSeconds: 0 }
+      : { allowed: false, retryAfterSeconds: Math.max(1, row.retry_after_seconds ?? 1) };
   } catch (error) {
-    // Network failure — fail open.
-    console.error("[rateLimiter] KV request threw, failing open", { routeKey, error });
+    console.error("[rateLimiter] rate limit check failed, failing open", { routeKey, error });
     return { allowed: true, retryAfterSeconds: 0 };
   }
 }
