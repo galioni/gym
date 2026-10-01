@@ -53,8 +53,13 @@ export class PostgresWorkoutDataRepository implements WorkoutDataRepository {
       version: STORAGE_SCHEMA_VERSION,
       updatedAt: latestUpdatedAt(rows),
       data,
+      // The database blanks a deleted day's content, so the hash it had at deletion is stored on the row. Rows
+      // without one (written before that existed) still carry their content and are hashed as before.
       deletedDays: Object.fromEntries(
-        deleted.map((row) => [row.day, dayContentHash(sanitizeDayData(rowToRawDay(row), row.day, TEMPLATES))])
+        deleted.map((row) => [
+          row.day,
+          row.deleted_hash ?? dayContentHash(sanitizeDayData(rowToRawDay(row), row.day, TEMPLATES)),
+        ])
       ),
     };
   }
@@ -72,10 +77,10 @@ export class PostgresWorkoutDataRepository implements WorkoutDataRepository {
       for (const row of changed) this.lastRead.set(row.day, dayContentHash(snapshot.data[row.day]));
     }
 
-    const toDelete = Object.keys(snapshot.deletedDays ?? {});
-    if (toDelete.length > 0) {
+    const toDelete = snapshot.deletedDays ?? {};
+    if (Object.keys(toDelete).length > 0) {
       await this.gateway.markDaysDeleted(toDelete);
-      for (const date of toDelete) this.lastRead.delete(date);
+      for (const date of Object.keys(toDelete)) this.lastRead.delete(date);
     }
   }
 

@@ -139,6 +139,8 @@ async function scenarioDelete(browser) {
 
   check(await waitFor(() => q("count(*)", "and wd.deleted_at is not null") === "1"), "B: the deletion reaches Postgres as a soft delete");
   check(q("count(*)", "and wd.deleted_at is null") === "0", "no live copy of the day remains");
+  check(q("count(*)", "and wd.deleted_at is not null and wd.main_notes = '' and wd.main = '[]'::jsonb and wd.deleted_hash is not null") === "1",
+    "the deleted day holds no content, only its marker and hash");
   check((await localDays(A)).length === 1, "A still has its unchanged local copy before it syncs");
   await A.reload();
   check(await waitFor(async () => (await localDays(A)).length === 0), "A: the unchanged copy is removed once A syncs");

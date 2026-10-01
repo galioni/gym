@@ -44,10 +44,24 @@ class FakeGateway implements RowGateway {
     }
   }
 
-  public async markDaysDeleted(days: string[]) {
-    for (const day of days) {
+  // Mirrors the database: the deleted_hash comes from the client, and the trigger blanks the content.
+  public async markDaysDeleted(days: Record<string, string>) {
+    for (const [day, hash] of Object.entries(days)) {
       const row = this.tables.workout_days.get(day);
-      if (row && row.deleted_at === null) row.deleted_at = new Date().toISOString();
+      if (row && row.deleted_at === null) {
+        Object.assign(row, {
+          deleted_at: new Date().toISOString(),
+          deleted_hash: hash,
+          warmup: [],
+          main: [],
+          warmup_notes: "",
+          main_notes: "",
+          check_notes: "",
+          weight: "",
+          warmup_timer_ms: 0,
+          main_timer_ms: 0,
+        });
+      }
     }
   }
 
@@ -130,6 +144,51 @@ describe("PostgresWorkoutDataRepository", () => {
     const restored = await repo.readSnapshot();
     expect(restored!.data["2026-10-01"].mainNotes).toBe("back again");
     expect(restored!.deletedDays).toEqual({});
+  });
+
+  it("keeps no content for a deleted day, yet the tombstone still matches the original day", async () => {
+    const gateway = new FakeGateway();
+    const repo = new PostgresWorkoutDataRepository(gateway);
+    const original = day("2026-10-01", "private note");
+    await repo.writeSnapshot(snap({ "2026-10-01": original }));
+    await repo.readSnapshot();
+
+    await repo.writeSnapshot(snap({}, { "2026-10-01": dayContentHash(original) }));
+
+    const stored = (await gateway.selectAll<Record<string, unknown>>("workout_days"))[0];
+    expect(stored.deleted_at).not.toBeNull();
+    expect(JSON.stringify(stored)).not.toContain("private note");
+    expect(stored.main).toEqual([]);
+    // Another device compares its own copy against this hash to decide whether the deletion applies to it.
+    const fresh = await new PostgresWorkoutDataRepository(gateway).readSnapshot();
+    expect(fresh!.deletedDays).toEqual({ "2026-10-01": dayContentHash(original) });
+  });
+
+  it("falls back to hashing the content for a deleted row that has no stored hash", async () => {
+    const gateway = new FakeGateway();
+    const repo = new PostgresWorkoutDataRepository(gateway);
+    const original = day("2026-10-01", "legacy");
+    await repo.writeSnapshot(snap({ "2026-10-01": original }));
+    const [row] = await gateway.selectAll<Record<string, unknown>>("workout_days");
+    gateway.tables.workout_days.set("2026-10-01", { ...row, deleted_at: "2026-10-02T00:00:00.000Z" });
+
+    const read = await new PostgresWorkoutDataRepository(gateway).readSnapshot();
+    expect(read!.deletedDays).toEqual({ "2026-10-01": dayContentHash(original) });
+  });
+
+  it("a restore clears the stored hash", async () => {
+    const gateway = new FakeGateway();
+    const repo = new PostgresWorkoutDataRepository(gateway);
+    const original = day("2026-10-01", "x");
+    await repo.writeSnapshot(snap({ "2026-10-01": original }));
+    await repo.readSnapshot();
+    await repo.writeSnapshot(snap({}, { "2026-10-01": dayContentHash(original) }));
+    await repo.readSnapshot();
+
+    await repo.writeSnapshot(snap({ "2026-10-01": day("2026-10-01", "back") }));
+    const [row] = await gateway.selectAll<Record<string, unknown>>("workout_days");
+    expect(row.deleted_at).toBeNull();
+    expect(row.deleted_hash).toBeNull();
   });
 
   it("clamps values to the database limits instead of failing the write", async () => {

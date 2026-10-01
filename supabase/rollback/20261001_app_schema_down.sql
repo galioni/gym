@@ -1,5 +1,6 @@
 -- Rollback for the app schema migrations:
---   20261001090000_core_tables, 20261001090100_row_level_security, 20261001100000_row_limits
+--   20261001090000_core_tables, 20261001090100_row_level_security, 20261001100000_row_limits,
+--   20261001110000_deleted_day_retention
 --
 -- DESTRUCTIVE: this deletes every row in the app tables (workout days, templates, plans, settings,
 -- subscriptions). Browsers keep their own local copies, so users do not lose their data, but the cloud
@@ -17,6 +18,16 @@ drop table if exists public.workout_days  cascade;
 drop table if exists public.user_settings cascade;
 drop table if exists public.subscriptions cascade;
 
+-- Retention job (only exists where pg_cron could be scheduled).
+do $$
+begin
+  if to_regclass('cron.job') is not null then
+    perform cron.unschedule(jobid) from cron.job where jobname = 'purge-deleted-days';
+  end if;
+end
+$$;
+drop function if exists public.purge_deleted_days(interval);
+drop function if exists public.blank_deleted_day();
 drop function if exists public.enforce_row_limit();
 drop function if exists public.row_limit(text);
 drop function if exists public.set_updated_at();
@@ -27,7 +38,7 @@ do $$
 begin
   if to_regclass('supabase_migrations.schema_migrations') is not null then
     delete from supabase_migrations.schema_migrations
-      where version in ('20261001090000', '20261001090100', '20261001100000');
+      where version in ('20261001090000', '20261001090100', '20261001100000', '20261001110000');
   end if;
 end
 $$;

@@ -21,7 +21,7 @@ export interface RowGateway {
   selectAll<T>(table: UserTable): Promise<T[]>;
   upsertRows(table: UserTable, rows: object[]): Promise<void>;
   /** Soft-deletes workout days (sets deleted_at); a later upsert of the day restores it. */
-  markDaysDeleted(days: string[]): Promise<void>;
+  markDaysDeleted(days: Record<string, string>): Promise<void>;
   /** Removes rows whose key is not in `keep` (whole-collection replace semantics for templates/plans). */
   deleteMissing(table: "templates" | "plans", keep: string[]): Promise<void>;
 }
@@ -104,16 +104,24 @@ export class PostgrestRowGateway implements RowGateway {
     }
   }
 
-  public async markDaysDeleted(days: string[]): Promise<void> {
+  public async markDaysDeleted(days: Record<string, string>): Promise<void> {
     const userId = await this.requireUserId();
-    for (let i = 0; i < days.length; i += WRITE_BATCH) {
-      const { error } = await this.client
-        .from("workout_days")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("user_id", userId)
-        .in("day", days.slice(i, i + WRITE_BATCH))
-        .is("deleted_at", null);
-      if (error) throw new Error(`Database delete failed (workout_days): ${error.message}`);
+    // The database blanks a deleted day's content, so each day carries the hash its content had. Days that share a
+    // hash (typically a few identical empty days) go in one request.
+    const byHash = new Map<string, string[]>();
+    for (const [day, hash] of Object.entries(days)) byHash.set(hash, [...(byHash.get(hash) ?? []), day]);
+
+    const deletedAt = new Date().toISOString();
+    for (const [hash, sameHash] of byHash) {
+      for (let i = 0; i < sameHash.length; i += WRITE_BATCH) {
+        const { error } = await this.client
+          .from("workout_days")
+          .update({ deleted_at: deletedAt, deleted_hash: hash })
+          .eq("user_id", userId)
+          .in("day", sameHash.slice(i, i + WRITE_BATCH))
+          .is("deleted_at", null);
+        if (error) throw new Error(`Database delete failed (workout_days): ${error.message}`);
+      }
     }
   }
 

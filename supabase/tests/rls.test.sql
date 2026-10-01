@@ -269,6 +269,65 @@ begin
 end $$;
 
 -- ===========================================================================
+-- Retention of deleted days: content is blanked at deletion, tombstones are purged after 90 days
+-- ===========================================================================
+select gym_test.become('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+insert into public.workout_days (user_id, day, session_type, warmup, main, main_notes, check_notes, weight, main_timer_ms)
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '2027-03-01', 'gym', '[{"text":"x"}]', '[{"text":"squat"}]', 'private note', 'felt ok', '80', 5000);
+select gym_test.expect_affected($$update public.workout_days set deleted_at = now(), deleted_hash = 'hash-1' where day = '2027-03-01'$$, 1,
+  'a client can soft-delete a day and record its hash');
+select gym_test.expect_count($$select 1 from public.workout_days where day = '2027-03-01'
+    and warmup = '[]' and main = '[]' and main_notes = '' and check_notes = '' and weight = '' and main_timer_ms = 0
+    and deleted_hash = 'hash-1' and session_type = 'gym'$$, 1,
+  'deleting a day blanks its content and keeps only the marker and the hash');
+
+select gym_test.expect_affected($$update public.workout_days set main_notes = 'sneaky', main = '[{"text":"x"}]' where day = '2027-03-01'$$, 1,
+  'a later write to a deleted day is accepted');
+select gym_test.expect_count($$select 1 from public.workout_days where day = '2027-03-01' and main_notes = '' and main = '[]'$$, 1,
+  'but a deleted day can never hold content again');
+
+select gym_test.expect_affected($$update public.workout_days set deleted_at = null, main_notes = 'back again' where day = '2027-03-01'$$, 1,
+  'a restore writes the day normally');
+select gym_test.expect_count($$select 1 from public.workout_days where day = '2027-03-01' and main_notes = 'back again' and deleted_hash is null and deleted_at is null$$, 1,
+  'a restored day has its content and no stale hash');
+
+select gym_test.expect_error($$select public.purge_deleted_days()$$, '42501', 'a signed-in user cannot run the purge');
+select gym_test.become_anon();
+select gym_test.expect_error($$select public.purge_deleted_days()$$, '42501', 'anon cannot run the purge');
+select gym_test.become_service();
+select gym_test.expect_error($$select public.purge_deleted_days()$$, '42501', 'not even the service role can run the purge through the API');
+
+select gym_test.become_admin();
+insert into public.workout_days (user_id, day, session_type, deleted_at, deleted_hash) values
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '2027-03-10', 'gym', now() - interval '100 days', 'old'),
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '2027-03-11', 'gym', now() - interval '89 days',  'recent'),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '2027-03-10', 'gym', now() - interval '91 days',  'old-b');
+insert into public.workout_days (user_id, day, session_type, main_notes) values
+  ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '2027-03-12', 'gym', 'a live day, however old, is never purged');
+update public.workout_days set updated_at = now() - interval '400 days' where day = '2027-03-12';
+select gym_test.expect_count($$select 1 from public.workout_days where day between '2027-03-10' and '2027-03-12'$$, 4, 'purge fixtures are in place');
+
+do $$
+declare removed bigint;
+begin
+  removed := public.purge_deleted_days();
+  if removed <> 2 then raise exception 'FAIL purge should report the 2 tombstones it removed, got %', removed; end if;
+  raise notice 'ok   - purge reports how many tombstones it removed';
+end $$;
+select gym_test.expect_count($$select 1 from public.workout_days where day between '2027-03-10' and '2027-03-12'$$, 2,
+  'the purge removed the two tombstones older than 90 days, for every user');
+select gym_test.expect_count($$select 1 from public.workout_days where deleted_hash = 'recent'$$, 1, 'a tombstone younger than 90 days is kept');
+select gym_test.expect_count($$select 1 from public.workout_days where main_notes like 'a live day%'$$, 1, 'live days are never purged');
+do $$
+declare removed bigint;
+begin
+  removed := public.purge_deleted_days(interval '1 day');
+  if removed <> 1 then raise exception 'FAIL a 1-day retention should remove the 89-day-old tombstone, got %', removed; end if;
+  raise notice 'ok   - the retention period is a parameter';
+end $$;
+select gym_test.expect_count($$select 1 from public.workout_days where deleted_hash = 'recent'$$, 0, 'a shorter period purges more');
+
+-- ===========================================================================
 -- Account deletion cascades to all user data
 -- ===========================================================================
 select gym_test.become_admin();
