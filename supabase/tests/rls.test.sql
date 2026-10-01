@@ -543,6 +543,186 @@ end $$;
 select gym_test.expect_count($$select 1 from public.rate_events where route = 'purge-new'$$, 1, 'a one-day-old event survives the purge (the longest plan window is a day)');
 
 -- ===========================================================================
+-- Free-plan sync allowance (20261001150000_sync_allowance.sql): one upload window per 30 days
+-- ===========================================================================
+select gym_test.become_admin();
+insert into auth.users (id, email) values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'e@test.local');
+
+-- begin_sync() as a user, returning its row, so the tests can look at the dates.
+create function gym_test.begin_as(uid uuid) returns table (allowed boolean, window_ends_at timestamptz, next_available_at timestamptz)
+language plpgsql as $$
+begin
+  perform gym_test.become(uid);
+  return query select * from public.begin_sync();
+  perform gym_test.become_admin();
+end $$;
+
+-- Put a user's last window "age" ago (run as admin).
+create function gym_test.set_window(uid uuid, age interval) returns void language sql as $$
+  insert into public.sync_windows (user_id, opened_at) values (uid, now() - age)
+  on conflict (user_id) do update set opened_at = excluded.opened_at
+$$;
+
+-- The switch ships OFF: until the app that calls begin_sync() is live, nothing changes for anyone.
+select gym_test.expect_count($$select 1 where public.sync_allowance_enforced() = false$$, 1, 'the allowance ships switched off');
+select gym_test.become('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+select gym_test.expect_affected($$insert into public.workout_days (user_id, day, session_type) values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '2026-12-01', 'gym')$$, 1,
+  'switched off: a Free account writes without a window');
+do $$
+declare r record;
+begin
+  select * into r from gym_test.begin_as('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+  if not r.allowed or r.window_ends_at is not null then raise exception 'FAIL switched off, begin_sync should allow with no window, got %', r; end if;
+  raise notice 'ok   - switched off: begin_sync allows the sync and records nothing';
+end $$;
+select gym_test.expect_count($$select 1 from public.sync_windows where user_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'$$, 0, 'switched off: no window is recorded');
+
+-- Switch it on.
+select gym_test.become_admin();
+update public.app_flags set enabled = true where name = 'sync_allowance';
+
+-- A sync that only checks (or only downloads) spends nothing: the month is spent by the first upload.
+do $$
+declare r record;
+begin
+  select * into r from gym_test.begin_as('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+  if not r.allowed or r.window_ends_at is not null or r.next_available_at is not null then raise exception 'FAIL begin_sync with no window used should simply allow, got %', r; end if;
+  raise notice 'ok   - begin_sync alone is allowed and spends nothing';
+end $$;
+select gym_test.expect_count($$select 1 from public.sync_windows where user_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'$$, 0, 'and opens no window');
+
+-- The first upload opens the window...
+select gym_test.become('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+select gym_test.expect_affected($$insert into public.workout_days (user_id, day, session_type) values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '2026-12-02', 'gym')$$, 1,
+  'the first upload of a Free account is allowed');
+select gym_test.become_admin();
+select gym_test.expect_count($$select 1 from public.sync_windows where user_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee' and opened_at >= now() - interval '1 minute'$$, 1,
+  'and it opens the 10-minute window');
+
+-- ...and everything inside it is the same sync.
+select gym_test.become('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+select gym_test.expect_affected($$insert into public.templates (user_id, session_type) values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'tpl')$$, 1, 'inside the window templates are written too');
+select gym_test.expect_affected($$insert into public.plans (user_id, id, label) values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'p', 'P')$$, 1, 'and plans');
+select gym_test.expect_affected($$insert into public.user_settings (user_id, active_plan_id) values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'p')$$, 1, 'and the account settings');
+select gym_test.expect_affected($$update public.workout_days set main_notes = 'synced' where user_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'$$, 2, 'and edits');
+select gym_test.expect_affected($$delete from public.workout_days where day = '2026-12-02'$$, 1, 'and deletes');
+do $$
+declare r record;
+begin
+  select * into r from gym_test.begin_as('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+  if not r.allowed or r.window_ends_at not between now() + interval '9 minutes' and now() + interval '11 minutes' then raise exception 'FAIL inside the window begin_sync reports it closing in ~10 minutes, got %', r; end if;
+  if r.next_available_at not between now() + interval '29 days 23 hours' and now() + interval '30 days 1 hour' then raise exception 'FAIL the next sync is ~30 days after the window opened, got %', r.next_available_at; end if;
+  raise notice 'ok   - inside the window begin_sync allows the same sync and reports when it closes and when the next opens';
+end $$;
+
+-- After the window, within the 30 days: refused everywhere, with the date.
+select gym_test.become_admin();
+select gym_test.set_window('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', interval '11 minutes');
+select gym_test.become('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+select gym_test.expect_error($$insert into public.workout_days (user_id, day, session_type) values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '2026-12-03', 'gym')$$, 'PT423', 'once the window has closed uploads are refused');
+select gym_test.expect_error($$update public.workout_days set main_notes = 'x' where user_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'$$, 'PT423', 'edits too');
+select gym_test.expect_error($$delete from public.workout_days where user_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'$$, 'PT423', 'and deletes');
+select gym_test.expect_error($$insert into public.templates (user_id, session_type) values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'tpl2')$$, 'PT423', 'templates are gated too');
+select gym_test.expect_error($$insert into public.plans (user_id, id, label) values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'p2', 'P')$$, 'PT423', 'plans are gated too');
+select gym_test.expect_error($$update public.user_settings set active_plan_id = 'q' where user_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'$$, 'PT423', 'and the account settings');
+select gym_test.expect_count($$select 1 from public.workout_days where user_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'$$, 1, 'but reading is never refused by the database (a refused read would look like an empty account)');
+do $$
+declare detail text; hint text; code text; next_at timestamptz;
+begin
+  perform gym_test.become('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+  begin
+    perform * from public.begin_sync();
+  exception when others then
+    get stacked diagnostics detail = pg_exception_detail, hint = pg_exception_hint;
+    code := sqlstate;
+  end;
+  perform gym_test.become_admin();
+  if code is distinct from 'PT423' then raise exception 'FAIL expected PT423, got %', code; end if;
+  next_at := detail::timestamptz;
+  if next_at not between now() + interval '29 days' and now() + interval '30 days' then raise exception 'FAIL the refusal names the next date, got %', detail; end if;
+  if hint not like '%Pro%' then raise exception 'FAIL the refusal points to Pro, got %', hint; end if;
+  raise notice 'ok   - begin_sync refuses inside the 30 days and names the date the next sync opens';
+end $$;
+do $$
+declare detail text;
+begin
+  perform gym_test.become('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+  begin
+    insert into public.workout_days (user_id, day, session_type) values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '2026-12-03', 'gym');
+  exception when others then
+    get stacked diagnostics detail = pg_exception_detail;
+  end;
+  perform gym_test.become_admin();
+  if detail is null or detail::timestamptz not between now() + interval '29 days' and now() + interval '30 days' then raise exception 'FAIL a refused upload also names the date, got %', detail; end if;
+  raise notice 'ok   - a refused upload names the date too';
+end $$;
+
+-- sync_allowance() for the UI.
+do $$
+declare r record;
+begin
+  perform gym_test.become('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+  select * into r from public.sync_allowance();
+  perform gym_test.become_admin();
+  if not r.enforced or r.is_pro or r.window_ends_at is not null or r.next_available_at is null then raise exception 'FAIL status while waiting, got %', r; end if;
+  raise notice 'ok   - sync_allowance reports the wait without changing anything';
+end $$;
+select gym_test.expect_count($$select 1 from public.sync_windows where user_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee' and opened_at < now() - interval '10 minutes'$$, 1, 'and the status call did not touch the window');
+
+-- Thirty days later: a sync is available again, and the next upload opens a new window.
+select gym_test.set_window('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', interval '31 days');
+do $$
+declare r record;
+begin
+  select * into r from gym_test.begin_as('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+  if not r.allowed or r.next_available_at is not null then raise exception 'FAIL 31 days later a sync is available, got %', r; end if;
+  raise notice 'ok   - after 30 days a sync is available again';
+end $$;
+select gym_test.expect_count($$select 1 from public.sync_windows where user_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee' and opened_at < now() - interval '30 days'$$, 1, 'and checking did not open a window');
+select gym_test.become('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+select gym_test.expect_affected($$insert into public.workout_days (user_id, day, session_type) values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '2026-12-04', 'gym')$$, 1, 'the next upload is allowed');
+select gym_test.become_admin();
+select gym_test.expect_count($$select 1 from public.sync_windows where user_id = 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee' and opened_at >= now() - interval '1 minute'$$, 1, 'and opens a new window');
+
+-- Pro is never limited; the service role is not affected; another account has its own allowance.
+select gym_test.set_window('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', interval '2 days');
+select gym_test.set_window('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', interval '2 days');
+select gym_test.become_service();
+select gym_test.expect_affected($$insert into public.workout_days (user_id, day, session_type) values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '2026-12-05', 'gym')$$, 1, 'server-side writes (service role) are not gated');
+select gym_test.become('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
+select gym_test.expect_error($$insert into public.workout_days (user_id, day, session_type) values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '2026-12-06', 'gym')$$, 'PT423', 'another Free account whose window is used is refused independently');
+select gym_test.become_admin();
+insert into public.subscriptions (user_id, plan, status) values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'pro', 'active');
+select gym_test.become('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+select gym_test.expect_affected($$insert into public.workout_days (user_id, day, session_type) values ('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '2026-12-06', 'gym')$$, 1, 'a Pro account writes with no window');
+do $$
+declare r record;
+begin
+  select * into r from gym_test.begin_as('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+  if not r.allowed or r.next_available_at is not null then raise exception 'FAIL Pro is never limited, got %', r; end if;
+  raise notice 'ok   - begin_sync never limits a Pro account';
+end $$;
+
+-- Nobody but the app's own calls: no table access, no helper functions, anon cannot even ask.
+select gym_test.become('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
+select gym_test.expect_error($$select * from public.sync_windows$$, '42501', 'a user cannot read the window table');
+select gym_test.expect_error($$insert into public.sync_windows (user_id) values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb')$$, '42501', 'nor grant themselves a window');
+select gym_test.expect_error($$select * from public.app_flags$$, '42501', 'nor read the switches');
+select gym_test.expect_error($$select public.sync_window_active('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb')$$, '42501', 'nor call the window helper');
+select gym_test.become_anon();
+select gym_test.expect_error($$select * from public.begin_sync()$$, '42501', 'anon cannot begin a sync');
+select gym_test.expect_error($$select * from public.sync_allowance()$$, '42501', 'or read the allowance');
+
+-- Kill switch.
+select gym_test.become_admin();
+update public.app_flags set enabled = false where name = 'sync_allowance';
+select gym_test.become('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
+select gym_test.expect_affected($$insert into public.workout_days (user_id, day, session_type) values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '2026-12-06', 'gym')$$, 1, 'switching it off lifts the limit at once, without a deploy');
+select gym_test.become_admin();
+-- Leave B as the later assertions expect it.
+delete from public.workout_days where user_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' and day = '2026-12-06';
+
+-- ===========================================================================
 -- Account deletion cascades to all user data
 -- ===========================================================================
 select gym_test.become_admin();
