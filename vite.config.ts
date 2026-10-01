@@ -11,8 +11,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: 'script',
+      // The app registers the worker itself (features/app-shell/pwa) so it can offer an "Update now" banner.
+      registerType: 'prompt',
+      injectRegister: false,
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
