@@ -56,6 +56,9 @@ can stay in place.
 
 KV is still used for billing state, user settings, push subscriptions and rate limits.
 
+- [ ] **Plan tiers** (see the Free/Pro table under "Decisions"): plan-aware `row_limit()`, a sync allowance for free
+  accounts with clear status text ("next sync available on …"), the cloud-only 7-day window, a plan-aware AI rate limit, and
+  upgrade prompts at each limit. Build after subscriptions are in Postgres
 - [ ] Subscriptions: read and write the `subscriptions` table (Stripe webhook writes it with the service role; the
   client can read its own row under RLS); migrate `api/subscription`, `api/_lib/subscriptionGuard.ts`, the webhook
 - [ ] User settings (AI provider): use `user_settings`; migrate `api/user-settings` and `api/generate-plan`
@@ -70,7 +73,9 @@ KV is still used for billing state, user settings, push subscriptions and rate l
 
 - [ ] Incremental pull (`updated_at > cursor` with a small overlap window) instead of reading every row each sync
 - [ ] Faster cross-device updates: Supabase Realtime or a lighter poll (today: on focus, on reconnect, every 5 minutes)
-- [ ] Scheduled purge of soft-deleted days older than a retention period (the row content is kept after a delete)
+- [ ] **Retention (decided: 90 days).** Blank the content of a day when it is soft-deleted (client write plus a database
+  trigger as a backstop), and a scheduled purge (`pg_cron` on the hosted project, plus a local equivalent) that deletes
+  days soft-deleted more than 90 days ago. Do this before Phase 15 ends: it is a privacy commitment, not an optimisation
 - [ ] Bound the size of local restore points (each one stores a full snapshot, up to 10 of them)
 
 ## Phase 17 — Tooling and developer experience  _(size: S to M)_
@@ -85,13 +90,35 @@ KV is still used for billing state, user settings, push subscriptions and rate l
 
 ## Decisions needed from the owner
 
-- [ ] **What is Pro for?** With sync free, the only Pro benefit in the product is choosing the AI model. Pricing, landing
-  page and Settings copy depend on this.
-- [ ] **Soft-deleted data retention:** a deleted day keeps its content in the database (marked deleted). How long, and is
-  that acceptable for the privacy policy? Also whether to offer a full data export.
-- [ ] **Row limits:** shipped with defaults of 5,000 days, 200 templates and 100 plans per account. Confirm they suit you; changing them is one new migration replacing `row_limit()`.
-- [ ] **Source control:** this work spans several workstreams and is not committed. Suggested commits on a branch:
-  theme, Docker stack, database and migrations, client sync, legacy-sync removal.
+Decided 2026-10-01:
+
+- [x] **What is Pro for?** Pro is the full product; **Free is deliberately small** (owner's choice, 2026-10-01, over
+  the recommendation of a more generous free tier). Subscriptions move to the Postgres `subscriptions` table and
+  Stripe stays (Phase 15). Pricing, landing page and Settings copy must say this plainly.
+
+  | | Free | Pro |
+  |---|---|---|
+  | Cloud sync | one sync per rolling 30 days (manual "Sync now"; automatic sync off) | automatic, unlimited |
+  | Templates | 1 | 200 |
+  | Cloud history | last 7 days | all (up to the row limit) |
+  | Plans | 20 (one fifth of Pro) | 100 |
+  | Workout days (safety cap) | 1,000 (one fifth of Pro) | 5,000 |
+  | AI plan generation | 1 per day, Google model | 10 per hour, choice of model |
+
+  Everything stays fully usable **locally** on a free account; the limits apply to what is stored and synced in the cloud.
+  Known consequences, accepted by the owner: low retention is likely; with 1 template the plans cap is mostly moot and with
+  a 7-day window the 1,000-day cap never binds; free users can lose up to a month of unsynced work if a device is lost.
+  Open design questions before building (Phase 15, "Plan tiers"):
+  - What counts as "a sync"? Proposal: one successful upload+download cycle; the first pull on a brand-new device does not count.
+  - The 7-day window must be a **cloud-only** rule. Rows older than 7 days are neither uploaded nor treated as deleted, or the
+    sync would read them as deletions and erase local history. This needs a change in `deletionReconciliation` and tests.
+  - Downgrade behaviour: a Pro user who lapses with 30 templates keeps them locally and read-only in the cloud; nothing is deleted.
+  - Free "1 template" is enforced in the client and by the database trigger (`row_limit` becomes plan-aware).
+- [x] **Soft-deleted data retention: 90 days.** A scheduled job permanently erases deleted days after 90 days, and the
+  exercise content of a deleted day is blanked straight away so only the deletion marker syncs. New work, see Phase 16.
+  A full data export was not decided; still open as a product question.
+- [x] **Row limits:** keep 5,000 days, 200 templates and 100 plans per account.
+- [x] **Source control:** done, work is merged to `main` through reviewed PRs.
 
 ## Known limitations (accepted for now)
 
