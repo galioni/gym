@@ -117,21 +117,35 @@ try {
   res = await call("GET", "/rest/v1/subscriptions", { token: a.token });
   check(res.status === 200 && res.json?.length === 0, "A can query subscriptions (empty until the server writes one)");
 
-  // Row limit: fill the account to its cap with a bulk insert (server side), then the browser path is refused.
-  const fill = Array.from({ length: 4999 }, (_, i) => ({
+  // Row limit: A is a Free account (cap 1,000 live days). Fill it to the cap with a bulk insert (server side),
+  // then the browser path is refused.
+  const fill = Array.from({ length: 999 }, (_, i) => ({
     user_id: a.id,
     day: new Date(Date.UTC(2001, 0, 1) + i * 86400000).toISOString().slice(0, 10),
     session_type: "gym",
   }));
   res = await call("POST", "/rest/v1/workout_days", { token: SERVICE, apikey: SERVICE, headers: { Prefer: "return=minimal" }, body: fill });
-  check(res.status === 201, "service role bulk-inserts up to the cap", `(${res.status} ${res.text.slice(0, 120)})`);
+  check(res.status === 201, "service role bulk-inserts up to the Free cap", `(${res.status} ${res.text.slice(0, 120)})`);
   res = await call("POST", "/rest/v1/workout_days", { token: a.token, body: { ...day, user_id: a.id, day: "2026-12-31" } });
-  check(res.status === 422 && res.json?.code === "PT422", "a new day beyond the cap is refused as HTTP 422 with code PT422", `(${res.status} ${res.text.slice(0, 160)})`);
-  check(/row limit reached for workout_days/.test(res.json?.message ?? ""), "and the message names the table and limit");
+  check(res.status === 422 && res.json?.code === "PT422", "a new day beyond the Free cap is refused as HTTP 422 with code PT422", `(${res.status} ${res.text.slice(0, 160)})`);
+  check(/row limit reached for workout_days: at most 1000/.test(res.json?.message ?? ""), "and the message names the table and the Free limit");
+  check(/upgrade to Pro/.test(res.json?.hint ?? ""), "and the hint points a Free account to Pro", res.json?.hint);
   res = await call("POST", "/rest/v1/workout_days?on_conflict=user_id,day", {
     token: a.token, headers: { Prefer: "resolution=merge-duplicates,return=representation" }, body: { ...day, user_id: a.id, main_notes: "still editable at the cap" },
   });
   check((res.status === 200 || res.status === 201) && res.json?.[0]?.main_notes === "still editable at the cap", "editing an existing day at the cap still works");
+
+  // Upgrading lifts the cap immediately (what the Stripe webhook does).
+  res = await call("POST", "/rest/v1/subscriptions?on_conflict=user_id", {
+    token: SERVICE, apikey: SERVICE, headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: { user_id: a.id, plan: "pro", status: "active" },
+  });
+  check([200, 201, 204].includes(res.status), "A is upgraded to Pro", `(${res.status})`);
+  res = await call("POST", "/rest/v1/workout_days", { token: a.token, headers: { Prefer: "return=minimal" }, body: { ...day, user_id: a.id, day: "2026-12-31" } });
+  check(res.status === 201, "after the upgrade the same new day is accepted", `(${res.status} ${res.text.slice(0, 120)})`);
+  res = await call("POST", "/rest/v1/subscriptions?on_conflict=user_id", {
+    token: SERVICE, apikey: SERVICE, headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: { user_id: a.id, plan: "free", status: "canceled" },
+  });
+  check([200, 201, 204].includes(res.status), "A drops back to Free (subscription canceled)", `(${res.status})`);
 
   // Service role (server only) bypasses RLS.
   res = await call("GET", `/rest/v1/workout_days?user_id=eq.${a.id}&day=eq.2026-10-01`, { token: SERVICE, apikey: SERVICE });
