@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { buildMockSession, SUPABASE_SESSION_KEY } from "./helpers/mockSession";
+import { buildMockSession, mockUnlimitedSync, SUPABASE_SESSION_KEY } from "./helpers/mockSession";
 
 const ONBOARDING_KEY = "daily-workout-tracker:onboarded:v1";
 const WORKOUT_KEY = "daily-workout-tracker:v2";
@@ -48,6 +48,7 @@ test.describe("Sync conflict resolution UI", () => {
   test.beforeEach(async ({ page }) => {
     // Abort any other Supabase call (auth refresh etc.) — the fake JWT never needs one
     await page.route("**placeholder.supabase.co/**", (route) => route.abort());
+    await mockUnlimitedSync(page);
 
     // PostgREST (registered after the catch-all above, so these take precedence). Reads return the
     // conflicting day; writes are accepted.

@@ -5,6 +5,7 @@ import { Button } from "../../../../components/ui/Button";
 import { useAuthSession } from "../../../auth/hooks/useAuthSession";
 import { cn } from "../../../../utils";
 import { formatRetryWait } from "../../utils/formatRetryWait";
+import { useSubscription } from "../../../billing/hooks/useSubscription";
 
 interface OnboardingWizardProps {
   onComplete: (templates: Templates, params: PlanParams, meta?: GeneratedPlanMeta) => Promise<void>;
@@ -157,6 +158,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
   const [bodyFocus, setBodyFocus] = useState<BodyFocus[]>((initialValues?.bodyFocus ?? []) as BodyFocus[]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Set when the refusal came from the Free plan's daily limit, so the message can offer the way out.
+  const [errorOffersUpgrade, setErrorOffersUpgrade] = useState(false);
+  const { startCheckout } = useSubscription();
 
   const toggleBodyFocus = (area: BodyFocus) => {
     setBodyFocus((prev) =>
@@ -170,6 +174,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
     if (!canGenerate || !session) return;
     setIsGenerating(true);
     setError(null);
+    setErrorOffersUpgrade(false);
 
     try {
       const res = await fetch("/api/generate-plan", {
@@ -189,6 +194,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             : " Try again later.";
           // A refusal that names the plan carries its own explanation (what Free includes, what Pro adds).
           const reason = body.plan && body.error ? body.error : "You've hit the plan generation limit.";
+          if (body.plan === "free") setErrorOffersUpgrade(true);
           throw new Error(`${reason}${wait}`);
         }
         if (res.status >= 500) {
@@ -311,9 +317,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
           </Section>
 
           {error && (
-            <p className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-dangerText">
-              {error}
-            </p>
+            <div className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-dangerText">
+              <p>{error}</p>
+              {errorOffersUpgrade && (
+                <Button variant="primary" size="sm" className="mt-2" onClick={() => void startCheckout().catch(() => setError("Could not start checkout. Try again."))}>
+                  Upgrade to Pro
+                </Button>
+              )}
+            </div>
           )}
 
           <Button
