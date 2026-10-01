@@ -5,10 +5,11 @@ Operational items for the AI-provider feature live in [`PENDING.md`](../PENDING.
 
 ## Where things stand
 
-Postgres (with row level security) is the source of truth for every signed-in user and sync is automatic.
-It is built and verified against the local Docker stack (`npm run gym:up`); **nothing has been applied to the
-hosted Supabase project or deployed**. The legacy Pro-only API/KV sync has been removed from the code.
-Everything below is what stands between this state and a safe production release, plus follow-up work.
+**Live in production since 2026-10-01** (`https://gym-galioni.vercel.app`, Supabase project `supabase-gym-prod`): Postgres with
+row level security is the source of truth for every signed-in user, sync is automatic, auth emails go through Resend, deleted days are
+blanked and purged after 90 days, and billing and the AI provider setting live in Postgres. What remains is retiring the last KV use
+(rate limiting), the Free/Pro plan limits, and follow-up work. **Migrations apply to production automatically when their PR merges**,
+so merge a migration PR before the code that needs it.
 
 Verification gates used throughout (all must stay green):
 
@@ -19,7 +20,7 @@ npm run gym:up && npm run gym:test-db && npm run gym:test-sync && npm run gym:do
 
 ## Current Phase
 
-**Phase 14 — Production rollout.** It is approval-gated at every step that touches production. One decision (what Pro is for) is still open and affects copy, not code.
+**Phase 15 — Retire KV**, then the Free/Pro plan limits it enables. Phase 14 (production rollout) is complete.
 
 ---
 
@@ -46,8 +47,9 @@ intentionally left behind.
     silently exercised the old build. Auth now returns to the current origin **with a trailing slash**
     (allow-list patterns like `https://host/**` do not match a bare origin)
   - The three pre-existing production accounts were deleted on request (no subscriptions, no clients)
-- [ ] Deploy to production; watch logs and error rates for the first day; keep the previous deployment ready to roll back
-- [ ] Optional: delete the orphaned `sync:{userId}:*` keys from KV once nobody needs the rollback
+- [x] Deploy to production (2026-10-01, PR #34): live, no runtime errors, previous deployment kept as the rollback target
+- [x] Orphaned KV keys (`sync:*`, `subscription:*`, `stripe_customer:*`, `stripe_event:*`, `user_settings:*`): **no key-by-key cleanup.** Nothing reads
+  them and there are no real users, so the whole Upstash store is deleted when KV is retired (last step of Phase 15)
 
 Rollback: redeploy the previous build (browsers keep working from their local copy); the new tables are additive and
 can stay in place.
@@ -75,7 +77,8 @@ KV is still used for billing state, user settings, push subscriptions and rate l
   The `VAPID_*` and `CRON_SECRET` variables in Vercel are now unused and can be deleted there
 - [ ] Rate limiting: replace the KV counters (Postgres counter table or a hosted limiter)
 - [ ] `delete-account`: drop the legacy KV key deletion once those keys are gone
-- [ ] Remove `STORAGE_KV_*` / `KV_REST_API_*` env vars and the `kv`, `kv-rest` services from `docker/compose.yaml`
+- [ ] Remove `STORAGE_KV_*` / `KV_REST_API_*` / `REDIS_URL` env vars and the `kv`, `kv-rest` services from `docker/compose.yaml`, then
+  **delete the whole Upstash KV store in the Vercel dashboard** (Storage), which also removes every leftover key at once
 - [ ] Update README (data stores, env vars, local stack table)
 
 ## Phase 16 — Sync performance and freshness  _(size: M; only when data volume or latency justifies it)_
@@ -132,6 +135,10 @@ Decided 2026-10-01:
   A full data export was not decided; still open as a product question.
 - [x] **Row limits:** keep 5,000 days, 200 templates and 100 plans per account.
 - [x] **Source control:** done, work is merged to `main` through reviewed PRs.
+- [x] **Data export: not now.** Revisit together with the plan tiers: once free accounts keep only 7 days of cloud history, an export (JSON +
+  CSV, built in the browser from local data, no server) is the natural safety net.
+- [x] **Vercel variables cleaned up (owner, 2026-10-01):** `VAPID_*`, `CRON_SECRET` and the legacy `SYNC_API_KEY`, `VITE_SYNC_API_BASE_URL`,
+  `VITE_SYNC_API_KEY` (the last one was readable in the public bundle) are unused and are deleted in the dashboard
 
 ## Known limitations (accepted for now)
 
