@@ -723,6 +723,56 @@ select gym_test.become_admin();
 delete from public.workout_days where user_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb' and day = '2026-12-06';
 
 -- ===========================================================================
+-- Free-plan history window (20261001160000_free_history_window.sql): 7 days in the cloud
+-- ===========================================================================
+select gym_test.become_admin();
+insert into auth.users (id, email) values ('ffffffff-ffff-ffff-ffff-ffffffffffff', 'f@test.local'), ('99999999-9999-9999-9999-999999999999', 'g@test.local'), ('88888888-8888-8888-8888-888888888888', 'h@test.local');
+-- G is Pro now; H used to be Pro (a Stripe customer on file, subscription cancelled).
+insert into public.subscriptions (user_id, plan, status, stripe_customer_id) values ('99999999-9999-9999-9999-999999999999', 'pro', 'active', 'cus_g'), ('88888888-8888-8888-8888-888888888888', 'free', 'canceled', 'cus_h');
+insert into public.workout_days (user_id, day, session_type) values
+  ('ffffffff-ffff-ffff-ffff-ffffffffffff', current_date - 40, 'gym'), ('ffffffff-ffff-ffff-ffff-ffffffffffff', current_date - 3, 'gym'),
+  ('99999999-9999-9999-9999-999999999999', current_date - 40, 'gym'), ('88888888-8888-8888-8888-888888888888', current_date - 40, 'gym');
+
+select gym_test.expect_count($$select 1 where public.free_history_window_enforced() = false$$, 1, 'the history window ships switched off');
+select gym_test.become('ffffffff-ffff-ffff-ffff-ffffffffffff');
+select gym_test.expect_affected($$insert into public.workout_days (user_id, day, session_type) values ('ffffffff-ffff-ffff-ffff-ffffffffffff', current_date - 20, 'gym')$$, 1,
+  'switched off: a Free account can still write an old day');
+select gym_test.become_admin();
+select gym_test.expect_count($$select 1 where public.purge_free_history() = 0$$, 1, 'switched off: the purge removes nothing');
+
+update public.app_flags set enabled = true where name = 'free_history_window';
+
+select gym_test.become('ffffffff-ffff-ffff-ffff-ffffffffffff');
+select gym_test.expect_error($$insert into public.workout_days (user_id, day, session_type) values ('ffffffff-ffff-ffff-ffff-ffffffffffff', current_date - 30, 'gym')$$, 'PT424', 'a Free account cannot add a day older than the window');
+select gym_test.expect_error($$update public.workout_days set main_notes = 'x' where day = current_date - 40$$, 'PT424', 'nor edit one');
+select gym_test.expect_affected($$insert into public.workout_days (user_id, day, session_type) values ('ffffffff-ffff-ffff-ffff-ffffffffffff', current_date, 'gym')$$, 1, 'today is accepted');
+select gym_test.expect_affected($$insert into public.workout_days (user_id, day, session_type) values ('ffffffff-ffff-ffff-ffff-ffffffffffff', current_date - 6, 'gym')$$, 1, 'the oldest day of the window is accepted');
+select gym_test.expect_affected($$insert into public.workout_days (user_id, day, session_type) values ('ffffffff-ffff-ffff-ffff-ffffffffffff', current_date - 9, 'gym')$$, 1, 'the slack for time zones is accepted');
+select gym_test.expect_count($$select 1 from public.workout_days where day = current_date - 40$$, 1, 'old days can still be read');
+select gym_test.become('99999999-9999-9999-9999-999999999999');
+select gym_test.expect_affected($$update public.workout_days set main_notes = 'pro' where day = current_date - 40$$, 1, 'Pro keeps all history');
+select gym_test.become_admin();
+select gym_test.expect_affected($$insert into public.workout_days (user_id, day, session_type) values ('ffffffff-ffff-ffff-ffff-ffffffffffff', current_date - 100, 'gym')$$, 1, 'server-side writes (no signed-in user) are not refused');
+select gym_test.expect_affected($$delete from public.workout_days where user_id = 'ffffffff-ffff-ffff-ffff-ffffffffffff' and day = current_date - 100$$, 1, 'clean up that row');
+
+do $$
+declare removed bigint;
+begin
+  removed := public.purge_free_history();
+  -- F's two old rows (40 and 20 days) go; F's 9-day row and recent rows stay; G (Pro) and H (paid once) keep everything.
+  if removed <> 2 then raise exception 'FAIL the purge should remove F''s two old days, removed %', removed; end if;
+  raise notice 'ok   - the purge removes a Free account''s days older than 10 days';
+end $$;
+select gym_test.expect_count($$select 1 from public.workout_days where user_id = 'ffffffff-ffff-ffff-ffff-ffffffffffff'$$, 4, 'recent days of the Free account survive the purge');
+select gym_test.expect_count($$select 1 from public.workout_days where user_id in ('99999999-9999-9999-9999-999999999999', '88888888-8888-8888-8888-888888888888') and day = current_date - 40$$, 2, 'Pro and ex-Pro accounts keep their old days');
+
+update public.app_flags set enabled = false where name = 'free_history_window';
+select gym_test.become('ffffffff-ffff-ffff-ffff-ffffffffffff');
+select gym_test.expect_affected($$insert into public.workout_days (user_id, day, session_type) values ('ffffffff-ffff-ffff-ffff-ffffffffffff', current_date - 50, 'gym')$$, 1, 'switching it off lifts the refusal at once');
+select gym_test.become_admin();
+delete from auth.users where id in ('ffffffff-ffff-ffff-ffff-ffffffffffff', '99999999-9999-9999-9999-999999999999', '88888888-8888-8888-8888-888888888888');
+
+-- ===========================================================================
 -- Account deletion cascades to all user data
 -- ===========================================================================
 select gym_test.become_admin();
