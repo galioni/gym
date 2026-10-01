@@ -371,7 +371,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div>
                   <div className="text-sm font-bold uppercase tracking-[0.14em] text-labelSecondary">Free</div>
                   <div className="mt-2 flex items-end gap-1">
-                    <span className="text-3xl font-bold text-label">$0</span>
+                    <span className="text-3xl font-bold text-label">£0</span>
                     <span className="text-base text-labelSecondary mb-1">forever</span>
                   </div>
                 </div>
@@ -402,7 +402,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div>
                   <div className="text-sm font-bold uppercase tracking-[0.14em] text-primary">Pro</div>
                   <div className="mt-2 flex items-end gap-1">
-                    <span className="text-3xl font-bold text-label">$4.99</span>
+                    <span className="text-3xl font-bold text-label">£1.99</span>
                     <span className="text-base text-labelSecondary mb-1">/ month</span>
                   </div>
                 </div>
