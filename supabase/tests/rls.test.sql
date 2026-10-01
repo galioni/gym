@@ -191,10 +191,12 @@ select gym_test.become_anon();
 select gym_test.expect_error($$select * from public.subscriptions$$, '42501', 'anon cannot read subscriptions');
 
 -- ===========================================================================
--- Per-account row limits (20261001100000_row_limits.sql)
+-- Per-account row limits (20261001100000_row_limits.sql, made plan-aware by 20261001140000_plan_row_limits.sql)
 -- ===========================================================================
 select gym_test.become_admin();
 insert into auth.users (id, email) values ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'c@test.local');
+-- C is a Pro account, so the caps asserted below are the Pro caps (5,000 days, 200 templates, 100 plans).
+insert into public.subscriptions (user_id, plan, status) values ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'pro', 'active');
 
 -- workout_days: fill account C to exactly the cap (5000 live days) using bulk inserts.
 insert into public.workout_days (user_id, day, session_type)
@@ -221,6 +223,18 @@ select gym_test.expect_affected($$insert into public.workout_days (user_id, day,
   'the freed slot can be used');
 select gym_test.expect_error($$insert into public.workout_days (user_id, day, session_type) values ('cccccccc-cccc-cccc-cccc-cccccccccccc', '2026-10-11', 'gym')$$,
   'PT422', 'and the cap holds again afterwards');
+
+-- Restoring a deleted day counts against the cap like a new day (otherwise delete / add / restore cycles grow past it).
+select gym_test.expect_error($$update public.workout_days set deleted_at = null where day = '2001-01-03'$$,
+  'PT422', 'restoring a deleted day at the cap is refused');
+select gym_test.expect_count($$select 1 from public.workout_days where day = '2001-01-03' and deleted_at is not null$$, 1,
+  'and the day stays deleted');
+select gym_test.expect_affected($$update public.workout_days set deleted_at = now() where day = '2001-01-04'$$, 1, 'deleting another day makes room');
+select gym_test.expect_affected($$update public.workout_days set deleted_at = null where day = '2001-01-03'$$, 1, 'so the first deleted day can now be restored');
+select gym_test.expect_affected($$insert into public.workout_days (user_id, day, session_type) values ('cccccccc-cccc-cccc-cccc-cccccccccccc', '2001-01-03', 'gym')
+  on conflict (user_id, day) do update set deleted_at = null$$, 1, 'restoring through an upsert on a live day is a plain update and still works');
+select gym_test.expect_error($$insert into public.workout_days (user_id, day, session_type) values ('cccccccc-cccc-cccc-cccc-cccccccccccc', '2001-01-04', 'gym')
+  on conflict (user_id, day) do update set deleted_at = null$$, 'PT422', 'restoring a deleted day through an upsert at the cap is refused too');
 
 -- Another account is unaffected by C being full.
 select gym_test.become('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
@@ -267,6 +281,91 @@ begin
   end if;
   raise notice 'ok   - the limit error names the table and the limit, with a hint';
 end $$;
+
+-- ===========================================================================
+-- Free caps, upgrades and downgrades (20261001140000_plan_row_limits.sql)
+-- ===========================================================================
+select gym_test.become_admin();
+insert into auth.users (id, email) values ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'd@test.local');
+select gym_test.expect_count($$select 1 where public.is_pro('dddddddd-dddd-dddd-dddd-dddddddddddd') = false$$, 1, 'an account without a subscription is Free');
+
+-- templates: Free cap 5 (the 4 built-in starters + 1 of your own)
+insert into public.templates (user_id, session_type) select 'dddddddd-dddd-dddd-dddd-dddddddddddd', 'tpl-' || n from generate_series(1, 5) n;
+select gym_test.become('dddddddd-dddd-dddd-dddd-dddddddddddd');
+select gym_test.expect_error($$insert into public.templates (user_id, session_type) values ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'sixth')$$,
+  'PT422', 'a Free account is capped at 5 templates');
+select gym_test.expect_affected($$insert into public.templates (user_id, session_type, label) values ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'tpl-1', 'edited')
+  on conflict (user_id, session_type) do update set label = excluded.label$$, 1, 'a Free account at its cap can still edit what it has');
+
+-- plans: Free cap 20
+select gym_test.become_admin();
+insert into public.plans (user_id, id, label) select 'dddddddd-dddd-dddd-dddd-dddddddddddd', 'p' || n, 'Plan ' || n from generate_series(1, 20) n;
+select gym_test.become('dddddddd-dddd-dddd-dddd-dddddddddddd');
+select gym_test.expect_error($$insert into public.plans (user_id, id, label) values ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'extra', 'Extra')$$,
+  'PT422', 'a Free account is capped at 20 plans');
+
+-- days: Free cap 1,000 live days
+select gym_test.become_admin();
+insert into public.workout_days (user_id, day, session_type) select 'dddddddd-dddd-dddd-dddd-dddddddddddd', date '2001-01-01' + n, 'gym' from generate_series(0, 999) n;
+select gym_test.become('dddddddd-dddd-dddd-dddd-dddddddddddd');
+select gym_test.expect_error($$insert into public.workout_days (user_id, day, session_type) values ('dddddddd-dddd-dddd-dddd-dddddddddddd', '2026-10-09', 'gym')$$,
+  'PT422', 'a Free account is capped at 1,000 workout days');
+
+-- The Free message points to Pro; the Pro message does not.
+do $$
+declare free_hint text; pro_hint text;
+begin
+  perform gym_test.become('dddddddd-dddd-dddd-dddd-dddddddddddd');
+  begin
+    insert into public.plans (user_id, id, label) values ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'extra2', 'Extra');
+  exception when others then
+    get stacked diagnostics free_hint = pg_exception_hint;
+  end;
+  perform gym_test.become('cccccccc-cccc-cccc-cccc-cccccccccccc');
+  begin
+    insert into public.plans (user_id, id, label) values ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'extra3', 'Extra');
+  exception when others then
+    get stacked diagnostics pro_hint = pg_exception_hint;
+  end;
+  reset role;
+  if free_hint is null or free_hint not like '%upgrade to Pro%' then raise exception 'FAIL the Free hint should mention Pro, got %', free_hint; end if;
+  if pro_hint is null or pro_hint like '%upgrade%' then raise exception 'FAIL the Pro hint should not pitch an upgrade, got %', pro_hint; end if;
+  raise notice 'ok   - the Free limit message points to Pro, the Pro one does not';
+end $$;
+
+-- Upgrading takes effect immediately.
+select gym_test.become_admin();
+insert into public.subscriptions (user_id, plan, status) values ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'pro', 'active');
+select gym_test.become('dddddddd-dddd-dddd-dddd-dddddddddddd');
+select gym_test.expect_affected($$insert into public.templates (user_id, session_type) values ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'sixth')$$, 1, 'after upgrading to Pro the sixth template fits');
+select gym_test.expect_affected($$insert into public.plans (user_id, id, label) values ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'twenty-one', 'Plan')$$, 1, 'and so does the 21st plan');
+
+-- A trial counts as Pro.
+select gym_test.become_admin();
+update public.subscriptions set status = 'trialing' where user_id = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
+select gym_test.become('dddddddd-dddd-dddd-dddd-dddddddddddd');
+select gym_test.expect_affected($$insert into public.templates (user_id, session_type) values ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'seventh')$$, 1, 'a trialing subscription has the Pro caps');
+
+-- Dropping to Free (lapsed, past due, or plan set to free) deletes nothing and blocks only NEW rows.
+select gym_test.become_admin();
+update public.subscriptions set status = 'past_due' where user_id = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
+select gym_test.become('dddddddd-dddd-dddd-dddd-dddddddddddd');
+select gym_test.expect_error($$insert into public.templates (user_id, session_type) values ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'eighth')$$,
+  'PT422', 'a past-due Pro account is back to the Free caps for new rows');
+select gym_test.expect_count($$select 1 from public.templates$$, 7, 'but its 7 templates are all still there');
+select gym_test.expect_affected($$update public.templates set label = 'still editable' where session_type = 'seventh'$$, 1,
+  'and it can still edit them');
+select gym_test.expect_affected($$delete from public.templates where session_type = 'seventh'$$, 1, 'and delete them');
+select gym_test.expect_error($$insert into public.templates (user_id, session_type) values ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'seventh-again')$$,
+  'PT422', 'but deleting one does not get it under the Free cap (6 > 5), so new templates are still refused');
+
+select gym_test.become_admin();
+update public.subscriptions set plan = 'free', status = 'active' where user_id = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
+select gym_test.expect_count($$select 1 where public.is_pro('dddddddd-dddd-dddd-dddd-dddddddddddd') = false$$, 1, 'a subscription whose plan is free is Free even when its status is active');
+
+-- Nobody can ask who is Pro through the API.
+select gym_test.become('dddddddd-dddd-dddd-dddd-dddddddddddd');
+select gym_test.expect_error($$select public.is_pro('dddddddd-dddd-dddd-dddd-dddddddddddd')$$, '42501', 'a signed-in user cannot call is_pro directly');
 
 -- ===========================================================================
 -- Retention of deleted days: content is blanked at deletion, tombstones are purged after 90 days
@@ -335,7 +434,7 @@ select gym_test.become_admin();
 select gym_test.expect_error($$insert into public.subscriptions (user_id, stripe_customer_id) values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'cus_test')$$,
   '23505', 'one Stripe customer cannot be attached to two accounts');
 insert into public.subscriptions (user_id) values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
-select gym_test.expect_count($$select 1 from public.subscriptions where stripe_customer_id is null$$, 1,
+select gym_test.expect_count($$select 1 from (select count(*) as n from public.subscriptions where stripe_customer_id is null) q where n >= 2$$, 1,
   'many users without a Stripe customer are allowed');
 
 select gym_test.become('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');

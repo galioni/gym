@@ -59,7 +59,7 @@ can stay in place.
 KV is still used for billing state, user settings, push subscriptions and rate limits.
 
 - [ ] **Plan tiers** (see the Free/Pro table under "Decisions"). Slice 1 **done** (2026-10-01): `generate-plan` is plan-aware (Free 1 per rolling day, Pro 10 per rolling
-  hour; numbers in `api/_lib/planLimits.ts`, refusal says what Free includes, wait shown in hours/days). Remaining slices 2 to 5 as listed above. Original scope: plan-aware `row_limit()`, a sync allowance for free
+  hour; numbers in `api/_lib/planLimits.ts`, refusal says what Free includes, wait shown in hours/days). Slice 2 **done** (2026-10-01, database side): `row_limit(table, is_pro)` and a security-definer `enforce_row_limit()` read the plan (`is_pro()`), so Free is 1,000 days / 5 templates / 20 plans and Pro is unchanged; a lapsed Pro account keeps everything and is only blocked from adding; restoring a soft-deleted day now counts against the cap (it used to bypass it through the update path). Client side of slice 2 (uploads that cannot deadlock at a small cap) follows. Remaining slices 3 to 5 as listed above. Original scope: plan-aware `row_limit()`, a sync allowance for free
   accounts with clear status text ("next sync available on …"), the cloud-only 7-day window, a plan-aware AI rate limit, and
   upgrade prompts at each limit. Build after subscriptions are in Postgres
 - [x] Subscriptions (slice 15.1, 2026-10-01): billing state is in Postgres. `subscriptions` holds the plan and, through a unique
