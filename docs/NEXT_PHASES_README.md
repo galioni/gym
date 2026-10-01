@@ -39,7 +39,12 @@ intentionally left behind.
   - **Launch blocker:** the built-in email service only delivers to organisation members and is heavily rate
     limited. Set up custom SMTP before real users sign up. Not needed for the preview test with an address we control.
 - [x] Apply `supabase/migrations` to the hosted project (2026-10-01, three migrations, history names match the files)
-- [ ] Deploy a Vercel preview against the hosted project; sign in with a real account; verify upload, a second browser, a delete
+- [x] Deploy a Vercel preview against the hosted project; sign in with a real account; verify upload, a second browser, a delete
+  (2026-10-01: passed with Google sign-in on branch `phase-14-postgres-sync`; test rows removed)
+  - Found and fixed: sign-in returned to the fixed `VITE_SUPABASE_REDIRECT_URL` (production), so a preview test
+    silently exercised the old build. Auth now returns to the current origin **with a trailing slash**
+    (allow-list patterns like `https://host/**` do not match a bare origin)
+  - The three pre-existing production accounts were deleted on request (no subscriptions, no clients)
 - [ ] Deploy to production; watch logs and error rates for the first day; keep the previous deployment ready to roll back
 - [ ] Optional: delete the orphaned `sync:{userId}:*` keys from KV once nobody needs the rollback
 
