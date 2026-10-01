@@ -56,6 +56,9 @@ can stay in place.
 
 KV is still used for billing state, user settings, push subscriptions and rate limits.
 
+- [ ] **Plan tiers** (see the Free/Pro table under "Decisions"): plan-aware `row_limit()`, a sync allowance for free
+  accounts with clear status text ("next sync available on …"), the cloud-only 7-day window, a plan-aware AI rate limit, and
+  upgrade prompts at each limit. Build after subscriptions are in Postgres
 - [ ] Subscriptions: read and write the `subscriptions` table (Stripe webhook writes it with the service role; the
   client can read its own row under RLS); migrate `api/subscription`, `api/_lib/subscriptionGuard.ts`, the webhook
 - [ ] User settings (AI provider): use `user_settings`; migrate `api/user-settings` and `api/generate-plan`
@@ -89,9 +92,28 @@ KV is still used for billing state, user settings, push subscriptions and rate l
 
 Decided 2026-10-01:
 
-- [x] **What is Pro for?** Pro = better AI (model choice and higher plan-generation limits). Sync stays free. Subscriptions
-  move to the Postgres `subscriptions` table and Stripe stays (Phase 15). Pricing, landing page and Settings copy should
-  say this.
+- [x] **What is Pro for?** Pro is the full product; **Free is deliberately small** (owner's choice, 2026-10-01, over
+  the recommendation of a more generous free tier). Subscriptions move to the Postgres `subscriptions` table and
+  Stripe stays (Phase 15). Pricing, landing page and Settings copy must say this plainly.
+
+  | | Free | Pro |
+  |---|---|---|
+  | Cloud sync | one sync per rolling 30 days (manual "Sync now"; automatic sync off) | automatic, unlimited |
+  | Templates | 1 | 200 |
+  | Cloud history | last 7 days | all (up to the row limit) |
+  | Plans | 20 (one fifth of Pro) | 100 |
+  | Workout days (safety cap) | 1,000 (one fifth of Pro) | 5,000 |
+  | AI plan generation | 1 per day, Google model | 10 per hour, choice of model |
+
+  Everything stays fully usable **locally** on a free account; the limits apply to what is stored and synced in the cloud.
+  Known consequences, accepted by the owner: low retention is likely; with 1 template the plans cap is mostly moot and with
+  a 7-day window the 1,000-day cap never binds; free users can lose up to a month of unsynced work if a device is lost.
+  Open design questions before building (Phase 15, "Plan tiers"):
+  - What counts as "a sync"? Proposal: one successful upload+download cycle; the first pull on a brand-new device does not count.
+  - The 7-day window must be a **cloud-only** rule. Rows older than 7 days are neither uploaded nor treated as deleted, or the
+    sync would read them as deletions and erase local history. This needs a change in `deletionReconciliation` and tests.
+  - Downgrade behaviour: a Pro user who lapses with 30 templates keeps them locally and read-only in the cloud; nothing is deleted.
+  - Free "1 template" is enforced in the client and by the database trigger (`row_limit` becomes plan-aware).
 - [x] **Soft-deleted data retention: 90 days.** A scheduled job permanently erases deleted days after 90 days, and the
   exercise content of a deleted day is blanked straight away so only the deletion marker syncs. New work, see Phase 16.
   A full data export was not decided; still open as a product question.
