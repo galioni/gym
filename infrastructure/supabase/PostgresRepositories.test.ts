@@ -4,73 +4,14 @@ import { dayContentHash, stableSerialize } from "../../application/sync/contentH
 import { sanitizeDayDataRecord } from "../../application/workout/data/dayDataRules";
 import { sanitizeTemplates } from "../../application/workout/templates/templateRules";
 import { TEMPLATES } from "../../constants";
-import { RowGateway, UserTable } from "./PostgrestRowGateway";
+import { CloudLimitError } from "../../application/sync/syncErrors";
+import { FakeGateway } from "./fakeGateway.testSupport";
 import {
   PostgresAccountSettingsRepository,
   PostgresPlansRepository,
   PostgresTemplateRepository,
   PostgresWorkoutDataRepository,
 } from "./PostgresRepositories";
-
-type Row = Record<string, unknown>;
-
-/** In-memory stand-in for the database as seen by one signed-in user. */
-class FakeGateway implements RowGateway {
-  public tables: Record<UserTable, Map<string, Row>> = {
-    workout_days: new Map(),
-    templates: new Map(),
-    plans: new Map(),
-    user_settings: new Map(),
-  };
-  public upserted: Record<UserTable, number> = { workout_days: 0, templates: 0, plans: 0, user_settings: 0 };
-  private clock = 0;
-
-  private static key(table: UserTable, row: Row): string {
-    return String(
-      table === "workout_days" ? row.day : table === "templates" ? row.session_type : table === "user_settings" ? row.user_id : row.id
-    );
-  }
-
-  public async requireUserId() { return "user-1"; }
-
-  public async selectAll<T>(table: UserTable): Promise<T[]> {
-    return [...this.tables[table].values()].map((row) => ({ ...row })) as T[];
-  }
-
-  public async upsertRows(table: UserTable, rows: object[]) {
-    for (const row of rows as Row[]) {
-      this.tables[table].set(FakeGateway.key(table, row), { ...row, updated_at: new Date(Date.now() + ++this.clock).toISOString() });
-      this.upserted[table] += 1;
-    }
-  }
-
-  // Mirrors the database: the deleted_hash comes from the client, and the trigger blanks the content.
-  public async markDaysDeleted(days: Record<string, string>) {
-    for (const [day, hash] of Object.entries(days)) {
-      const row = this.tables.workout_days.get(day);
-      if (row && row.deleted_at === null) {
-        Object.assign(row, {
-          deleted_at: new Date().toISOString(),
-          deleted_hash: hash,
-          warmup: [],
-          main: [],
-          warmup_notes: "",
-          main_notes: "",
-          check_notes: "",
-          weight: "",
-          warmup_timer_ms: 0,
-          main_timer_ms: 0,
-        });
-      }
-    }
-  }
-
-  public async deleteMissing(table: "templates" | "plans", keep: string[]) {
-    for (const key of [...this.tables[table].keys()]) {
-      if (!keep.includes(key)) this.tables[table].delete(key);
-    }
-  }
-}
 
 function day(date: string, notes = "", extra: Partial<DayData> = {}): DayData {
   const raw: DayData = {
@@ -251,6 +192,86 @@ describe("PostgresTemplateRepository", () => {
 
     expect(gateway.upserted.templates).toBe(0);
     expect([...gateway.tables.templates.keys()]).toEqual(["push"]);
+  });
+});
+
+describe("account limits never block edits, deletions or the rows that fit", () => {
+  const tpl = (text: string): Templates[string] => ({ warmup: [], main: [{ text, target: "3x8" }] });
+  const snapshot = (data: Templates) => ({ version: 1, updatedAt: "x", data: sanitizeTemplates(data) });
+
+  async function cloudWith(keys: string[], cap: number) {
+    const gateway = new FakeGateway();
+    const seed: Templates = Object.fromEntries(keys.map((key) => [key, tpl(`${key} v1`)]));
+    await new PostgresTemplateRepository(gateway).writeSnapshot(snapshot(seed));
+    gateway.caps.templates = cap;
+    const repo = new PostgresTemplateRepository(gateway);
+    await repo.readSnapshot();
+    return { gateway, repo };
+  }
+  const stored = (gateway: FakeGateway) => [...gateway.tables.templates.keys()].sort();
+
+  it("saves edits to existing items even when a new item is over the limit, then reports the limit", async () => {
+    const { gateway, repo } = await cloudWith(["a", "b"], 2);
+
+    const write = repo.writeSnapshot(snapshot({ a: tpl("a EDITED"), b: tpl("b v1"), c: tpl("c new") }));
+
+    await expect(write).rejects.toBeInstanceOf(CloudLimitError);
+    expect(stored(gateway)).toEqual(["a", "b"]);
+    expect(JSON.stringify(gateway.tables.templates.get("a"))).toContain("a EDITED");
+  });
+
+  it("lets someone at the limit delete one item and add another in the same sync", async () => {
+    const { gateway, repo } = await cloudWith(["a", "b"], 2);
+
+    await repo.writeSnapshot(snapshot({ b: tpl("b v1"), c: tpl("c new") }));
+
+    expect(stored(gateway)).toEqual(["b", "c"]);
+  });
+
+  it("stores as many new items as fit instead of none, then reports the limit", async () => {
+    const { gateway, repo } = await cloudWith(["a"], 3);
+
+    const write = repo.writeSnapshot(snapshot({ a: tpl("a v1"), b: tpl("b"), c: tpl("c"), d: tpl("d"), e: tpl("e") }));
+
+    await expect(write).rejects.toBeInstanceOf(CloudLimitError);
+    expect(stored(gateway)).toEqual(["a", "b", "c"]);
+  });
+
+  it("does not hide a failure that is not a limit", async () => {
+    const { gateway, repo } = await cloudWith(["a"], 5);
+    gateway.upsertRows = async () => {
+      throw new Error("connection reset");
+    };
+    await expect(repo.writeSnapshot(snapshot({ a: tpl("a v1"), b: tpl("b") }))).rejects.toThrow("connection reset");
+  });
+
+  it("applies the same order to workout days: deleting a day at the cap makes room for a new one", async () => {
+    const gateway = new FakeGateway();
+    const repo = new PostgresWorkoutDataRepository(gateway);
+    const first = day("2026-10-01", "first");
+    const second = day("2026-10-02", "second");
+    await repo.writeSnapshot(snap({ "2026-10-01": first, "2026-10-02": second }));
+    gateway.caps.workout_days = 2;
+    await repo.readSnapshot();
+
+    await repo.writeSnapshot(snap({ "2026-10-02": second, "2026-10-03": day("2026-10-03", "third") }, { "2026-10-01": dayContentHash(first) }));
+
+    const live = [...gateway.tables.workout_days.values()].filter((row) => row.deleted_at == null).map((row) => row.day).sort();
+    expect(live).toEqual(["2026-10-02", "2026-10-03"]);
+  });
+
+  it("keeps the edits to existing days when a new day is refused at the cap", async () => {
+    const gateway = new FakeGateway();
+    const repo = new PostgresWorkoutDataRepository(gateway);
+    await repo.writeSnapshot(snap({ "2026-10-01": day("2026-10-01", "v1") }));
+    gateway.caps.workout_days = 1;
+    await repo.readSnapshot();
+
+    const write = repo.writeSnapshot(snap({ "2026-10-01": day("2026-10-01", "v2 edited"), "2026-10-02": day("2026-10-02", "new") }));
+
+    await expect(write).rejects.toBeInstanceOf(CloudLimitError);
+    expect(gateway.tables.workout_days.size).toBe(1);
+    expect(String(gateway.tables.workout_days.get("2026-10-01")?.main_notes)).toBe("v2 edited");
   });
 });
 

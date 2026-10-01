@@ -8,6 +8,7 @@ import { AccountSettingsRepository } from "../../interfaces/workout/AccountSetti
 import { sanitizeDayData, sanitizeDayDataRecord } from "../../application/workout/data/dayDataRules";
 import { sanitizeTemplates } from "../../application/workout/templates/templateRules";
 import { dayContentHash, hashString, stableSerialize } from "../../application/sync/contentHash";
+import { CloudLimitError } from "../../application/sync/syncErrors";
 import { RowGateway } from "./PostgrestRowGateway";
 import {
   PlanRow,
@@ -23,6 +24,57 @@ import {
 } from "./postgresRows";
 
 const fingerprint = (value: unknown): string => hashString(stableSerialize(value));
+
+/**
+ * Writes the changed rows of a collection in an order that an account limit can never deadlock:
+ *
+ *   1. edits to rows the cloud already holds. An update adds no row, so it cannot hit a limit; before this order, one new
+ *      item over the limit made the whole batch fail and kept every edit to existing items from syncing too;
+ *   2. deletions, which free room. Without this, someone at the limit who deletes one item and adds another could never
+ *      sync, because the new item was inserted before the old one was removed;
+ *   3. new rows, as one batch. If that batch is refused for being over the limit, they are tried one by one in order until
+ *      the first refusal, so an account with room for three more stores three instead of none.
+ *
+ * If any new row was refused, the limit error is thrown only AFTER the edits, deletions and the rows that fit are saved,
+ * so the person is told while nothing else is held back.
+ */
+async function writeRespectingLimits<R extends object>(plan: {
+  rows: R[];
+  exists: (row: R) => boolean;
+  upsert: (rows: R[]) => Promise<void>;
+  deleteRemoved: () => Promise<void>;
+  onWritten: (row: R) => void;
+}): Promise<void> {
+  const edits = plan.rows.filter(plan.exists);
+  const additions = plan.rows.filter((row) => !plan.exists(row));
+
+  if (edits.length > 0) {
+    await plan.upsert(edits);
+    edits.forEach(plan.onWritten);
+  }
+  await plan.deleteRemoved();
+  if (additions.length === 0) return;
+
+  try {
+    await plan.upsert(additions);
+    additions.forEach(plan.onWritten);
+    return;
+  } catch (error) {
+    if (!(error instanceof CloudLimitError) || additions.length === 1) throw error;
+    let refusal: CloudLimitError = error;
+    for (const row of additions) {
+      try {
+        await plan.upsert([row]);
+        plan.onWritten(row);
+      } catch (single) {
+        if (!(single instanceof CloudLimitError)) throw single;
+        refusal = single;
+        break;
+      }
+    }
+    throw refusal;
+  }
+}
 
 /**
  * Workout days in Postgres (one row per day). Writes upsert only the days that differ from what the last
@@ -72,16 +124,18 @@ export class PostgresWorkoutDataRepository implements WorkoutDataRepository {
       const row = dayToRow(userId, date, day);
       if (row) changed.push(row);
     }
-    if (changed.length > 0) {
-      await this.gateway.upsertRows("workout_days", changed);
-      for (const row of changed) this.lastRead.set(row.day, dayContentHash(snapshot.data[row.day]));
-    }
-
     const toDelete = snapshot.deletedDays ?? {};
-    if (Object.keys(toDelete).length > 0) {
-      await this.gateway.markDaysDeleted(toDelete);
-      for (const date of Object.keys(toDelete)) this.lastRead.delete(date);
-    }
+    await writeRespectingLimits({
+      rows: changed,
+      exists: (row) => this.lastRead.has(row.day),
+      upsert: (rows) => this.gateway.upsertRows("workout_days", rows),
+      deleteRemoved: async () => {
+        if (Object.keys(toDelete).length === 0) return;
+        await this.gateway.markDaysDeleted(toDelete);
+        for (const date of Object.keys(toDelete)) this.lastRead.delete(date);
+      },
+      onWritten: (row) => this.lastRead.set(row.day, dayContentHash(snapshot.data[row.day])),
+    });
   }
 
   public async readAll(): Promise<Record<string, DayData>> {
@@ -117,10 +171,13 @@ export class PostgresTemplateRepository implements TemplateRepository {
     const userId = await this.gateway.requireUserId();
     const rows = templatesToRows(userId, snapshot.data);
     const changed = rows.filter((row) => this.lastRead.get(row.session_type) !== fingerprint(snapshot.data[row.session_type]));
-    if (changed.length > 0) {
-      await this.gateway.upsertRows("templates", changed);
-    }
-    await this.gateway.deleteMissing("templates", rows.map((row) => row.session_type));
+    await writeRespectingLimits({
+      rows: changed,
+      exists: (row) => this.lastRead.has(row.session_type),
+      upsert: (batch) => this.gateway.upsertRows("templates", batch),
+      deleteRemoved: () => this.gateway.deleteMissing("templates", rows.map((row) => row.session_type)),
+      onWritten: (row) => this.lastRead.set(row.session_type, fingerprint(snapshot.data[row.session_type])),
+    });
     this.lastRead = new Map(rows.map((row) => [row.session_type, fingerprint(snapshot.data[row.session_type])]));
   }
 
@@ -155,10 +212,13 @@ export class PostgresPlansRepository implements PlansRepository {
     const rows = plansToRows(userId, snapshot.data);
     const byId = new Map(snapshot.data.map((plan) => [plan.id, plan]));
     const changed = rows.filter((row) => this.lastRead.get(row.id) !== fingerprint(byId.get(row.id)));
-    if (changed.length > 0) {
-      await this.gateway.upsertRows("plans", changed);
-    }
-    await this.gateway.deleteMissing("plans", rows.map((row) => row.id));
+    await writeRespectingLimits({
+      rows: changed,
+      exists: (row) => this.lastRead.has(row.id),
+      upsert: (batch) => this.gateway.upsertRows("plans", batch),
+      deleteRemoved: () => this.gateway.deleteMissing("plans", rows.map((row) => row.id)),
+      onWritten: (row) => this.lastRead.set(row.id, fingerprint(byId.get(row.id))),
+    });
     this.lastRead = new Map(rows.map((row) => [row.id, fingerprint(byId.get(row.id))]));
   }
 

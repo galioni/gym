@@ -180,3 +180,35 @@ export function agreedBase<T>(
 export function baseDaysFrom(finalDays: Record<string, DayData>): Record<string, string> {
   return Object.fromEntries(Object.entries(finalDays).map(([date, day]) => [date, dayContentHash(day)]));
 }
+
+/** The hash of every item in a keyed collection. */
+export function collectionHashes<T>(collection: Collection<T> | null): Record<string, string> {
+  if (!collection) return {};
+  return Object.fromEntries(collection.keys.map((key) => [key, entityHash(collection.items[key])]));
+}
+
+/**
+ * The base to store after a sync in which the cloud accepted only part of what was sent (an account limit refused the
+ * rest). It is recomputed from what the cloud really holds afterwards, not from what was intended:
+ *
+ *   - an item both sides hold identically is agreed;
+ *   - an item whose two copies differ keeps its previous base entry (or none), so the difference is still recognised
+ *     as an edit later and not as a clash with an unknown ancestor;
+ *   - an item this device holds that the cloud lacks was either refused (no base entry, so it is simply sent again) or
+ *     removed on another device (its previous entry is kept, so the removal is still recognised and not undone).
+ */
+export function baseAfterPartialWrite(
+  previous: Record<string, string>,
+  cloudHashes: Record<string, string>,
+  localHashes: Record<string, string>
+): Record<string, string> {
+  const next: Record<string, string> = {};
+  for (const [key, hash] of Object.entries(cloudHashes)) {
+    if (localHashes[key] === hash) next[key] = hash;
+    else if (Object.hasOwn(previous, key)) next[key] = previous[key];
+  }
+  for (const key of Object.keys(previous)) {
+    if (!Object.hasOwn(cloudHashes, key) && Object.hasOwn(localHashes, key)) next[key] = previous[key];
+  }
+  return next;
+}
