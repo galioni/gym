@@ -328,6 +328,41 @@ end $$;
 select gym_test.expect_count($$select 1 from public.workout_days where deleted_hash = 'recent'$$, 0, 'a shorter period purges more');
 
 -- ===========================================================================
+-- Billing state: subscriptions are looked up by Stripe customer; webhook events are de-duplicated server-side
+-- ===========================================================================
+select gym_test.become_admin();
+-- A already has a subscription (customer cus_test) from the service-role test above.
+select gym_test.expect_error($$insert into public.subscriptions (user_id, stripe_customer_id) values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'cus_test')$$,
+  '23505', 'one Stripe customer cannot be attached to two accounts');
+insert into public.subscriptions (user_id) values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
+select gym_test.expect_count($$select 1 from public.subscriptions where stripe_customer_id is null$$, 1,
+  'many users without a Stripe customer are allowed');
+
+select gym_test.become('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
+select gym_test.expect_count($$select 1 from public.subscriptions$$, 1, 'a user reads only their own subscription');
+select gym_test.expect_error($$select * from public.stripe_events$$, '42501', 'a signed-in user cannot read webhook events');
+select gym_test.expect_error($$insert into public.stripe_events (event_id) values ('evt_user')$$, '42501', 'a signed-in user cannot write webhook events');
+select gym_test.become_anon();
+select gym_test.expect_error($$select * from public.stripe_events$$, '42501', 'anon cannot read webhook events');
+
+select gym_test.become_service();
+insert into public.stripe_events (event_id) values ('evt_new');
+select gym_test.expect_error($$insert into public.stripe_events (event_id) values ('evt_new')$$, '23505', 'a repeated event id is detected');
+select gym_test.expect_count($$select 1 from public.stripe_events$$, 1, 'the server can record and read webhook events');
+select gym_test.expect_error($$select public.purge_stripe_events()$$, '42501', 'the service role cannot run the event purge through the API');
+
+select gym_test.become_admin();
+insert into public.stripe_events (event_id, received_at) values ('evt_old', now() - interval '40 days'), ('evt_recent', now() - interval '29 days');
+do $$
+declare removed bigint;
+begin
+  removed := public.purge_stripe_events();
+  if removed <> 1 then raise exception 'FAIL the event purge should remove only the 40-day-old id, removed %', removed; end if;
+  raise notice 'ok   - the event purge removes ids older than 30 days';
+end $$;
+select gym_test.expect_count($$select 1 from public.stripe_events where event_id in ('evt_new', 'evt_recent')$$, 2, 'newer event ids are kept');
+
+-- ===========================================================================
 -- Account deletion cascades to all user data
 -- ===========================================================================
 select gym_test.become_admin();
