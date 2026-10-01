@@ -5,6 +5,7 @@ import { attachApiRequestObservability } from "./_lib/observability.js";
 import { getAiModelForProvider, getEnabledProviders } from "./_lib/apiEnv.js";
 import { getUserSettings } from "./_lib/userSettingsStore.js";
 import { resolveAiProvider } from "./_lib/aiProvider.js";
+import { describeGeneratePlanLimit, generatePlanLimit } from "./_lib/planLimits.js";
 import { getSubscription, hasProAccess } from "./_lib/subscriptionGuard.js";
 import { checkRateLimit, FixedWindowRateLimiter } from "./_lib/rateLimiter.js";
 
@@ -155,26 +156,31 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     if (!auth) return;
     observation.setUserId(auth.userId);
 
-    // Tight rate limit: 10 per hour per user — each call costs money
+    const [subscription, userSettings] = await Promise.all([
+      getSubscription(auth.userId),
+      getUserSettings(auth.userId),
+    ]);
+    const isPro = hasProAccess(subscription);
+
+    // Each call costs money, so the limit depends on the plan: Free 1 per day, Pro 10 per hour (see _lib/planLimits).
     // RATE_LIMIT_BYPASS_USERS: comma-separated user IDs that skip the per-user limit (owner/testing use)
     const bypassUsers = new Set((process.env.RATE_LIMIT_BYPASS_USERS ?? "").split(",").filter(Boolean));
     if (bypassUsers.has(auth.userId)) {
       console.log("[rate-limit] bypassed for user", auth.userId);
     } else {
-      const rateLimit = await checkRateLimit(auth.userId, "generate-plan", 10, 3600);
+      const rule = generatePlanLimit(isPro);
+      const rateLimit = await checkRateLimit(auth.userId, "generate-plan", rule.maxRequests, rule.windowSeconds);
       if (!rateLimit.allowed) {
-        res.status(429).json({ error: "Too many requests. Try again later.", retryAfter: rateLimit.retryAfterSeconds });
+        res.status(429).json({
+          error: describeGeneratePlanLimit(isPro),
+          retryAfter: rateLimit.retryAfterSeconds,
+          plan: isPro ? "pro" : "free",
+        });
         return;
       }
     }
 
-    const [subscription, userSettings] = await Promise.all([
-      getSubscription(auth.userId),
-      getUserSettings(auth.userId),
-    ]);
-
     const enabledProviders = getEnabledProviders();
-    const isPro = hasProAccess(subscription);
     const provider = resolveAiProvider(userSettings.aiProvider, isPro, enabledProviders);
 
     const body = parseJsonBody<unknown>(req, null);

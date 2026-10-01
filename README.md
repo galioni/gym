@@ -117,7 +117,8 @@ Upstash KV keys:
 ## Subscription Model
 
 - **Free**: local workout tracking, templates, AI plan generation
-- **Pro**: choice of AI model for plan generation (gated at API level — 402 for free users)
+- **Pro**: choice of AI model for plan generation (gated at API level — 402 for free users) and a higher AI limit
+- **AI plan generation limit** (counted per user in Postgres): Free 1 per rolling day on the default model; Pro 10 per rolling hour. More Free/Pro limits are planned (`docs/NEXT_PHASES_README.md`).
 
 Subscription state is stored in Postgres (table `subscriptions`, one row per user; the Stripe customer id on that row is how the webhook finds the user). Only the server writes it, with the service-role key; a user can read their own row. Today the only Pro benefit is choosing the AI model; the planned Free/Pro limits are specified in `docs/NEXT_PHASES_README.md`.
 

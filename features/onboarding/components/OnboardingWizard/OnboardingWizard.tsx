@@ -4,6 +4,7 @@ import { GeneratedPlanMeta, PlanParams, Templates } from "../../../../types";
 import { Button } from "../../../../components/ui/Button";
 import { useAuthSession } from "../../../auth/hooks/useAuthSession";
 import { cn } from "../../../../utils";
+import { formatRetryWait } from "../../utils/formatRetryWait";
 
 interface OnboardingWizardProps {
   onComplete: (templates: Templates, params: PlanParams, meta?: GeneratedPlanMeta) => Promise<void>;
@@ -181,12 +182,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({})) as { error?: string; retryAfter?: number };
+        const body = await res.json().catch(() => ({})) as { error?: string; retryAfter?: number; plan?: string };
         if (res.status === 429) {
           const wait = body.retryAfter && body.retryAfter > 0
-            ? ` Try again in ${Math.ceil(body.retryAfter / 60)} minute${Math.ceil(body.retryAfter / 60) === 1 ? "" : "s"}.`
+            ? ` Try again in ${formatRetryWait(body.retryAfter)}.`
             : " Try again later.";
-          throw new Error(`You've hit the plan generation limit.${wait}`);
+          // A refusal that names the plan carries its own explanation (what Free includes, what Pro adds).
+          const reason = body.plan && body.error ? body.error : "You've hit the plan generation limit.";
+          throw new Error(`${reason}${wait}`);
         }
         if (res.status >= 500) {
           throw new Error("Plan generation failed due to a server error. Please try again in a moment.");
