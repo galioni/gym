@@ -88,12 +88,12 @@ function OptionCard<T extends string>({
       className={cn(
         "w-full text-left px-4 py-3 rounded-2xl border transition-all duration-150",
         selected
-          ? "border-primary bg-primary/15 text-white"
-          : "border-white/10 bg-white/5 text-slate-300 hover:border-white/25 hover:bg-white/10"
+          ? "border-primary bg-primary/15 text-label"
+          : "border-border bg-fill/5 text-labelSecondary hover:border-borderStrong hover:bg-fill/10"
       )}
     >
       <div className="text-sm font-medium">{label}</div>
-      {sub && <div className="text-xs text-slate-500 mt-0.5">{sub}</div>}
+      {sub && <div className="text-xs text-labelTertiary mt-0.5">{sub}</div>}
     </button>
   );
 }
@@ -110,7 +110,7 @@ function DayButton({ n, selected, onClick }: { n: number; selected: boolean; onC
         "h-11 w-11 rounded-xl text-sm font-bold border transition-all duration-150",
         selected
           ? "border-primary bg-primary/20 text-primary"
-          : "border-white/10 bg-white/5 text-slate-400 hover:border-white/25"
+          : "border-border bg-fill/5 text-labelSecondary hover:border-borderStrong"
       )}
     >
       {n}
@@ -139,7 +139,7 @@ function GeneratingText() {
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">{label}</p>
+      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-labelSecondary">{label}</p>
       {children}
     </div>
   );
@@ -225,11 +225,11 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             <Dumbbell size={22} />
             <span className="text-[11px] font-bold uppercase tracking-[0.2em]">Daily Grind</span>
           </div>
-          <h1 className="text-3xl font-bold text-white">{isRebuilding ? "Rebuild your plan" : "Build your plan"}</h1>
-          <p className="text-sm text-slate-400">{isRebuilding ? "Adjust your preferences and we'll generate a fresh set of session templates." : "Answer a few questions and we'll generate a training plan tailored to you."}</p>
+          <h1 className="text-3xl font-bold text-label">{isRebuilding ? "Rebuild your plan" : "Build your plan"}</h1>
+          <p className="text-sm text-labelSecondary">{isRebuilding ? "Adjust your preferences and we'll generate a fresh set of session templates." : "Answer a few questions and we'll generate a training plan tailored to you."}</p>
         </div>
 
-        <div className="rounded-[1.4rem] border border-white/10 bg-surface/60 backdrop-blur-xl p-5 space-y-5">
+        <div className="rounded-[1.4rem] border border-border bg-surface/60 backdrop-blur-xl p-5 space-y-5">
 
           <Section label="What's your goal?">
             <div role="radiogroup" aria-label="Goal" className="grid grid-cols-1 gap-2">
@@ -276,7 +276,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     "py-2.5 px-3 rounded-xl text-sm font-medium border transition-all duration-150 text-left",
                     bodyFocus.includes(b.value)
                       ? "border-primary bg-primary/20 text-primary"
-                      : "border-white/10 bg-white/5 text-slate-400 hover:border-white/25"
+                      : "border-border bg-fill/5 text-labelSecondary hover:border-borderStrong"
                   )}
                 >
                   {b.label}
@@ -298,7 +298,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     "flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all duration-150",
                     duration === d.value
                       ? "border-primary bg-primary/20 text-primary"
-                      : "border-white/10 bg-white/5 text-slate-400 hover:border-white/25"
+                      : "border-border bg-fill/5 text-labelSecondary hover:border-borderStrong"
                   )}
                 >
                   {d.label}
@@ -308,7 +308,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
           </Section>
 
           {error && (
-            <p className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-red-200">
+            <p className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-dangerText">
               {error}
             </p>
           )}
@@ -338,13 +338,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
           <button
             type="button"
             onClick={onSkip}
-            className="w-full text-center text-xs text-slate-500 hover:text-slate-400 transition-colors py-2"
+            className="w-full text-center text-xs text-labelTertiary hover:text-labelSecondary transition-colors py-2"
           >
             {isRebuilding ? "Cancel — keep my current plan" : "Skip — I'll set up my plan manually"}
           </button>
           {!isRebuilding && (
-            <p className="text-[11px] text-slate-600 leading-relaxed">
-              Skipping leaves you with an empty template list. You can build templates in <span className="text-slate-500">Settings → Templates</span> or generate a plan any time from <span className="text-slate-500">Settings → AI Plan</span>.
+            <p className="text-[11px] text-labelTertiary leading-relaxed">
+              Skipping leaves you with an empty template list. You can build templates in <span className="text-labelTertiary">Settings → Templates</span> or generate a plan any time from <span className="text-labelTertiary">Settings → AI Plan</span>.
             </p>
           )}
         </div>

@@ -42,7 +42,7 @@ function SessionToggle({
         "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
         selected
           ? "border-primary bg-primary/20 text-primary"
-          : "border-white/10 bg-white/5 text-slate-400 hover:border-white/25"
+          : "border-border bg-fill/5 text-labelSecondary hover:border-borderStrong"
       )}
     >
       {option.label}
@@ -63,11 +63,11 @@ function DayScheduleGrid({
 }) {
   return (
     <div>
-      <p className="text-[11px] uppercase tracking-widest text-slate-500 mb-2">Day schedule</p>
+      <p className="text-[11px] uppercase tracking-widest text-labelTertiary mb-2">Day schedule</p>
       <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 items-center max-w-xs">
         {WEEK_DAYS.map((day) => (
           <React.Fragment key={day}>
-            <span className="text-xs text-slate-400 w-20">{DAY_LABELS[day]}</span>
+            <span className="text-xs text-labelSecondary w-20">{DAY_LABELS[day]}</span>
             <select
               value={schedule[day] ?? ""}
               onChange={(e) => {
@@ -79,7 +79,7 @@ function DayScheduleGrid({
                 }
                 onChange(next);
               }}
-              className="bg-background/70 border border-white/10 rounded-lg px-2 py-1 text-xs text-slate-300 outline-none focus:ring-1 focus:ring-primary/50"
+              className="bg-background/70 border border-border rounded-lg px-2 py-1 text-xs text-labelSecondary outline-none focus:ring-1 focus:ring-primary/50"
             >
               <option value="">—</option>
               {selectedSessions.map((id) => {
@@ -163,12 +163,12 @@ function PlanRow({
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          className="w-full bg-background/70 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
+          className="w-full bg-background/70 border border-border rounded-lg px-3 py-2 text-sm text-label focus:ring-2 focus:ring-primary/50 outline-none"
           autoFocus
           maxLength={40}
         />
         <div>
-          <p className="text-[11px] uppercase tracking-widest text-slate-500 mb-2">Sessions</p>
+          <p className="text-[11px] uppercase tracking-widest text-labelTertiary mb-2">Sessions</p>
           <div className="flex flex-wrap gap-2">
             {sessionOptions.map((opt) => (
               <SessionToggle
@@ -187,7 +187,7 @@ function PlanRow({
             "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition-all",
             isScheduleEnabled
               ? "border-primary/40 bg-primary/10 text-primary"
-              : "border-white/10 bg-white/5 text-slate-500 hover:text-slate-300 hover:border-white/20"
+              : "border-border bg-fill/5 text-labelTertiary hover:text-labelSecondary hover:border-borderStrong"
           )}
         >
           <CalendarDays size={11} />
@@ -229,11 +229,11 @@ function PlanRow({
   return (
     <div className={cn(
       "rounded-xl border p-3 flex items-start justify-between gap-3",
-      isActive ? "border-primary/30 bg-primary/5" : "border-white/10 bg-white/3"
+      isActive ? "border-primary/30 bg-primary/5" : "border-border bg-fill/3"
     )}>
       <div className="flex-1 min-w-0 space-y-0.5">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-white">{plan.label}</span>
+          <span className="text-sm font-semibold text-label">{plan.label}</span>
           {isActive && (
             <span
               className="text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/30 bg-primary/10 px-1.5 py-0.5 rounded-md"
@@ -243,12 +243,12 @@ function PlanRow({
             </span>
           )}
           {hasSchedule && (
-            <span className="inline-flex items-center gap-0.5 text-[10px] text-slate-500">
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-labelTertiary">
               <CalendarDays size={9} />
             </span>
           )}
         </div>
-        <div className="text-xs text-slate-500 truncate">{sessionSummary}</div>
+        <div className="text-xs text-labelTertiary truncate">{sessionSummary}</div>
       </div>
       <div className="flex items-center gap-1 shrink-0">
         <Button
@@ -262,7 +262,7 @@ function PlanRow({
         <button
           type="button"
           onClick={() => setIsEditing(true)}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+          className="p-1.5 rounded-lg text-labelSecondary hover:text-label hover:bg-fill/10 transition-colors"
           aria-label="Edit plan"
         >
           <Pencil size={13} />
@@ -270,7 +270,7 @@ function PlanRow({
         <button
           type="button"
           onClick={() => void onDelete()}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+          className="p-1.5 rounded-lg text-labelSecondary hover:text-dangerText hover:bg-red-400/10 transition-colors"
           aria-label="Delete plan"
         >
           <Trash2 size={13} />
@@ -318,18 +318,18 @@ function CreatePlanForm({
   };
 
   return (
-    <div className="rounded-xl border border-white/15 bg-white/5 p-3 space-y-3">
+    <div className="rounded-xl border border-borderStrong bg-fill/5 p-3 space-y-3">
       <input
         type="text"
         value={label}
         onChange={(e) => setLabel(e.target.value)}
         placeholder="Plan name (e.g. Strength block)"
-        className="w-full bg-background/70 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-primary/50 outline-none"
+        className="w-full bg-background/70 border border-border rounded-lg px-3 py-2 text-sm text-label placeholder-labelTertiary focus:ring-2 focus:ring-primary/50 outline-none"
         autoFocus
         maxLength={40}
       />
       <div>
-        <p className="text-[11px] uppercase tracking-widest text-slate-500 mb-2">Sessions in this plan</p>
+        <p className="text-[11px] uppercase tracking-widest text-labelTertiary mb-2">Sessions in this plan</p>
         <div className="flex flex-wrap gap-2">
           {sessionOptions.map((opt) => (
             <SessionToggle
@@ -348,7 +348,7 @@ function CreatePlanForm({
           "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg border transition-all",
           isScheduleEnabled
             ? "border-primary/40 bg-primary/10 text-primary"
-            : "border-white/10 bg-white/5 text-slate-500 hover:text-slate-300 hover:border-white/20"
+            : "border-border bg-fill/5 text-labelTertiary hover:text-labelSecondary hover:border-borderStrong"
         )}
       >
         <CalendarDays size={11} />
@@ -395,7 +395,7 @@ export const PlansEditor: React.FC<PlansEditorProps> = ({
   return (
     <div className="space-y-3">
       {plans.length === 0 && !isCreating && (
-        <div className="text-xs text-slate-500 space-y-1">
+        <div className="text-xs text-labelTertiary space-y-1">
           <p>No plans yet.</p>
           <p>A plan groups a set of sessions (e.g. "Strength block: Push, Pull, Legs"). When you activate a plan, the session dropdown in the header only shows its sessions.</p>
         </div>

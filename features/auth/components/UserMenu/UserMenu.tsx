@@ -10,8 +10,8 @@ interface UserMenuProps {
 
 export const UserMenu: React.FC<UserMenuProps> = ({ email, isWorking, onSignOut }) => {
   return (
-    <div className="fixed right-4 top-3 z-50 flex items-center gap-2 rounded-full border border-white/15 bg-background/75 px-3 py-2 backdrop-blur-xl">
-      <span className="max-w-[170px] truncate text-xs tracking-[0.05em] text-slate-300">{email}</span>
+    <div className="fixed right-4 top-3 z-50 flex items-center gap-2 rounded-full border border-borderStrong bg-background/75 px-3 py-2 backdrop-blur-xl">
+      <span className="max-w-[170px] truncate text-xs tracking-[0.05em] text-labelSecondary">{email}</span>
       <Button
         size="sm"
         variant="ghost"

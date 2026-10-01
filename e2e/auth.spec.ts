@@ -1,58 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { buildMockSession, SUPABASE_SESSION_KEY } from "./helpers/mockSession";
 
-/**
- * Builds a mock Supabase session with a far-future expiry (2030-01-01).
- * The stored session is read by Supabase JS directly from localStorage without
- * a network call as long as expires_at > Date.now()/1000 + refresh_margin.
- */
-function buildMockSession() {
-  const b64url = (data: unknown) =>
-    Buffer.from(JSON.stringify(data))
-      .toString("base64")
-      .replace(/=/g, "")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
-
-  const jwt = [
-    b64url({ alg: "HS256", typ: "JWT" }),
-    b64url({
-      sub: "user-e2e-test",
-      email: "e2e@example.com",
-      role: "authenticated",
-      aud: "authenticated",
-      exp: 1893456000,
-      iat: 1718352000,
-    }),
-    "fakesig",
-  ].join(".");
-
-  return {
-    access_token: jwt,
-    token_type: "bearer",
-    expires_in: 3600,
-    expires_at: 1893456000,
-    refresh_token: "fake-refresh-for-e2e",
-    user: {
-      id: "user-e2e-test",
-      aud: "authenticated",
-      role: "authenticated",
-      email: "e2e@example.com",
-      app_metadata: {},
-      user_metadata: {},
-      created_at: "2024-01-01T00:00:00.000Z",
-      updated_at: "2024-01-01T00:00:00.000Z",
-    },
-  };
-}
-
-/**
- * @supabase/auth-js GoTrueClient defaults to "supabase.auth.token" as the storage key
- * when no custom storageKey is provided (see GoTrueClient constructor / STORAGE_KEY constant).
- */
-const SUPABASE_SESSION_KEY = "supabase.auth.token";
 const ONBOARDING_KEY = "daily-workout-tracker:onboarded:v1";
 
-const MOCK_SESSION = buildMockSession();
+const MOCK_SESSION = buildMockSession({ id: "user-e2e-test", email: "e2e@example.com" });
 
 test.describe("Authenticated state (mocked session)", () => {
   test.beforeEach(async ({ page }) => {

@@ -14,7 +14,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: var(--scrollbar-thumb);
   border-radius: 10px;
 }
 
@@ -23,10 +23,7 @@ body {
   -webkit-tap-highlight-color: transparent;
   padding-top: env(safe-area-inset-top);
   background-color: rgb(var(--color-background));
-  background-image:
-    radial-gradient(circle at 0% 0%, rgb(255 122 26 / 0.18), transparent 38%),
-    radial-gradient(circle at 100% 0%, rgb(72 213 151 / 0.15), transparent 40%),
-    linear-gradient(145deg, rgb(9 12 18), rgb(12 16 24) 46%, rgb(8 13 23));
+  background-image: var(--body-background-image);
   background-attachment: fixed;
   min-height: 100vh;
 }
@@ -35,22 +32,43 @@ body {
  Keep these utility classes in global CSS for Phase 0 so existing components
  can be migrated incrementally without a visual regression.
 */
+/* Keep -webkit-backdrop-filter before backdrop-filter: with var() values the CSS minifier drops the standard property when the order is reversed. */
 .glass {
   background: rgb(var(--color-surface) / var(--glass-surface-opacity));
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   border: 1px solid rgb(var(--color-border) / var(--border-opacity));
-  box-shadow: 0 22px 45px rgb(0 0 0 / 0.28);
+  box-shadow: var(--glass-shadow);
 }
 
 .glass-panel {
   background: rgb(var(--color-background) / var(--glass-panel-opacity));
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: var(--glass-panel-blur);
+  backdrop-filter: var(--glass-panel-blur);
+}
+
+/* Sticky app bars (header). Content scrolls beneath, so light needs a more opaque, stronger blur. */
+.bar-surface {
+  background: rgb(var(--color-background) / var(--bar-opacity));
+  -webkit-backdrop-filter: var(--bar-blur);
+  backdrop-filter: var(--bar-blur);
+}
+
+.landing-backdrop {
+  background-image: var(--landing-backdrop);
+}
+
+.landing-orb-a {
+  background-image: var(--landing-orb-a);
+}
+
+.landing-orb-b {
+  background-image: var(--landing-orb-b);
 }
 
 .display-title {
   font-family: var(--font-display);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: var(--display-weight);
+  letter-spacing: var(--display-tracking);
+  text-transform: var(--display-transform);
 }

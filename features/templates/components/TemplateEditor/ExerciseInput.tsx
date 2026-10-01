@@ -99,13 +99,13 @@ export function ExerciseInput({
           if (value.trim()) setOpen(true);
         }}
         onKeyDown={handleKeyDown}
-        className="w-full bg-background/60 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-primary/50"
+        className="w-full bg-background/60 border border-border rounded-xl px-3 py-2 text-sm text-label outline-none focus:ring-2 focus:ring-primary/50"
       />
       {open && suggestions.length > 0 && (
         <ul
           ref={listRef}
           role="listbox"
-          className="absolute z-50 top-full left-0 right-0 mt-1 max-h-52 overflow-y-auto bg-surface border border-white/15 rounded-xl shadow-2xl shadow-black/40"
+          className="absolute z-50 top-full left-0 right-0 mt-1 max-h-52 overflow-y-auto bg-surface border border-borderStrong rounded-xl shadow-pop"
         >
           {suggestions.map((entry, i) => (
             <li key={entry.text} role="option" aria-selected={i === activeIndex}>
@@ -120,13 +120,13 @@ export function ExerciseInput({
                 className={cn(
                   "w-full text-left flex items-baseline gap-2 px-3 py-2 text-sm transition-colors",
                   i === activeIndex
-                    ? "bg-primary/20 text-white"
-                    : "text-slate-200 hover:bg-white/5"
+                    ? "bg-primary/20 text-label"
+                    : "text-label hover:bg-fill/5"
                 )}
               >
                 <span className="truncate">{entry.text}</span>
                 {entry.target && (
-                  <span className="shrink-0 text-xs text-slate-500">{entry.target}</span>
+                  <span className="shrink-0 text-xs text-labelTertiary">{entry.target}</span>
                 )}
               </button>
             </li>

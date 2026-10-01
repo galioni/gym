@@ -22,8 +22,9 @@ root.render(
           <AuthGate>
             <App />
           </AuthGate>
-          <Analytics />
-          <SpeedInsights />
+          {/* Production only: dev and the local gym-app stack must not call out or skew analytics. */}
+          {import.meta.env.PROD && <Analytics />}
+          {import.meta.env.PROD && <SpeedInsights />}
         </FeedbackProvider>
       </AuthProvider>
     </ErrorBoundary>

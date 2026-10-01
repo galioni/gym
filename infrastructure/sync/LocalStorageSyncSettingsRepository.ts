@@ -3,9 +3,11 @@ import {
   SyncSettingsRepository,
 } from "../../interfaces/sync/SyncSettingsRepository";
 import {
+  SYNC_BASE_STORAGE_KEY,
   SYNC_RESTORE_POINTS_STORAGE_KEY,
   SYNC_SETTINGS_STORAGE_KEY,
 } from "../../constants";
+import { EMPTY_SYNC_BASE, SyncBase } from "../../application/sync/syncMerge";
 
 /**
  * Local persistence for sync mode/status metadata.
@@ -33,6 +35,28 @@ export class LocalStorageSyncSettingsRepository
 
   public async writeSettings(settings: SyncSettings): Promise<void> {
     localStorage.setItem(SYNC_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  }
+
+  public async readSyncBase(): Promise<SyncBase> {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(SYNC_BASE_STORAGE_KEY) ?? "null") as Partial<SyncBase> | null;
+      if (!parsed || typeof parsed !== "object") return EMPTY_SYNC_BASE;
+      const days =
+        parsed.days && typeof parsed.days === "object" && !Array.isArray(parsed.days)
+          ? Object.fromEntries(Object.entries(parsed.days).filter(([, hash]) => typeof hash === "string"))
+          : {};
+      const items = (value: unknown): Record<string, string> =>
+        value && typeof value === "object" && !Array.isArray(value)
+          ? Object.fromEntries(Object.entries(value).filter(([, hash]) => typeof hash === "string") as Array<[string, string]>)
+          : {}; // the earlier whole-entity format (a single hash) is ignored: those items simply have no base yet
+      return { days, templates: items(parsed.templates), plans: items(parsed.plans), settings: items(parsed.settings) };
+    } catch {
+      return EMPTY_SYNC_BASE;
+    }
+  }
+
+  public async writeSyncBase(base: SyncBase): Promise<void> {
+    localStorage.setItem(SYNC_BASE_STORAGE_KEY, JSON.stringify(base));
   }
 
   public async readRestorePoints(): Promise<

@@ -1,0 +1,45 @@
+# Single local entrypoint (stands in for Supabase's Kong gateway):
+#   /auth/v1/*  -> GoTrue      /rest/v1/*  -> PostgREST
+# The browser (http://localhost:5180) calls this cross-origin, so CORS is answered here and the
+# upstreams' own CORS headers are stripped to avoid duplicates.
+{
+	admin off
+	auto_https off
+}
+
+:8000 {
+	@preflight method OPTIONS
+	handle @preflight {
+		header Access-Control-Allow-Origin "http://localhost:5180"
+		header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+		header Access-Control-Allow-Headers "authorization, apikey, content-type, x-client-info, x-supabase-api-version, prefer, range, accept-profile, content-profile"
+		header Access-Control-Max-Age "86400"
+		respond 204
+	}
+
+	header {
+		Access-Control-Allow-Origin "http://localhost:5180"
+		Access-Control-Expose-Headers "content-range, content-profile"
+		Vary Origin
+	}
+
+	handle_path /auth/v1/* {
+		reverse_proxy auth:9999 {
+			header_down -Access-Control-Allow-Origin
+			header_down -Access-Control-Allow-Credentials
+			header_down -Access-Control-Expose-Headers
+		}
+	}
+
+	handle_path /rest/v1/* {
+		reverse_proxy rest:3000 {
+			header_down -Access-Control-Allow-Origin
+			header_down -Access-Control-Allow-Credentials
+			header_down -Access-Control-Expose-Headers
+		}
+	}
+
+	handle {
+		respond "gym-app gateway: /auth/v1 and /rest/v1" 200
+	}
+}

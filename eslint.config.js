@@ -25,5 +25,12 @@ export default tseslint.config(
       // Allow void expressions (commonly used for fire-and-forget callbacks)
       "@typescript-eslint/no-floating-promises": "off",
     },
+  },
+  {
+    // Node-side tooling (local stack launcher/adapter, CommonJS configs).
+    files: ["scripts/**/*.{mjs,ts}", "**/*.cjs"],
+    languageOptions: {
+      globals: { console: "readonly", process: "readonly", module: "readonly", Buffer: "readonly", fetch: "readonly", URL: "readonly", window: "readonly", setTimeout: "readonly", localStorage: "readonly", Event: "readonly" },
+    },
   }
 );

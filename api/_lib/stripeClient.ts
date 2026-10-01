@@ -9,7 +9,8 @@ async function stripeRequest(
   params?: Record<string, string>
 ): Promise<unknown> {
   const secretKey = getStripeSecretKey();
-  const url = `https://api.stripe.com/v1${path}`;
+  // STRIPE_API_BASE points the gym-app local stack at stripe-mock; unset in production.
+  const url = `${process.env.STRIPE_API_BASE ?? "https://api.stripe.com/v1"}${path}`;
 
   const init: RequestInit = {
     method,

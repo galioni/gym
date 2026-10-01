@@ -19,15 +19,15 @@ npm install
 
 **Terminal 1 — API (Vercel serverless, port 3000):**
 ```bash
-npx vercel dev --listen 3000
+npx vercel dev --listen 3010
 ```
 
-**Terminal 2 — Frontend (Vite, port 5173):**
+**Terminal 2 — Frontend (Vite, port 5180):**
 ```bash
 npm run dev
 ```
 
-Open the app at `http://localhost:5173`.
+Open the app at `http://localhost:5180`.
 
 > **First time?** Copy `.env.example` to `.env.local` and fill in all required values before starting. See [Environment Variables](#environment-variables) below.
 
@@ -101,7 +101,7 @@ localStorage keys:
 - Onboarding complete: `daily-workout-tracker:onboarded:v1`
 
 Upstash KV keys:
-- Cloud sync: `sync:{userId}:workout-data`, `sync:{userId}:templates`, `sync:{userId}:plans`
+- Legacy cloud sync (no longer written, removed with the account): `sync:{userId}:workout-data`, `sync:{userId}:templates`, `sync:{userId}:plans`
 - Subscription: `subscription:{userId}`
 - Stripe customer mapping: `stripe_customer:{stripeCustomerId}` → `userId`
 - Rate limiting: `ratelimit:{routeKey}:{userId}:{windowSlot}`
@@ -110,9 +110,6 @@ Upstash KV keys:
 
 | Route | Method | Auth | Description |
 |-------|--------|------|-------------|
-| `/api/workout-data` | GET, PUT | Required | Cloud sync for workout data. Returns 402 for free users. |
-| `/api/templates` | GET, PUT | Required | Cloud sync for templates. Returns 402 for free users. |
-| `/api/plans` | GET, PUT | Required | Cloud sync for plans. Returns 402 for free users. |
 | `/api/generate-plan` | POST | Required | Calls OpenAI `gpt-4o-mini` to generate training templates. Rate-limited: 5/min per IP, 10/hr per user. |
 | `/api/subscription` | GET | Required | Returns current plan and subscription status from KV. |
 | `/api/create-checkout-session` | POST | Required | Creates Stripe Checkout session, returns redirect URL. |
@@ -141,7 +138,6 @@ Subscription state is stored in Upstash KV (not Supabase). The Stripe webhook wr
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 - `VITE_SUPABASE_REDIRECT_URL`
-- `VITE_SYNC_API_BASE_URL` — set to `http://localhost:3000` for local dev
 
 ### API runtime (Vercel project env for `/api/*` handlers)
 
@@ -167,17 +163,58 @@ Subscription state is stored in Upstash KV (not Supabase). The Stripe webhook wr
 
 Rotation policy: rotate privileged secrets immediately if exposed; remove from scopes that don't need them.
 
-## Local Cloud Sync Dev
+## Local stack (Docker, works offline)
 
-1. Set `VITE_SYNC_API_BASE_URL=http://localhost:3000` in `.env.local`
-2. Terminal 1: `npx vercel dev --listen 3000`
-3. Terminal 2: `npm run dev`
-4. Open `http://localhost:5173`
+Everything the app talks to runs in one Docker Compose project, `gym-app`. Nothing starts on its own
+(`restart: "no"`); you start and stop it explicitly. Requires Docker Desktop. The first `up` pulls any missing images
+and runs `npm ci` inside the container, so it needs a network once.
+
+```bash
+npm run gym:init              # once: writes .env.local with generated, local-only secrets
+                              #       (your previous .env.local is kept as .env.local.remote)
+npm run gym:up                # start the core stack
+npm run gym:up -- mail stripe studio   # ...plus any optional profiles
+npm run gym:down              # stop (data kept)    |  npm run gym:reset   # stop and delete all data
+npm run gym:ps | gym:logs [service] | gym:restart <service>
+npm run gym:migrate           # apply new files from supabase/migrations (also runs automatically on gym:up)
+npm run gym:test-db           # RLS/constraint tests + end-to-end API smoke test against the running stack
+npm run gym:test-sync         # two real browsers, one account: automatic sync, new-browser pull, clash handling, deletes
+                              #   GYM_BROWSER=webkit|firefox  GYM_DEVICE="iPhone 13"  GYM_SCENARIOS=sync,delete
+                              #   GYM_PROJECT=<name> runs a separate copy of the stack (own containers and volumes)
+```
+
+| Service | Replaces | Image |
+|---|---|---|
+| `db` | Supabase Postgres | `public.ecr.aws/supabase/postgres` |
+| `auth` | Supabase Auth (GoTrue) | `public.ecr.aws/supabase/gotrue` |
+| `migrate` (one-shot) | applies `supabase/migrations` | same image as `db` |
+| `rest` | Supabase REST (PostgREST) | `public.ecr.aws/supabase/postgrest` |
+| `gateway` | Supabase gateway (`/auth/v1`, `/rest/v1`) | `caddy:2-alpine` |
+| `kv` + `kv-rest` | Upstash KV | `redis:7` + `hiett/serverless-redis-http` |
+| `deps`, `web`, `api` | Vite + Vercel `/api` functions | `node:24-bookworm-slim` (`scripts/local/dev-api.ts` replaces `vercel dev`) |
+| `mail` (profile) | SMTP provider | `axllent/mailpit` |
+| `stripe` (profile) | api.stripe.com | `stripe/stripe-mock` |
+| `studio`, `meta` (profile) | Supabase Studio | `public.ecr.aws/supabase/studio`, `postgres-meta` |
+
+Database schema lives in `supabase/migrations` (Supabase CLI layout, so the same files can later be pushed to the hosted project). Every table has row level security; `gym:test-db` proves users cannot read or change each other's rows and that billing state is read-only for clients.
+
+### How sync works
+
+Workouts, templates, plans and a few account preferences (the active plan and plan details) are stored in the browser (instant, works offline) and in Postgres, which is the source of truth for every signed-in user. Sync runs automatically: after sign-in, a few seconds after edits, when the connection returns, when the tab regains focus and every 5 minutes. It is a three-way merge against the last state both sides agreed on, **item by item** (a day, a template, a plan), so an ordinary edit is never reported as a conflict and edits to different templates on two devices simply combine; only the very same item changed on both is a conflict you are asked about. Deleting an item on one device deletes it on the others unless it was edited elsewhere since (an edit beats a delete). The header shows the live state: Synced, Syncing, Offline, or Needs attention (tap it for details). Deletions propagate as soft deletes. The browser talks to Postgres directly through PostgREST with the user's own token; row level security (see `supabase/migrations`) keeps users apart. KV is still used for billing state, rate limits and push subscriptions.
+
+**Account limits.** Each account can store up to 5,000 days, 200 session templates and 100 plans, enforced in the database (`supabase/migrations/*_row_limits.sql`) because the browser writes to it directly. Editing existing data always works, deleting frees room, and the check is safe under concurrent requests. When a limit is hit, Postgres rejects the write with code `PT422` (HTTP 422); the app shows a one-time "Cloud storage limit reached" notice and the reason in Settings → Sync, and nothing is lost locally. To change a limit, replace `row_limit()` in a new migration.
+
+### Continuous integration
+
+`.github/workflows/ci.yml` has two jobs. `ci` lints (zero warnings allowed), type-checks, runs the unit tests, builds, and runs the mocked Playwright specs. `stack` starts this Compose stack from an **empty database** (so every migration is applied from scratch, then re-run to prove idempotence), then runs `gym:test-db` and `gym:test-sync` on Chromium, WebKit and an iPhone profile. Text colours are guarded by `design/tokens.contrast.test.ts` (WCAG AA for both themes).
+
+Ports (localhost only): app 5180, API 3010, gateway 54321, Postgres 54322, Mailpit 8026, Studio 54323.
 
 Notes:
-- `npm run dev` only starts Vite — it does not run `/api/*` handlers
-- `vercel dev` requires a valid Vercel login; run `npx vercel login` if it fails
-- Local API requires: `SUPABASE_URL`, `SUPABASE_JWT_SECRET`, KV vars, `OPENAI_API_KEY`, Stripe vars
+- Sign-ups auto-confirm by default. To test confirmation emails set `GYM_AUTOCONFIRM=false` in `.env.local`, recreate `auth`, and start the `mail` profile.
+- Pro is stored in KV. Grant it to a local user: `docker compose -p gym-app exec kv redis-cli SET subscription:<userId> '{"plan":"pro","status":"active","stripeCustomerId":"cus_local","currentPeriodEnd":"2099-01-01T00:00:00.000Z"}'`
+- Not available offline: Google sign-in, web-push delivery, AI plan generation (needs a provider key).
+- `gym:init` refuses to overwrite a generated `.env.local` because an existing Postgres volume keeps its original password; `gym:reset` first, then `gym:init -- --force`.
 
 ## Deploy
 
@@ -258,7 +295,7 @@ Export/import supports:
 
 ## Observability
 
-API handlers emit structured request lifecycle logs for `/api/workout-data`, `/api/templates`, `/api/generate-plan`, `/api/subscription`, `/api/create-checkout-session`, `/api/billing-portal`, `/api/plans`, `/api/delete-account` with:
+API handlers emit structured request lifecycle logs for `/api/generate-plan`, `/api/subscription`, `/api/create-checkout-session`, `/api/billing-portal`, `/api/delete-account` with:
 
 - `requestId`
 - `endpoint`

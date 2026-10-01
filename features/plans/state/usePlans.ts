@@ -12,7 +12,7 @@ interface UsePlansResult {
   setActivePlan: (id: string | null) => Promise<void>;
 }
 
-export function usePlans(service: PlanService): UsePlansResult {
+export function usePlans(service: PlanService, reloadToken = 0): UsePlansResult {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [activePlanId, setActivePlanIdState] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -32,7 +32,7 @@ export function usePlans(service: PlanService): UsePlansResult {
     };
     void load();
     return () => { cancelled = true; };
-  }, [service]);
+  }, [service, reloadToken]);
 
   const createPlan = useCallback(async (label: string, sessionIds: string[], schedule?: Plan["schedule"]) => {
     const newPlan = await service.createPlan(label, sessionIds, schedule);

@@ -1,0 +1,138 @@
+import { PostgrestClient } from "@supabase/postgrest-js";
+import { AuthTokenProvider } from "../../interfaces/auth/AuthTokenProvider";
+import { getRequiredSupabaseClientEnv } from "../auth/supabase/supabaseEnv";
+import { CloudLimitError, describeLimit } from "../../application/sync/syncErrors";
+
+export type UserTable = "workout_days" | "templates" | "plans" | "user_settings";
+
+export interface AuthIdentityProvider {
+  getUserId(): Promise<string | null>;
+}
+
+/**
+ * The only operations the repositories need from the database. Keeping this narrow lets the repository
+ * logic (diffing, mapping, deletes) be tested against an in-memory fake, and the real adapter against
+ * the real stack.
+ */
+export interface RowGateway {
+  /** Id of the signed-in user (also the value of user_id on every row written). */
+  requireUserId(): Promise<string>;
+  /** Every row of the signed-in user's table, in a stable order, across pages. */
+  selectAll<T>(table: UserTable): Promise<T[]>;
+  upsertRows(table: UserTable, rows: object[]): Promise<void>;
+  /** Soft-deletes workout days (sets deleted_at); a later upsert of the day restores it. */
+  markDaysDeleted(days: string[]): Promise<void>;
+  /** Removes rows whose key is not in `keep` (whole-collection replace semantics for templates/plans). */
+  deleteMissing(table: "templates" | "plans", keep: string[]): Promise<void>;
+}
+
+// Stable total order so pages never overlap or skip rows.
+const ORDER: Record<UserTable, string[]> = {
+  workout_days: ["day"],
+  templates: ["position", "session_type"],
+  plans: ["position", "id"],
+  user_settings: ["user_id"],
+};
+const KEY: Record<"templates" | "plans", string> = { templates: "session_type", plans: "id" };
+const CONFLICT: Record<UserTable, string> = {
+  workout_days: "user_id,day",
+  templates: "user_id,session_type",
+  plans: "user_id,id",
+  user_settings: "user_id",
+};
+// Hosted Supabase caps a response at 1000 rows by default, so reads page and writes batch below that.
+const PAGE_SIZE = 1000;
+const WRITE_BATCH = 200;
+// SQLSTATE the database raises when an account reaches a row limit (PostgREST returns it as HTTP 422).
+const LIMIT_REACHED_CODE = "PT422";
+
+function writeError(table: UserTable, action: string, error: { code?: string; message: string }): Error {
+  return error.code === LIMIT_REACHED_CODE
+    ? new CloudLimitError(table, describeLimit(table))
+    : new Error(`Database ${action} failed (${table}): ${error.message}`);
+}
+
+export class PostgrestRowGateway implements RowGateway {
+  private readonly client: PostgrestClient;
+
+  public constructor(
+    private readonly tokenProvider: AuthTokenProvider,
+    private readonly identity: AuthIdentityProvider
+  ) {
+    const env = getRequiredSupabaseClientEnv();
+    this.client = new PostgrestClient(`${env.url}/rest/v1`, {
+      headers: { apikey: env.anonKey },
+      // The user's own access token (refreshed by the auth client) is what row level security evaluates.
+      fetch: async (input, init) => {
+        const token = await this.tokenProvider.getAccessToken();
+        const headers = new Headers(init?.headers);
+        if (token) headers.set("Authorization", `Bearer ${token}`);
+        return fetch(input, { ...init, headers });
+      },
+    });
+  }
+
+  public async requireUserId(): Promise<string> {
+    const userId = await this.identity.getUserId();
+    if (!userId) {
+      throw new Error("Missing authenticated session. Sign in again and retry sync.");
+    }
+    return userId;
+  }
+
+  public async selectAll<T>(table: UserTable): Promise<T[]> {
+    const rows: T[] = [];
+    for (let from = 0; ; from += PAGE_SIZE) {
+      let query = this.client.from(table).select("*");
+      for (const column of ORDER[table]) {
+        query = query.order(column, { ascending: true });
+      }
+      const { data, error } = await query.range(from, from + PAGE_SIZE - 1);
+      if (error) throw new Error(`Database read failed (${table}): ${error.message}`);
+      const page = (data ?? []) as T[];
+      rows.push(...page);
+      if (page.length < PAGE_SIZE) return rows;
+    }
+  }
+
+  public async upsertRows(table: UserTable, rows: object[]): Promise<void> {
+    for (let i = 0; i < rows.length; i += WRITE_BATCH) {
+      const { error } = await this.client
+        .from(table)
+        .upsert(rows.slice(i, i + WRITE_BATCH), { onConflict: CONFLICT[table] });
+      if (error) throw writeError(table, "write", error);
+    }
+  }
+
+  public async markDaysDeleted(days: string[]): Promise<void> {
+    const userId = await this.requireUserId();
+    for (let i = 0; i < days.length; i += WRITE_BATCH) {
+      const { error } = await this.client
+        .from("workout_days")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .in("day", days.slice(i, i + WRITE_BATCH))
+        .is("deleted_at", null);
+      if (error) throw new Error(`Database delete failed (workout_days): ${error.message}`);
+    }
+  }
+
+  public async deleteMissing(table: "templates" | "plans", keep: string[]): Promise<void> {
+    const userId = await this.requireUserId();
+    const column = KEY[table];
+    const existing = await this.client.from(table).select(column).eq("user_id", userId);
+    if (existing.error) throw new Error(`Database read failed (${table}): ${existing.error.message}`);
+    const keepSet = new Set(keep);
+    const stale = ((existing.data ?? []) as unknown as Array<Record<string, string>>)
+      .map((row) => row[column])
+      .filter((key) => !keepSet.has(key));
+    for (let i = 0; i < stale.length; i += WRITE_BATCH) {
+      const { error } = await this.client
+        .from(table)
+        .delete()
+        .eq("user_id", userId)
+        .in(column, stale.slice(i, i + WRITE_BATCH));
+      if (error) throw new Error(`Database delete failed (${table}): ${error.message}`);
+    }
+  }
+}

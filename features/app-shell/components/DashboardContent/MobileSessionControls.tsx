@@ -24,10 +24,10 @@ export const MobileSessionControls: React.FC<MobileSessionControlsProps> = ({
   const isToday = currentDate === todayKey;
 
   return (
-    <div className="md:hidden bg-surface/50 border border-white/10 rounded-2xl p-3 space-y-3 motion-rise">
+    <div className="md:hidden bg-surface/50 border border-border rounded-2xl p-3 space-y-3 motion-rise">
       <div className="flex items-end gap-3">
         <div className="space-y-1">
-          <label className="text-xs text-slate-500 font-medium uppercase tracking-[0.14em] flex items-center gap-1.5">
+          <label className="text-xs text-labelTertiary font-medium uppercase tracking-[0.14em] flex items-center gap-1.5">
             <Calendar size={12} /> Date
             {isToday && (
               <span className="text-[9px] font-bold uppercase tracking-wider text-primary border border-primary/30 bg-primary/10 px-1 py-0 rounded">
@@ -39,19 +39,19 @@ export const MobileSessionControls: React.FC<MobileSessionControlsProps> = ({
             type="date"
             value={currentDate}
             onChange={onDateChange}
-            className={`bg-background/80 border rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none ${
-              isToday ? 'border-primary/40' : 'border-white/10'
+            className={`bg-background/80 border rounded-xl px-3 py-2 text-sm text-label focus:ring-2 focus:ring-primary/50 outline-none ${
+              isToday ? 'border-primary/40' : 'border-border'
             }`}
           />
         </div>
         <div className="flex-1 space-y-1 min-w-0">
-          <label className="text-xs text-slate-500 font-medium uppercase tracking-[0.14em] flex items-center gap-1.5">
+          <label className="text-xs text-labelTertiary font-medium uppercase tracking-[0.14em] flex items-center gap-1.5">
             <Activity size={12} /> Session
           </label>
           <select
             value={sessionType}
             onChange={onSessionTypeChange}
-            className="w-full bg-background/80 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
+            className="w-full bg-background/80 border border-border rounded-xl px-3 py-2 text-sm text-label focus:ring-2 focus:ring-primary/50 outline-none"
           >
             {(() => {
               const userOpts = sessionOptions.filter((o) => o.source !== "ai");

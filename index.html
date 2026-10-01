@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="editorial-sport">
+<html lang="en" data-theme="apple-light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -11,9 +11,32 @@
     <!-- Mobile / PWA -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Daily Grind" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#F2F2F7" />
+    <!-- Editorial (dark) theme webfonts: injected only when that theme is active; light uses the system font stack. -->
+    <meta name="dg-dark-fonts" content="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=block" />
+    <script>
+      /* Light is the default. The Settings toggle owns the choice; ?theme=light|dark|system is a shortcut.
+         Runs before paint to avoid a flash. Keep in sync with features/settings/theme/themePreference.ts. */
+      (function () {
+        try {
+          var q = new URLSearchParams(location.search).get("theme");
+          if (q === "light" || q === "dark" || q === "system") localStorage.setItem("dg-theme", q);
+          var pref = localStorage.getItem("dg-theme");
+          if (pref === "system") pref = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          if (pref !== "dark") return;
+          document.documentElement.setAttribute("data-theme", "editorial-sport");
+          document.querySelector('meta[name="theme-color"]').setAttribute("content", "#0f172a");
+          document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').setAttribute("content", "black-translucent");
+          var link = document.createElement("link");
+          link.id = "dg-fonts";
+          link.rel = "stylesheet";
+          link.href = document.querySelector('meta[name="dg-dark-fonts"]').getAttribute("content");
+          document.head.appendChild(link);
+        } catch (e) {}
+      })();
+    </script>
     <link rel="apple-touch-icon" href="/icon.svg" />
     <!-- manifest injected by vite-plugin-pwa -->
 
@@ -33,14 +56,10 @@
 
     <title>Daily Grind — AI Workout Tracker</title>
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=block" rel="stylesheet" />
 
     <link rel="stylesheet" href="./index.css" />
   </head>
-  <body class="text-slate-200 antialiased selection:bg-primary selection:text-white">
+  <body class="text-label antialiased selection:bg-primary selection:text-white">
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
   </body>

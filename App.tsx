@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "./components/Header";
 import { StickyFooter } from "./components/StickyFooter";
 import { useWorkoutTracker } from "./features/workout/state/useWorkoutTracker";
@@ -8,13 +8,18 @@ import { GeneratedPlanMeta, PlanParams, SessionType, WeekDay } from "./types";
 import { toLocalDateKey } from "./utils";
 import { createWorkoutServices } from "./infrastructure/workout/factory/createWorkoutServices";
 import { useSyncSettings } from "./features/sync/state/useSyncSettings";
+import { useAutoSync, useCrossTabReload } from "./features/sync/state/useAutoSync";
+import { switchSyncOwner } from "./features/sync/state/syncOwner";
+import { useOnlineStatus } from "./features/sync/hooks/useOnlineStatus";
+import { deriveSyncStatus } from "./application/sync/syncStatus";
 import { useWorkoutKeyboardShortcuts } from "./features/app-shell/hooks/useWorkoutKeyboardShortcuts";
+import { useModalFocus } from "./features/app-shell/hooks/useModalFocus";
 import { DashboardContent } from "./features/app-shell/components/DashboardContent/DashboardContent";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { useFeedback } from "./features/feedback/hooks/useFeedback";
 import { getSessionLabel, getSessionOptions } from "./application/workout/sessionTypes/sessionTypeRules";
 import { usePlans } from "./features/plans/state/usePlans";
-import { ONBOARDING_STORAGE_KEY, PLAN_META_STORAGE_KEY, PLAN_PARAMS_STORAGE_KEY } from "./constants";
+import { ONBOARDING_STORAGE_KEY, PLAN_META_STORAGE_KEY, PLAN_PARAMS_STORAGE_KEY, STORAGE_KEY, TEMPLATE_STORAGE_KEY } from "./constants";
 import { buildExerciseLibrary } from "./application/workout/exerciseLibrary";
 import { useAuthSession } from "./features/auth/hooks/useAuthSession";
 import { useSubscription } from "./features/billing/hooks/useSubscription";
@@ -29,10 +34,22 @@ const OnboardingWizard = React.lazy(() =>
   import("./features/onboarding/components/OnboardingWizard/OnboardingWizard").then((m) => ({ default: m.OnboardingWizard }))
 );
 
+/** Parses a JSON object stored under `key`, or null when missing or corrupt. */
+function readStoredObject<T>(key: string): T | null {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) ?? "null") as unknown;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as T) : null;
+  } catch {
+    return null;
+  }
+}
+
 function App() {
   const { session, signOut, isWorking: isSigningOut } = useAuthSession();
   const { subscription, isLoading: isLoadingSubscription, startCheckout } = useSubscription();
   const { confirm, showToast } = useFeedback();
+  // Bumped when storage changed underneath the in-memory state (a sync or another tab); hooks re-read it.
+  const [dataRevision, setDataRevision] = useState(0);
   const services = useMemo(() => createWorkoutServices(), []);
   const isQAMode = useMemo(() => {
     if (typeof window === "undefined") {
@@ -52,7 +69,7 @@ function App() {
     addSessionType,
     removeSessionType,
     renameSessionType,
-  } = useTemplates(services.templateService);
+  } = useTemplates(services.templateService, dataRevision);
 
   const {
     currentDate,
@@ -71,11 +88,10 @@ function App() {
     clearCurrentDay,
     jumpToToday,
     duplicatePreviousDayNotesAndWeight,
-  } = useWorkoutTracker(services.workoutDataService, templates);
+  } = useWorkoutTracker(services.workoutDataService, templates, dataRevision);
   const {
     settings: syncSettings,
     isSyncing,
-    isUpgradeRequired,
     conflicts,
     restorePoints,
     syncMessage,
@@ -84,7 +100,7 @@ function App() {
     pruneRestorePoints,
   } = useSyncSettings(services.syncService);
 
-  const { plans, activePlanId, createPlan, updatePlan, deletePlan, setActivePlan } = usePlans(services.planService);
+  const { plans, activePlanId, createPlan, updatePlan, deletePlan, setActivePlan } = usePlans(services.planService, dataRevision);
 
   const exerciseLibrary = useMemo(() => buildExerciseLibrary(allData), [allData]);
   const allSessionOptions = useMemo(() => getSessionOptions(templates), [templates]);
@@ -143,6 +159,88 @@ function App() {
     } catch {
       return null;
     }
+  });
+
+  // ---- Automatic sync and stale-state protection --------------------------------
+  const userId = session?.user.id ?? null;
+  // The wizard is open for an account that is regenerating its plan ("Rebuild your plan"). It must not be
+  // dismissed just because data arrived from the cloud.
+  const isRebuildingPlanRef = useRef(false);
+  useEffect(() => {
+    isRebuildingPlanRef.current = !hasOnboarded && savedPlanParams !== null;
+  });
+  const reloadFromStorage = useCallback(() => {
+    // Templates or workouts arriving from the cloud mean this account is already set up: skip onboarding.
+    if (!isRebuildingPlanRef.current && (localStorage.getItem(TEMPLATE_STORAGE_KEY) || localStorage.getItem(STORAGE_KEY))) {
+      localStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
+      setHasOnboarded(true);
+    }
+    // Plan details may have just arrived from the cloud too; keep the old object when nothing changed.
+    const keepIfSame = <T,>(next: T | null) => (previous: T | null) =>
+      JSON.stringify(previous) === JSON.stringify(next) ? previous : next;
+    setSavedPlanParams(keepIfSame(readStoredObject<PlanParams>(PLAN_PARAMS_STORAGE_KEY)));
+    setSavedPlanMeta(keepIfSame(readStoredObject<GeneratedPlanMeta>(PLAN_META_STORAGE_KEY)));
+    setDataRevision((revision) => revision + 1);
+  }, []);
+  const changeSignal = useMemo(
+    () => ({ allData, templates, plans, activePlanId, savedPlanParams, savedPlanMeta }),
+    [allData, templates, plans, activePlanId, savedPlanParams, savedPlanMeta]
+  );
+  const handleSyncConflicts = useCallback(() => {
+    showToast({
+      tone: "info",
+      title: "Sync needs your attention",
+      description: "The same day was changed on two devices. Choose which version to keep.",
+      durationMs: 10000,
+      action: { label: "Review", onClick: () => setPage("settings") },
+    });
+  }, [showToast]);
+  const handleStorageLimit = useCallback(
+    (message: string) => {
+      showToast({ tone: "error", title: "Cloud storage limit reached", description: message, durationMs: 15000 });
+    },
+    [showToast]
+  );
+  const handleOwnerMismatch = useCallback(async () => {
+    const switchAccount = await confirm({
+      title: "Another account's data is on this device",
+      description:
+        "Nothing is synced until you choose, so the two accounts stay separate. Switching removes the other account's workouts from this browser (they remain in that account's cloud if they were synced).",
+      confirmLabel: "Switch to this account",
+      cancelLabel: "Sign out",
+      tone: "danger",
+    });
+    if (switchAccount && userId) {
+      switchSyncOwner(userId);
+      window.location.reload();
+    } else {
+      await signOut();
+    }
+  }, [confirm, signOut, userId]);
+
+  const isOnline = useOnlineStatus();
+  const syncStatus = useMemo(
+    () =>
+      deriveSyncStatus({
+        isSyncing,
+        isOnline,
+        conflictCount: conflicts.length,
+        lastError: syncSettings.lastError,
+        lastSyncedAt: syncSettings.lastSyncedAt,
+      }),
+    [isSyncing, isOnline, conflicts.length, syncSettings.lastError, syncSettings.lastSyncedAt]
+  );
+
+  useCrossTabReload(reloadFromStorage);
+  useAutoSync({
+    ready: isLoaded && areTemplatesLoaded,
+    userId,
+    syncNow,
+    changeSignal,
+    onLocalDataChanged: reloadFromStorage,
+    onConflicts: handleSyncConflicts,
+    onStorageLimit: handleStorageLimit,
+    onOwnerMismatch: handleOwnerMismatch,
   });
 
   const appShellStyle = useMemo(
@@ -233,6 +331,10 @@ function App() {
     [confirm, removeSessionType, usedSessionTypes]
   );
 
+  const closeShortcutsModal = useCallback(() => setShowShortcutsModal(false), []);
+  const shortcutsDialogRef = useRef<HTMLDivElement | null>(null);
+  useModalFocus(showShortcutsModal, shortcutsDialogRef, closeShortcutsModal);
+
   useWorkoutKeyboardShortcuts({
     onJumpToday: jumpToToday,
     onDuplicatePreviousDayNotesAndWeight: handleDuplicatePreviousDayNotesAndWeight,
@@ -284,7 +386,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-slate-200" style={appShellStyle}>
+    <div className="min-h-screen bg-background text-label" style={appShellStyle}>
       <Header
         currentDate={currentDate}
         onDateChange={(event) => setCurrentDate(event.target.value)}
@@ -298,6 +400,7 @@ function App() {
         onSignOut={signOut}
         isSigningOut={isSigningOut}
         onUpgrade={!isLoadingSubscription && subscription.plan === "free" ? () => void startCheckout() : undefined}
+        syncStatus={syncStatus}
       />
       <OfflineBanner />
 
@@ -350,7 +453,6 @@ function App() {
             conflicts={conflicts}
             restorePoints={restorePoints}
             isSyncing={isSyncing}
-            isUpgradeRequired={isUpgradeRequired}
             onSaveSectionTemplate={saveSectionTemplate}
             onSaveTemplateVideoUrl={saveTemplateVideoUrl}
             onUndoSectionTemplate={undoSectionTemplate}
@@ -389,22 +491,24 @@ function App() {
 
       {showShortcutsModal && (
         <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-scrim backdrop-blur-sm px-4"
           role="dialog"
           aria-modal="true"
           aria-label="Keyboard shortcuts"
           onClick={() => setShowShortcutsModal(false)}
         >
           <div
-            className="glass-panel rounded-2xl border border-white/15 p-6 w-full max-w-sm shadow-[0_24px_48px_rgba(0,0,0,0.5)]"
+            ref={shortcutsDialogRef}
+            tabIndex={-1}
+            className="bg-surface rounded-2xl border border-borderStrong p-6 w-full max-w-sm shadow-pop outline-none"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-white">Keyboard Shortcuts</h2>
+              <h2 className="text-base font-bold text-label">Keyboard Shortcuts</h2>
               <button
                 type="button"
                 onClick={() => setShowShortcutsModal(false)}
-                className="text-slate-400 hover:text-white transition-colors text-xs"
+                className="text-labelSecondary hover:text-label transition-colors text-xs"
                 aria-label="Close"
               >
                 ✕
@@ -417,12 +521,12 @@ function App() {
                 ["?", "Show this help"],
               ] as [string, string][]).map(([key, label]) => (
                 <div key={key} className="flex items-center justify-between gap-4">
-                  <span className="text-sm text-slate-300">{label}</span>
-                  <kbd className="text-xs font-mono bg-white/10 border border-white/15 rounded px-2 py-0.5 text-slate-300 shrink-0">{key}</kbd>
+                  <span className="text-sm text-labelSecondary">{label}</span>
+                  <kbd className="text-xs font-mono bg-fill/10 border border-borderStrong rounded px-2 py-0.5 text-labelSecondary shrink-0">{key}</kbd>
                 </div>
               ))}
             </div>
-            <p className="mt-4 text-[11px] text-slate-500">Shortcuts are disabled when typing in a field.</p>
+            <p className="mt-4 text-[11px] text-labelTertiary">Shortcuts are disabled when typing in a field.</p>
           </div>
         </div>
       )}

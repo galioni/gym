@@ -14,10 +14,10 @@ export const GoogleSignInCard: React.FC<GoogleSignInCardProps> = ({
   onSignIn,
 }) => {
   return (
-    <div className="w-full max-w-md rounded-[1.4rem] border border-white/20 bg-slate-950/70 p-6 shadow-[0_28px_80px_rgb(0_0_0_/_0.55)] backdrop-blur-xl">
-      <p className="text-[11px] uppercase tracking-[0.2em] text-emerald-300/90">Secure Access</p>
-      <h1 className="mt-2 display-title text-4xl leading-none text-white">Daily Grind</h1>
-      <p className="mt-3 text-sm text-slate-300">
+    <div className="w-full max-w-md rounded-[1.4rem] border border-borderStrong bg-overlay/70 p-6 shadow-pop backdrop-blur-xl">
+      <p className="text-[11px] uppercase tracking-[0.2em] text-successText/90">Secure Access</p>
+      <h1 className="mt-2 display-title text-4xl leading-none text-label">Daily Grind</h1>
+      <p className="mt-3 text-sm text-labelSecondary">
         Sign in with your Google account to securely sync your workout data.
       </p>
 
@@ -32,11 +32,11 @@ export const GoogleSignInCard: React.FC<GoogleSignInCardProps> = ({
         {isWorking ? "Connecting..." : "Continue with Google"}
       </Button>
 
-      <p className="mt-3 text-[11px] uppercase tracking-[0.16em] text-slate-500">
+      <p className="mt-3 text-[11px] uppercase tracking-[0.16em] text-labelTertiary">
         Google OAuth provider only
       </p>
       {error && (
-        <p className="mt-3 rounded-xl border border-danger/40 bg-danger/10 p-2 text-xs text-red-200">
+        <p className="mt-3 rounded-xl border border-danger/40 bg-danger/10 p-2 text-xs text-dangerText">
           {error}
         </p>
       )}

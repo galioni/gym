@@ -2,14 +2,19 @@ import { WorkoutDataService } from "../../../application/workout/WorkoutDataServ
 import { TemplateService } from "../../../application/workout/TemplateService";
 import { SyncService } from "../../../application/sync/SyncService";
 import { PlanService } from "../../../application/workout/PlanService";
-import { CloudTemplateRepository } from "../cloud/CloudTemplateRepository";
-import { CloudWorkoutDataRepository } from "../cloud/CloudWorkoutDataRepository";
-import { CloudPlansRepository } from "../cloud/CloudPlansRepository";
 import { LocalStorageTemplateRepository } from "../LocalStorageTemplateRepository";
 import { LocalStorageWorkoutDataRepository } from "../LocalStorageWorkoutDataRepository";
 import { LocalStorageSyncSettingsRepository } from "../../sync/LocalStorageSyncSettingsRepository";
 import { LocalStoragePlansRepository } from "../LocalStoragePlansRepository";
 import { SupabaseTokenProvider } from "../../auth/supabase/SupabaseTokenProvider";
+import { PostgrestRowGateway } from "../../supabase/PostgrestRowGateway";
+import { LocalStorageAccountSettingsRepository } from "../LocalStorageAccountSettingsRepository";
+import {
+  PostgresAccountSettingsRepository,
+  PostgresPlansRepository,
+  PostgresTemplateRepository,
+  PostgresWorkoutDataRepository,
+} from "../../supabase/PostgresRepositories";
 
 interface WorkoutServices {
   workoutDataService: WorkoutDataService;
@@ -18,25 +23,10 @@ interface WorkoutServices {
   planService: PlanService;
 }
 
-function toSyncApiBaseUrl(rawValue: string | undefined): string | null {
-  if (!rawValue || rawValue.trim().length === 0) {
-    return null;
-  }
-  const normalized = rawValue.trim().replace(/\/+$/, "");
-  // Vercel serverless functions are mounted under /api by default.
-  return normalized.endsWith("/api") ? normalized : `${normalized}/api`;
-}
-
-function getRequiredSyncApiBaseUrl(): string {
-  const normalizedBaseUrl = toSyncApiBaseUrl(import.meta.env.VITE_SYNC_API_BASE_URL);
-  if (!normalizedBaseUrl) {
-    throw new Error("Missing required env var: VITE_SYNC_API_BASE_URL");
-  }
-  return normalizedBaseUrl;
-}
-
 /**
- * Local-first service factory with mandatory cloud sync support.
+ * Local-first service factory. The browser keeps a localStorage copy for instant, offline use; Postgres
+ * (queried directly with the signed-in user's token under row level security) is the source of truth,
+ * and SyncService reconciles the two.
  */
 export function createWorkoutServices(): WorkoutServices {
   const localWorkoutRepository = new LocalStorageWorkoutDataRepository();
@@ -44,11 +34,8 @@ export function createWorkoutServices(): WorkoutServices {
   const syncSettingsRepository = new LocalStorageSyncSettingsRepository();
   const plansRepository = new LocalStoragePlansRepository();
 
-  const baseUrl = getRequiredSyncApiBaseUrl();
   const tokenProvider = new SupabaseTokenProvider();
-  const cloudWorkoutRepository = new CloudWorkoutDataRepository(baseUrl, tokenProvider);
-  const cloudTemplateRepository = new CloudTemplateRepository(baseUrl, tokenProvider);
-  const cloudPlansRepository = new CloudPlansRepository(baseUrl, tokenProvider);
+  const gateway = new PostgrestRowGateway(tokenProvider, tokenProvider);
 
   return {
     workoutDataService: new WorkoutDataService(localWorkoutRepository),
@@ -58,10 +45,12 @@ export function createWorkoutServices(): WorkoutServices {
       settingsRepository: syncSettingsRepository,
       localWorkoutRepository,
       localTemplateRepository,
-      cloudWorkoutRepository,
-      cloudTemplateRepository,
+      cloudWorkoutRepository: new PostgresWorkoutDataRepository(gateway),
+      cloudTemplateRepository: new PostgresTemplateRepository(gateway),
       localPlansRepository: plansRepository,
-      cloudPlansRepository,
+      cloudPlansRepository: new PostgresPlansRepository(gateway),
+      localSettingsRepository: new LocalStorageAccountSettingsRepository(),
+      cloudSettingsRepository: new PostgresAccountSettingsRepository(gateway),
     }),
   };
 }

@@ -23,7 +23,7 @@ export function OfflineBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="flex items-center justify-center gap-2 bg-amber-500/15 border-b border-amber-500/25 px-4 py-2 text-xs text-amber-300 font-medium"
+      className="flex items-center justify-center gap-2 bg-amber-500/15 border-b border-amber-500/25 px-4 py-2 text-xs text-warningText font-medium"
     >
       <WifiOff size={13} className="shrink-0" />
       You're offline — changes will save locally and sync when you reconnect.

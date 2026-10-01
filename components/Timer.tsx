@@ -112,7 +112,7 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, initialIsRunning = fals
     <div
       role="timer"
       aria-label={`Timer: ${isRunning ? "running" : "paused"}, ${formatTimer(ms)}`}
-      className="flex w-full items-center justify-between gap-2 bg-background/60 p-1.5 rounded-xl border border-white/10 sm:w-auto sm:justify-start"
+      className="flex w-full items-center justify-between gap-2 bg-background/60 p-1.5 rounded-xl border border-border sm:w-auto sm:justify-start"
     >
       <div aria-hidden="true" className="text-base sm:text-lg font-bold w-[68px] sm:w-[76px] text-center text-primary tabular-nums" style={{ fontFamily: "var(--font-mono)" }}>
         {formatTimer(ms)}
@@ -132,7 +132,7 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, initialIsRunning = fals
         size="icon"
         variant="ghost"
         onClick={reset}
-        className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-300"
+        className="h-8 w-8 rounded-lg text-labelSecondary hover:text-dangerText"
         aria-label="Reset timer"
         title="Reset"
       >

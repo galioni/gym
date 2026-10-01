@@ -45,7 +45,7 @@ describe("attachApiRequestObservability", () => {
       },
     };
     const { res, state } = createMockResponse();
-    attachApiRequestObservability(req, res, "/api/workout-data", {
+    attachApiRequestObservability(req, res, "/api/subscription", {
       now: () => nowMs,
       logger,
       requestIdFactory: () => "unused",
@@ -60,7 +60,7 @@ describe("attachApiRequestObservability", () => {
     const payload = JSON.parse(logger.info.mock.calls[0]?.[0] as string) as Record<string, unknown>;
     expect(payload.event).toBe("api.request.completed");
     expect(payload.requestId).toBe("req-abc-123");
-    expect(payload.endpoint).toBe("/api/workout-data");
+    expect(payload.endpoint).toBe("/api/subscription");
     expect(payload.status).toBe(200);
     expect(payload.latencyMs).toBe(25);
   });
@@ -75,7 +75,7 @@ describe("attachApiRequestObservability", () => {
       headers: {},
     };
     const { res } = createMockResponse();
-    const observation = attachApiRequestObservability(req, res, "/api/templates", {
+    const observation = attachApiRequestObservability(req, res, "/api/generate-plan", {
       logger,
       requestIdFactory: () => "req-generated",
     });

@@ -39,7 +39,7 @@ export const SessionTypeCreateForm: React.FC<SessionTypeCreateFormProps> = ({
         value={label}
         onChange={(event) => setLabel(event.target.value)}
         placeholder="New session type"
-        className="bg-background/70 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
+        className="bg-background/70 border border-border rounded-xl px-3 py-2 text-sm text-label focus:ring-2 focus:ring-primary/50 outline-none"
       />
       <Button
         variant="secondary"

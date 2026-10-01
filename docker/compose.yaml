@@ -1,0 +1,242 @@
+# gym-app: local, offline-capable stack that mirrors every external service the app uses.
+#
+#   npm run gym:init          generate .env.local with local-only secrets (first time only)
+#   npm run gym:up            start the core stack          (add profiles: npm run gym:up -- mail stripe studio)
+#   npm run gym:down          stop it                       (data is kept in named volumes)
+#   npm run gym:reset         stop it AND delete all data
+#
+# Nothing here starts on its own: every service has restart: "no".
+# Service         Replaces (production)
+#   db            Supabase Postgres
+#   auth          Supabase Auth (GoTrue)
+#   migrate       (one-shot) applies supabase/migrations to db
+#   rest          Supabase REST API (PostgREST), browser -> DB with RLS
+#   gateway       Supabase's single /auth/v1 + /rest/v1 entrypoint (Kong)
+#   kv, kv-rest   Upstash KV (Redis + Upstash-compatible REST)
+#   deps/web/api  Vite dev server and the Vercel /api functions
+#   mail          (profile) captures GoTrue emails; stands in for the SMTP provider
+#   stripe        (profile) stripe-mock; stands in for api.stripe.com
+#   studio, meta  (profile) database/auth admin UI
+name: gym-app
+
+x-no-autostart: &no-autostart
+  restart: "no"
+
+x-node: &node
+  <<: *no-autostart
+  image: node:24-bookworm-slim
+  working_dir: /workspace
+  volumes:
+    - ..:/workspace
+    # Linux-built dependencies live in a volume so they never clash with the Windows node_modules on the host.
+    - node_modules:/workspace/node_modules
+
+services:
+  db:
+    <<: *no-autostart
+    image: public.ecr.aws/supabase/postgres:17.6.1.171
+    environment:
+      POSTGRES_PASSWORD: ${GYM_POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+      JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      JWT_EXP: "3600"
+    ports:
+      - "127.0.0.1:54322:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:ro
+      - ../supabase/tests:/tests:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "127.0.0.1"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  # One-shot: applies supabase/migrations once each, then exits. Re-run with `npm run gym:migrate`.
+  migrate:
+    <<: *no-autostart
+    image: public.ecr.aws/supabase/postgres:17.6.1.171
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${GYM_POSTGRES_PASSWORD}
+    entrypoint: ["sh", "/migrate.sh"]
+    volumes:
+      - ../supabase/migrations:/migrations:ro
+      - ./db/migrate.sh:/migrate.sh:ro
+
+  auth:
+    <<: *no-autostart
+    image: public.ecr.aws/supabase/gotrue:v2.197.0
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: "9999"
+      API_EXTERNAL_URL: http://localhost:54321
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${GYM_POSTGRES_PASSWORD}@db:5432/postgres
+      GOTRUE_SITE_URL: http://localhost:5180
+      GOTRUE_URI_ALLOW_LIST: http://localhost:5180,http://localhost:5180/**
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      GOTRUE_JWT_EXP: "3600"
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      # true = sign-ups work without an inbox. Set GYM_AUTOCONFIRM=false (and run the mail profile) to test confirmation emails.
+      GOTRUE_MAILER_AUTOCONFIRM: ${GYM_AUTOCONFIRM:-true}
+      GOTRUE_SMTP_HOST: mail
+      GOTRUE_SMTP_PORT: "1025"
+      GOTRUE_SMTP_ADMIN_EMAIL: noreply@gym.local
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_RECOVERY: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_INVITE: /auth/v1/verify
+
+  rest:
+    <<: *no-autostart
+    image: public.ecr.aws/supabase/postgrest:v14.14
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${GYM_POSTGRES_PASSWORD}@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+
+  gateway:
+    <<: *no-autostart
+    image: caddy:2-alpine
+    depends_on:
+      - auth
+      - rest
+    ports:
+      - "127.0.0.1:54321:8000"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+
+  kv:
+    <<: *no-autostart
+    image: redis:7
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  kv-rest:
+    <<: *no-autostart
+    image: hiett/serverless-redis-http:latest
+    depends_on:
+      kv:
+        condition: service_healthy
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: ${KV_REST_API_TOKEN}
+      SRH_CONNECTION_STRING: redis://kv:6379
+
+  # One-shot: installs Linux dependencies into the node_modules volume when package-lock.json changes.
+  deps:
+    <<: *node
+    command:
+      - sh
+      - -c
+      - |
+        h=$$(sha256sum package-lock.json | cut -d' ' -f1)
+        if [ "$$(cat node_modules/.gym-lock 2>/dev/null)" != "$$h" ]; then
+          npm ci && echo "$$h" > node_modules/.gym-lock
+        fi
+
+  web:
+    <<: *node
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+    environment:
+      GYM_DOCKER: "1"
+    command: ["npx", "vite", "--host", "0.0.0.0"]
+    ports:
+      - "127.0.0.1:5180:5180"
+
+  api:
+    <<: *node
+    depends_on:
+      deps:
+        condition: service_completed_successfully
+      kv-rest:
+        condition: service_started
+      gateway:
+        condition: service_started
+    env_file:
+      - ../.env.local
+    environment:
+      GYM_API_PORT: "3010"
+    command: ["npx", "tsx", "watch", "--clear-screen=false", "scripts/local/dev-api.ts"]
+    ports:
+      - "127.0.0.1:3010:3010"
+
+  # ---- optional services (profiles) -------------------------------------------------
+
+  mail:
+    <<: *no-autostart
+    profiles: ["mail"]
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:8026:8025"
+
+  stripe:
+    <<: *no-autostart
+    profiles: ["stripe"]
+    image: stripe/stripe-mock:latest
+
+  meta:
+    <<: *no-autostart
+    profiles: ["studio"]
+    image: public.ecr.aws/supabase/postgres-meta:v0.99.0
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PG_META_PORT: "8080"
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: "5432"
+      PG_META_DB_NAME: postgres
+      PG_META_DB_USER: supabase_admin
+      PG_META_DB_PASSWORD: ${GYM_POSTGRES_PASSWORD}
+
+  studio:
+    <<: *no-autostart
+    profiles: ["studio"]
+    image: public.ecr.aws/supabase/studio:2026.09.14-sha-4dd8a95
+    depends_on:
+      - meta
+      - gateway
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_PASSWORD: ${GYM_POSTGRES_PASSWORD}
+      PG_META_CRYPTO_KEY: ${SUPABASE_JWT_SECRET}
+      DEFAULT_ORGANIZATION_NAME: gym-app
+      DEFAULT_PROJECT_NAME: local
+      SUPABASE_URL: http://gateway:8000
+      SUPABASE_PUBLIC_URL: http://localhost:54321
+      SUPABASE_ANON_KEY: ${GYM_ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${GYM_SERVICE_ROLE_KEY}
+      AUTH_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+    ports:
+      - "127.0.0.1:54323:3000"
+
+volumes:
+  pgdata:
+  redisdata:
+  node_modules:

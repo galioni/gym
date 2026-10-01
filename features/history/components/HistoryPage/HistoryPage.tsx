@@ -103,10 +103,10 @@ function progressBarColor(pct: number): string {
 
 function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string | number; label: string }) {
   return (
-    <div className="flex-1 min-w-0 bg-surface/60 border border-white/10 rounded-2xl px-4 py-3 flex flex-col items-center gap-1">
+    <div className="flex-1 min-w-0 bg-surface/60 border border-border rounded-2xl px-4 py-3 flex flex-col items-center gap-1">
       <div className="text-primary">{icon}</div>
-      <div className="text-xl font-bold text-white">{value}</div>
-      <div className="text-[11px] text-slate-500 font-medium uppercase tracking-wider text-center leading-tight">
+      <div className="text-xl font-bold text-label">{value}</div>
+      <div className="text-[11px] text-labelTertiary font-medium uppercase tracking-wider text-center leading-tight">
         {label}
       </div>
     </div>
@@ -151,12 +151,12 @@ export function HistoryPage({ allData, onSelectDay, onDeleteDay, onBack }: Histo
       <div className="flex items-center gap-3">
         <button
           onClick={onBack}
-          className="inline-flex items-center justify-center h-9 w-9 text-slate-400 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+          className="inline-flex items-center justify-center h-9 w-9 text-labelSecondary hover:text-label hover:bg-fill/10 rounded-full transition-colors"
           aria-label="Back"
         >
           <ArrowLeft size={18} />
         </button>
-        <h2 className="text-xl font-bold text-white">Workout History</h2>
+        <h2 className="text-xl font-bold text-label">Workout History</h2>
       </div>
 
       <div className="flex gap-3">
@@ -166,14 +166,14 @@ export function HistoryPage({ allData, onSelectDay, onDeleteDay, onBack }: Histo
       </div>
 
       {hasWeightData && (
-        <div className="bg-surface/60 border border-white/10 rounded-2xl px-4 py-4 space-y-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 mb-3">Body weight</p>
+        <div className="bg-surface/60 border border-border rounded-2xl px-4 py-4 space-y-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-labelTertiary mb-3">Body weight</p>
           <WeightChart allData={allData} />
         </div>
       )}
 
       {weekGroups.length === 0 ? (
-        <div className="text-center text-slate-500 py-16">
+        <div className="text-center text-labelTertiary py-16">
           <Dumbbell size={36} className="mx-auto mb-3 opacity-30" />
           <p className="text-sm">No workout history yet. Start tracking!</p>
         </div>
@@ -183,7 +183,7 @@ export function HistoryPage({ allData, onSelectDay, onDeleteDay, onBack }: Histo
             const weeklyVolume = calcWeeklyVolume(days);
             return (
             <div key={weekStart}>
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 mb-2 px-1">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-labelTertiary mb-2 px-1">
                 {weekLabel(weekStart)}
                 {weeklyVolume > 0 && (
                   <span className="font-normal normal-case tracking-normal"> · {weeklyVolume} sets</span>
@@ -205,27 +205,27 @@ export function HistoryPage({ allData, onSelectDay, onDeleteDay, onBack }: Histo
                         <SwipeToDeleteRow onDelete={() => onDeleteDay(day.date)}>
                           <button
                             onClick={() => onSelectDay(day.date)}
-                            className="w-full flex items-center gap-3 px-4 py-3 bg-surface/40 hover:bg-surface/70 border border-white/[0.08] hover:border-white/15 rounded-xl transition-colors text-left"
+                            className="w-full flex items-center gap-3 px-4 py-3 bg-surface/40 hover:bg-surface/70 border border-borderStrong/[0.08] hover:border-borderStrong rounded-xl transition-colors text-left"
                           >
                             <div className="min-w-0 flex-1 space-y-1.5">
                               <div className="flex items-center justify-between gap-2">
-                                <span className="text-sm font-medium text-white">{dateStr}</span>
-                                <span className="text-xs text-slate-400 shrink-0">{sessionLabel}</span>
+                                <span className="text-sm font-medium text-label">{dateStr}</span>
+                                <span className="text-xs text-labelSecondary shrink-0">{sessionLabel}</span>
                               </div>
                               {pct > 0 && (
                                 <div className="flex items-center gap-2">
-                                  <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                  <div className="flex-1 h-1.5 bg-fill/10 rounded-full overflow-hidden">
                                     <div
                                       className={cn("h-full rounded-full", progressBarColor(pct))}
                                       style={{ width: `${pct}%` }}
                                     />
                                   </div>
-                                  <span className="text-[10px] text-slate-500 shrink-0 w-7 text-right">{pct}%</span>
+                                  <span className="text-[10px] text-labelTertiary shrink-0 w-7 text-right">{pct}%</span>
                                 </div>
                               )}
                             </div>
                             {day.weight.trim().length > 0 && (
-                              <span className="text-xs text-slate-500 shrink-0">{day.weight} kg</span>
+                              <span className="text-xs text-labelTertiary shrink-0">{day.weight} kg</span>
                             )}
                           </button>
                         </SwipeToDeleteRow>
@@ -234,7 +234,7 @@ export function HistoryPage({ allData, onSelectDay, onDeleteDay, onBack }: Histo
                       <button
                         type="button"
                         onClick={() => onDeleteDay(day.date)}
-                        className="hidden md:flex shrink-0 items-center justify-center h-9 w-9 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-400/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="hidden md:flex shrink-0 items-center justify-center h-9 w-9 rounded-lg text-labelTertiary hover:text-dangerText hover:bg-red-400/10 opacity-0 group-hover:opacity-100 transition-opacity"
                         aria-label="Delete day"
                         tabIndex={-1}
                       >

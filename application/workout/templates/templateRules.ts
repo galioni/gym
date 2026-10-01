@@ -4,7 +4,7 @@ import {
   TEMPLATE_TEXT_MAX_LENGTH,
   TEMPLATES,
 } from "../../../constants";
-import { SessionType, TemplateData, Templates } from "../../../types";
+import { TemplateData, Templates } from "../../../types";
 import { cloneTemplateData } from "../sessionTypes/sessionTypeRules";
 import { generateId } from "../../../utils";
 

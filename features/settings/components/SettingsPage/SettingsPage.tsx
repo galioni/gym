@@ -16,6 +16,7 @@ import {
 import { ExerciseLibraryEntry } from "../../../../application/workout/exerciseLibrary";
 import { useBackupIO } from "../../../session-controls/hooks/useBackupIO";
 import { AiProviderSelector } from "../AiProviderSelector";
+import { ThemeSelector } from "../ThemeSelector";
 import { useAuthSession } from "../../../auth/hooks/useAuthSession";
 import { useFeedback } from "../../../feedback/hooks/useFeedback";
 import { useSubscription } from "../../../billing/hooks/useSubscription";
@@ -50,7 +51,6 @@ interface SettingsPageProps {
   onCreateSessionType: (label: string) => Promise<CreateSessionTypeResult>;
   onDeleteSessionType: (sessionType: SessionType) => Promise<DeleteSessionTypeResult>;
   onRenameSessionType: (oldType: SessionType, newLabel: string) => Promise<RenameSessionTypeResult>;
-  isUpgradeRequired: boolean;
   onSyncNow: (
     resolution?: Partial<Record<string, "keepLocal" | "keepCloud">>
   ) => Promise<SyncNowResult>;
@@ -86,7 +86,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   onCreateSessionType,
   onDeleteSessionType,
   onRenameSessionType,
-  isUpgradeRequired,
   onSyncNow,
   onRollback,
   onPruneRestorePoints,
@@ -155,11 +154,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       <button
         type="button"
         onClick={onBack}
-        className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
+        className="inline-flex items-center gap-2 text-sm text-labelSecondary hover:text-label transition-colors"
       >
         <ArrowLeft size={16} />
         Back
       </button>
+
+      <Card title="Appearance">
+        <ThemeSelector />
+      </Card>
 
       <TemplateEditor
         templates={templates}
@@ -177,7 +180,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
 
       {/* Plans */}
       <Card title="Plans">
-        <div className="text-xs text-slate-500 mb-3">
+        <div className="text-xs text-labelTertiary mb-3">
           Group sessions into named plans. Activate a plan to filter the session dropdown in the header.
           Sessions are shared — the same session can belong to multiple plans.
         </div>
@@ -195,16 +198,16 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       {/* Subscription */}
       <Card title="Subscription">
         {isSubscriptionLoading ? (
-          <div className="text-sm text-slate-400">Loading...</div>
+          <div className="text-sm text-labelSecondary">Loading...</div>
         ) : subscriptionFetchError ? (
-          <div className="text-sm text-slate-400">Could not load subscription status. Please refresh and try again.</div>
+          <div className="text-sm text-labelSecondary">Could not load subscription status. Please refresh and try again.</div>
         ) : subscription.plan === "pro" ? (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm font-semibold text-white">Pro</div>
+                <div className="text-sm font-semibold text-label">Pro</div>
                 {subscription.currentPeriodEnd && (
-                  <div className="text-xs text-slate-400 mt-0.5">
+                  <div className="text-xs text-labelSecondary mt-0.5">
                     Renews {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
                   </div>
                 )}
@@ -216,8 +219,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="text-sm text-slate-300">
-              You're on the <span className="font-semibold text-white">free plan</span>. Upgrade to Pro to enable cloud sync across devices.
+            <div className="text-sm text-labelSecondary">
+              You're on the <span className="font-semibold text-label">free plan</span>. Your workouts sync automatically across your devices; Pro adds a choice of AI models.
             </div>
             <Button variant="primary" size="sm" className="gap-2" onClick={() => void startCheckout().catch(() => showToast({ tone: "error", title: "Could not start checkout. Try again." }))}>
               Upgrade to Pro
@@ -233,11 +236,9 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         conflicts={conflicts}
         restorePoints={restorePoints}
         isSyncing={isSyncing}
-        isUpgradeRequired={isUpgradeRequired}
         onSyncNow={onSyncNow}
         onRollback={onRollback}
         onPruneRestorePoints={onPruneRestorePoints}
-        onUpgrade={startCheckout}
       />
 
       {/* AI Plan */}
@@ -245,15 +246,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         <AiProviderSelector />
         {planMeta && (
           <div className="space-y-2 mb-3">
-            <div className="text-xs font-semibold text-slate-300">{planMeta.split}</div>
-            <div className="text-xs text-slate-400 leading-relaxed">{planMeta.progression}</div>
+            <div className="text-xs font-semibold text-labelSecondary">{planMeta.split}</div>
+            <div className="text-xs text-labelSecondary leading-relaxed">{planMeta.progression}</div>
             {planMeta.notes && (
-              <div className="text-xs text-slate-500 italic">{planMeta.notes}</div>
+              <div className="text-xs text-labelTertiary italic">{planMeta.notes}</div>
             )}
           </div>
         )}
         {planParams && (
-          <div className="text-xs text-slate-500 mb-3">
+          <div className="text-xs text-labelTertiary mb-3">
             {[
               planParams.goal.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()),
               planParams.experience.replace(/^./, (c) => c.toUpperCase()),
@@ -268,8 +269,8 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         )}
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-sm text-slate-300">Regenerate your AI workout plan</div>
-            <div className="text-xs text-slate-500 mt-0.5">Answer a few questions and Claude will build a personalised set of session templates from scratch. This replaces your existing templates.</div>
+            <div className="text-sm text-labelSecondary">Regenerate your AI workout plan</div>
+            <div className="text-xs text-labelTertiary mt-0.5">Answer a few questions and Claude will build a personalised set of session templates from scratch. This replaces your existing templates.</div>
           </div>
           <Button variant="secondary" size="sm" className="gap-2 shrink-0" onClick={onRegeneratePlan}>
             <Sparkles size={14} />
@@ -292,7 +293,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
             </Button>
           </div>
 
-          <div className="pt-2 border-t border-white/10">
+          <div className="pt-2 border-t border-border">
             <Button
               variant="danger"
               size="sm"
@@ -302,7 +303,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
               <Trash2 size={14} />
               Delete account and all data
             </Button>
-            <p className="mt-2 text-xs text-slate-500 text-center">
+            <p className="mt-2 text-xs text-labelTertiary text-center">
               Permanently deletes your account, all workout history, templates, and cloud data. Cannot be undone.
             </p>
           </div>

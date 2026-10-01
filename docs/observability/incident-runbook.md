@@ -1,6 +1,6 @@
 # API Incident Runbook
 
-Scope: `/api/workout-data` and `/api/templates`.
+Scope: `/api/subscription` and `/api/generate-plan`.
 
 ## 1) Triage
 

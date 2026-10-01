@@ -54,6 +54,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     // Delete all server-side data for this user.
     const keysToDelete = [
       `subscription:${auth.userId}`,
+      // Legacy KV sync documents (no longer written). Current data lives in Postgres and is removed by the
+      // cascade when the auth user is deleted.
       `sync:${auth.userId}:workout-data`,
       `sync:${auth.userId}:templates`,
       `sync:${auth.userId}:plans`,

@@ -7,6 +7,7 @@ import {
   ToastMessage,
   ToastOptions,
 } from "../types/feedbackTypes";
+import { FeedbackContext } from "./FeedbackContext";
 
 interface PendingConfirm extends ConfirmOptions {
   resolve: (confirmed: boolean) => void;
@@ -15,8 +16,6 @@ interface PendingConfirm extends ConfirmOptions {
 interface FeedbackProviderProps {
   children: React.ReactNode;
 }
-
-export const FeedbackContext = React.createContext<FeedbackContextValue | undefined>(undefined);
 
 /**
  * Provides app-wide confirm and toast APIs so UI flows stay non-blocking on mobile.

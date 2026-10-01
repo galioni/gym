@@ -18,18 +18,18 @@ const toneStyles: Record<
 > = {
   success: {
     border: "border-accent/45",
-    icon: <CheckCircle2 size={16} className="text-accent" />,
-    text: "text-slate-100",
+    icon: <CheckCircle2 size={16} className="text-accentText" />,
+    text: "text-label",
   },
   error: {
     border: "border-danger/45",
-    icon: <AlertCircle size={16} className="text-red-300" />,
-    text: "text-slate-100",
+    icon: <AlertCircle size={16} className="text-dangerText" />,
+    text: "text-label",
   },
   info: {
     border: "border-primary/45",
     icon: <Info size={16} className="text-primary" />,
-    text: "text-slate-100",
+    text: "text-label",
   },
 };
 
@@ -56,7 +56,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
 
   return (
     <div
-      className={`glass-panel rounded-xl border ${style.border} px-3 py-2.5 shadow-[0_18px_32px_rgba(0,0,0,0.35)]`}
+      className={`glass-panel rounded-xl border ${style.border} px-3 py-2.5 shadow-toast`}
       role={isError ? "alert" : "status"}
       aria-live={isError ? "assertive" : "polite"}
       aria-atomic="true"
@@ -66,7 +66,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
         <div className="flex-1 min-w-0">
           <div className={`text-sm font-semibold ${style.text}`}>{toast.title}</div>
           {toast.description && (
-            <div className="mt-0.5 text-xs leading-relaxed text-slate-300">{toast.description}</div>
+            <div className="mt-0.5 text-xs leading-relaxed text-labelSecondary">{toast.description}</div>
           )}
           {toast.action && (
             <ToastActionButton action={toast.action} onDismiss={() => onDismiss(toast.id)} />
@@ -76,7 +76,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onDismiss }) => {
           type="button"
           onClick={() => onDismiss(toast.id)}
           aria-label="Dismiss notification"
-          className="h-9 w-9 shrink-0 rounded-lg text-slate-400 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+          className="h-9 w-9 shrink-0 rounded-lg text-labelSecondary transition-colors hover:bg-fill/10 hover:text-label focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
         >
           <X size={14} className="mx-auto" />
         </button>
@@ -94,7 +94,7 @@ export const ToastViewport: React.FC<ToastViewportProps> = ({ toasts, onDismiss 
   }
 
   return (
-    <aside className="pointer-events-none fixed inset-x-0 top-3 z-[95] px-3 sm:top-4 sm:right-4 sm:left-auto sm:w-[360px] sm:px-0">
+    <aside className="pointer-events-none fixed inset-x-0 top-[5.5rem] z-[95] px-3 sm:top-[6.5rem] sm:right-4 sm:left-auto sm:w-[360px] sm:px-0">
       <div className="pointer-events-auto space-y-2">
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />

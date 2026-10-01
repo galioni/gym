@@ -26,7 +26,7 @@ interface UseTemplatesResult {
 /**
  * Manages editable session templates and persists user changes.
  */
-export function useTemplates(service: TemplateService): UseTemplatesResult {
+export function useTemplates(service: TemplateService, reloadToken = 0): UseTemplatesResult {
   const [templates, setTemplates] = useState<Templates>(TEMPLATES);
   const [isLoaded, setIsLoaded] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -60,7 +60,7 @@ export function useTemplates(service: TemplateService): UseTemplatesResult {
     return () => {
       isCancelled = true;
     };
-  }, [service]);
+  }, [service, reloadToken]);
 
   const saveSectionTemplate = useCallback(
     (session: SessionType, section: TemplateSectionKey, rows: TemplateData[TemplateSectionKey]) => {

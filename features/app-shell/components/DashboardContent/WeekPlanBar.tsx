@@ -55,16 +55,16 @@ function Pill({
   const className = [
     "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border whitespace-nowrap transition-colors",
     done
-      ? "bg-green-500/10 border-green-500/20 text-green-500/70"
+      ? "bg-green-500/10 border-green-500/20 text-successText/70"
       : isCurrent
       ? "bg-primary/25 border-primary/50 text-primary cursor-pointer hover:bg-primary/35"
       : isNext
       ? "bg-primary/15 border-primary/30 text-primary cursor-pointer hover:bg-primary/25"
       : isOverdue
-      ? "bg-amber-500/10 border-amber-500/30 text-amber-500 cursor-pointer hover:bg-amber-500/20"
+      ? "bg-amber-500/10 border-amber-500/30 text-warningText cursor-pointer hover:bg-amber-500/20"
       : onSelect
-      ? "border-slate-700 text-slate-500 cursor-pointer hover:border-slate-500 hover:text-slate-400"
-      : "border-slate-700 text-slate-500",
+      ? "border-borderStrong text-labelTertiary cursor-pointer hover:border-labelTertiary hover:text-labelSecondary"
+      : "border-borderStrong text-labelTertiary",
   ].join(" ");
 
   const statusText = done
@@ -173,11 +173,11 @@ export const WeekPlanBar: React.FC<WeekPlanBarProps> = ({
     const allDone = scheduleNextIndex === -1 && scheduleSlots.length > 0;
     return (
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-[10px] font-semibold tracking-wider text-slate-600 uppercase shrink-0 mr-0.5">
+        <span className="text-[10px] font-semibold tracking-wider text-labelTertiary uppercase shrink-0 mr-0.5">
           {plan.label}
         </span>
         {allDone ? (
-          <span className="inline-flex items-center gap-1 text-xs text-green-400 font-medium">
+          <span className="inline-flex items-center gap-1 text-xs text-successText font-medium">
             <Check size={11} />
             Week complete
           </span>
@@ -206,11 +206,11 @@ export const WeekPlanBar: React.FC<WeekPlanBarProps> = ({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-[10px] font-semibold tracking-wider text-slate-600 uppercase shrink-0 mr-0.5">
+      <span className="text-[10px] font-semibold tracking-wider text-labelTertiary uppercase shrink-0 mr-0.5">
         {plan.label}
       </span>
       {allDone ? (
-        <span className="inline-flex items-center gap-1 text-xs text-green-400 font-medium">
+        <span className="inline-flex items-center gap-1 text-xs text-successText font-medium">
           <Check size={11} />
           Week complete
         </span>

@@ -3,6 +3,8 @@ import { Menu, X, Crosshair, Settings, History, LogOut, Zap } from 'lucide-react
 import { SessionOption, SessionType } from '../types';
 import { Button } from './ui/Button';
 import { cn, fromLocalDateKey } from '../utils';
+import { SyncStatus } from '../application/sync/syncStatus';
+import { SyncStatusIndicator } from '../features/sync/components/SyncStatusIndicator/SyncStatusIndicator';
 
 interface HeaderProps {
   currentDate: string;
@@ -17,6 +19,8 @@ interface HeaderProps {
   onSignOut?: () => Promise<void>;
   isSigningOut?: boolean;
   onUpgrade?: () => void;
+  /** Sync state shown next to the navigation; clicking it opens Settings. */
+  syncStatus?: SyncStatus;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -32,9 +36,11 @@ export const Header: React.FC<HeaderProps> = ({
   onSignOut,
   isSigningOut,
   onUpgrade,
+  syncStatus,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -43,8 +49,18 @@ export const Header: React.FC<HeaderProps> = ({
         setIsOpen(false);
       }
     };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    };
     document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, [isOpen]);
 
   const todayKey = new Date().toLocaleDateString('en-CA');
@@ -57,34 +73,39 @@ export const Header: React.FC<HeaderProps> = ({
   });
 
   return (
-    <header ref={menuRef} className="sticky top-0 z-40 border-b border-white/10 bg-background/80 backdrop-blur-xl motion-sweep">
+    <header ref={menuRef} className="sticky top-0 z-40 border-b border-border bar-surface motion-sweep">
       <div className="max-w-5xl mx-auto px-4 py-3 md:py-4">
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
-            <h1 className="display-title text-3xl md:text-4xl leading-none text-white">
+            <h1 className="display-title text-3xl md:text-4xl leading-none text-label">
               Daily Grind
             </h1>
-            <p className="text-slate-400 text-xs font-medium tracking-[0.14em] uppercase">
+            <p className="mt-1 text-labelSecondary text-xs font-medium tracking-[0.14em] uppercase">
               {formattedDate}
             </p>
             {userEmail && (
-              <p className="hidden md:block text-[10px] text-slate-500 tracking-[0.04em] truncate max-w-[160px]">{userEmail}</p>
+              <p className="hidden md:block text-[10px] text-labelTertiary tracking-[0.04em] truncate max-w-[160px]">{userEmail}</p>
             )}
           </div>
 
-          {/* Mobile hamburger */}
-          <button
-            className="md:hidden inline-flex items-center justify-center h-11 w-11 -mr-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors focus:outline-none"
-            onClick={() => setIsOpen(!isOpen)}
-            aria-label="Toggle menu"
-          >
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          {/* Mobile: sync state and hamburger */}
+          <div className="md:hidden flex items-center gap-0.5">
+            {syncStatus && <SyncStatusIndicator status={syncStatus} onClick={onNavigateSettings} />}
+            <button
+              ref={menuButtonRef}
+              className="inline-flex items-center justify-center h-11 w-11 -mr-2 text-labelSecondary hover:text-label hover:bg-fill/10 rounded-full transition-colors focus:outline-none"
+              onClick={() => setIsOpen(!isOpen)}
+              aria-label="Toggle menu"
+              aria-expanded={isOpen}
+            >
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-end gap-3 bg-surface/60 border border-white/10 rounded-2xl px-3 py-2">
+          <div className="hidden md:flex items-end gap-3 bg-surface/60 border border-border rounded-2xl px-3 py-2">
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.14em] flex items-center gap-1.5">
+              <label className="text-[10px] text-labelTertiary font-bold uppercase tracking-[0.14em] flex items-center gap-1.5">
                 Date
                 {isToday && (
                   <span className="text-[9px] font-bold uppercase tracking-wider text-primary border border-primary/30 bg-primary/10 px-1 py-0 rounded">Today</span>
@@ -94,16 +115,16 @@ export const Header: React.FC<HeaderProps> = ({
                 type="date"
                 value={currentDate}
                 onChange={onDateChange}
-                className={`bg-background/70 border rounded-lg px-2 py-1 text-xs text-slate-200 focus:ring-1 focus:ring-primary outline-none hover:border-primary/60 transition-colors ${isToday ? "border-primary/40" : "border-white/10"}`}
+                className={`bg-background/70 border rounded-lg px-2 py-1 text-xs text-label focus:ring-1 focus:ring-primary outline-none hover:border-primary/60 transition-colors ${isToday ? "border-primary/40" : "border-border"}`}
               />
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.14em]">Session</label>
+              <label className="text-[10px] text-labelTertiary font-bold uppercase tracking-[0.14em]">Session</label>
               <select
                 value={sessionType}
                 onChange={onSessionTypeChange}
-                className="bg-background/70 border border-white/10 rounded-lg px-2 py-1 text-xs text-slate-200 focus:ring-1 focus:ring-primary outline-none w-40 hover:border-primary/60 transition-colors"
+                className="bg-background/70 border border-border rounded-lg px-2 py-1 text-xs text-label focus:ring-1 focus:ring-primary outline-none w-40 hover:border-primary/60 transition-colors"
               >
                 {(() => {
                   const userOpts = sessionOptions.filter((o) => o.source !== "ai");
@@ -135,14 +156,15 @@ export const Header: React.FC<HeaderProps> = ({
             {onUpgrade && (
               <button
                 onClick={onUpgrade}
-                className="flex items-center gap-1.5 px-3 h-11 rounded-xl text-xs font-semibold text-amber-400 border border-amber-400/30 hover:bg-amber-400/10 hover:text-amber-300 transition-colors"
+                className="flex items-center gap-1.5 px-3 h-11 rounded-xl text-xs font-semibold text-warningText border border-amber-400/30 hover:bg-amber-400/10 hover:text-warningText transition-colors"
               >
                 <Zap size={12} />
                 Upgrade
               </button>
             )}
 
-            <div className="flex gap-1 ml-1 pl-3 border-l border-white/10">
+            <div className="flex gap-1 ml-1 pl-3 border-l border-border">
+              {syncStatus && <SyncStatusIndicator status={syncStatus} onClick={onNavigateSettings} showLabel />}
               {onNavigateHistory && (
                 <Button onClick={onNavigateHistory} size="icon" variant="ghost" title="History" className="h-11 w-11">
                   <History size={14} />
@@ -163,9 +185,9 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Mobile menu — navigation only; session controls live inline on the home page */}
         <div className={cn(
           "md:hidden overflow-hidden transition-all duration-300 ease-in-out",
-          isOpen ? "max-h-[320px] opacity-100 mt-4 border-t border-white/10 pt-4" : "max-h-0 opacity-0"
+          isOpen ? "max-h-[320px] opacity-100 mt-4 border-t border-border pt-4" : "max-h-0 opacity-0"
         )}>
-          <div className="space-y-3 pb-2 bg-surface/50 border border-white/10 rounded-2xl p-3">
+          <div className="space-y-3 pb-2 bg-surface/50 border border-border rounded-2xl p-3">
             {onNavigateHistory && (
               <Button onClick={() => { onNavigateHistory(); setIsOpen(false); }} variant="secondary" className="w-full min-h-11 gap-2 text-xs">
                 <History size={14} />
@@ -175,7 +197,7 @@ export const Header: React.FC<HeaderProps> = ({
             {onUpgrade && (
               <button
                 onClick={() => { onUpgrade(); setIsOpen(false); }}
-                className="w-full flex items-center justify-center gap-2 min-h-11 rounded-xl text-sm font-semibold text-amber-400 border border-amber-400/30 hover:bg-amber-400/10 hover:text-amber-300 transition-colors"
+                className="w-full flex items-center justify-center gap-2 min-h-11 rounded-xl text-sm font-semibold text-warningText border border-amber-400/30 hover:bg-amber-400/10 hover:text-warningText transition-colors"
               >
                 <Zap size={14} />
                 Upgrade to Pro
@@ -186,9 +208,9 @@ export const Header: React.FC<HeaderProps> = ({
               Settings
             </Button>
             {onSignOut && (
-              <div className="pt-2 border-t border-white/10 space-y-1">
+              <div className="pt-2 border-t border-border space-y-1">
                 {userEmail && (
-                  <p className="text-[10px] text-slate-500 truncate px-1">{userEmail}</p>
+                  <p className="text-[10px] text-labelTertiary truncate px-1">{userEmail}</p>
                 )}
                 <Button
                   onClick={() => { void onSignOut(); setIsOpen(false); }}
