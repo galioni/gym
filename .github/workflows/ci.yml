@@ -114,6 +114,18 @@ jobs:
       - name: Generate local-only secrets
         run: npm run gym:init
 
+      # public.ecr.aws throttles anonymous pulls and these jobs pull the same images at once, so retry with a
+      # growing pause instead of failing the run on "toomanyrequests: Rate exceeded".
+      - name: Pull images (with retries)
+        run: |
+          for i in 1 2 3 4 5 6; do
+            docker compose --env-file .env.local -f docker/compose.yaml -p gym-app pull --ignore-buildable && exit 0
+            echo "pull attempt $i failed; waiting $((i * 30))s" >&2
+            sleep $((i * 30))
+          done
+          echo "could not pull images" >&2
+          exit 1
+
       - name: Start the stack (applies all migrations to an empty database)
         run: npm run gym:up
 
