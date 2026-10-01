@@ -1,4 +1,5 @@
 import { CloudLimitError } from "./syncErrors";
+import { FREE_HISTORY_DAYS } from "./historyWindow";
 
 /**
  * The Free plan syncs once every 30 days (see supabase/migrations/*_sync_allowance.sql). A sync asks for permission first
@@ -14,9 +15,15 @@ export interface SyncAllowanceStatus {
   nextAvailableAt: string | null;
 }
 
+/** What a permitted sync is told about its plan. */
+export interface SyncGrant {
+  /** The Free plan keeps this many days of history in the cloud: older days are not uploaded. Null means no such limit. */
+  historyDays: number | null;
+}
+
 export interface SyncAllowance {
   /** Called at the start of every sync. Resolves when the sync may go ahead; throws SyncAllowanceError when it may not. */
-  begin(): Promise<void>;
+  begin(): Promise<SyncGrant>;
   status(): Promise<SyncAllowanceStatus>;
 }
 
@@ -33,6 +40,11 @@ export class SyncAllowanceError extends CloudLimitError {
     super("sync", message);
     this.name = "SyncAllowanceError";
   }
+}
+
+/** The history window of the plan, or null when there is none (Pro, or the allowance switched off). */
+export function historyDaysFor(status: SyncAllowanceStatus | null): number | null {
+  return status && status.enforced && !status.isPro ? FREE_HISTORY_DAYS : null;
 }
 
 /** True when a Free account may start a sync right now. */

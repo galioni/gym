@@ -10,11 +10,40 @@ function allowanceWith(reply: Reply) {
   return { allowance: new PostgrestSyncAllowance({ rpc } as unknown as PostgrestClient), rpc };
 }
 
+function allowanceByRpc(replies: { begin_sync: Reply; sync_allowance: Reply }) {
+  const rpc = vi.fn(async (name: "begin_sync" | "sync_allowance") => replies[name]);
+  return { allowance: new PostgrestSyncAllowance({ rpc } as unknown as PostgrestClient), rpc };
+}
+
+const ALLOWED: Reply = { data: [{ allowed: true }], error: null };
+const status = (enforced: boolean, isPro: boolean): Reply => ({
+  data: [{ enforced, is_pro: isPro, window_ends_at: null, next_available_at: null }],
+  error: null,
+});
+
 describe("PostgrestSyncAllowance.begin", () => {
-  it("lets the sync through when the database allows it", async () => {
-    const { allowance, rpc } = allowanceWith({ data: [{ allowed: true }], error: null });
-    await expect(allowance.begin()).resolves.toBeUndefined();
+  it("lets a Free sync through with the 7-day cloud history window", async () => {
+    const { allowance, rpc } = allowanceByRpc({ begin_sync: ALLOWED, sync_allowance: status(true, false) });
+    await expect(allowance.begin()).resolves.toEqual({ historyDays: 7 });
     expect(rpc).toHaveBeenCalledWith("begin_sync");
+  });
+
+  it("puts no history limit on Pro", async () => {
+    const { allowance } = allowanceByRpc({ begin_sync: ALLOWED, sync_allowance: status(true, true) });
+    await expect(allowance.begin()).resolves.toEqual({ historyDays: null });
+  });
+
+  it("puts no history limit on anyone while the allowance is switched off", async () => {
+    const { allowance } = allowanceByRpc({ begin_sync: ALLOWED, sync_allowance: status(false, false) });
+    await expect(allowance.begin()).resolves.toEqual({ historyDays: null });
+  });
+
+  it("does not run the sync when the plan cannot be read", async () => {
+    const { allowance } = allowanceByRpc({
+      begin_sync: ALLOWED,
+      sync_allowance: { data: null, error: { code: "08006", message: "connection failure" } },
+    });
+    await expect(allowance.begin()).rejects.toThrow(/connection failure/);
   });
 
   it("refuses with the date the next sync opens when the monthly sync has been used", async () => {
@@ -29,7 +58,7 @@ describe("PostgrestSyncAllowance.begin", () => {
 
   it("does not block anyone when the database has not been migrated yet", async () => {
     const { allowance } = allowanceWith({ data: null, error: { code: "PGRST202", message: "Could not find the function" } });
-    await expect(allowance.begin()).resolves.toBeUndefined();
+    await expect(allowance.begin()).resolves.toEqual({ historyDays: null });
   });
 
   it("reports any other failure, so the sync is retried later instead of running unchecked", async () => {

@@ -33,6 +33,7 @@ describe("what the plans say", () => {
     expect(text).not.toMatch(/automatic/i);
     expect(text).toContain("one sync every 30 days");
     expect(text).toContain("1 per day");
+    expect(text).toContain("7 days of history in the cloud");
   });
 
   it("gives Pro a concrete reason to pay", () => {

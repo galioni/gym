@@ -122,6 +122,7 @@ Upstash KV keys:
 | Templates / plans in the cloud | 5 / 20 | 200 / 100 |
 | Workout days in the cloud | 1,000 | 5,000 |
 | Cloud sync | one sync every 30 days, started by you; the first sync on a new device runs on its own but only downloads | automatic, no limit |
+| History kept in the cloud | the last 7 days (older days stay on the device) | everything, up to the day limit |
 | AI plan generation | 1 per rolling day, Gemini | 10 per rolling hour, choice of Gemini / Claude / ChatGPT |
 
 - The facts shown to people live in `application/plans/planCatalog.ts` (landing page, Settings, upgrade prompts); the enforced numbers live in `api/_lib/planLimits.ts` (AI) and the `*_plan_row_limits` and `*_sync_allowance` migrations. A test keeps the TypeScript ones equal.

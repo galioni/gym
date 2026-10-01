@@ -231,7 +231,8 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
           <span>
             {syncAvailable
               ? "A sync is available now. It sends and receives your changes in one go, then the next opens in 30 days."
-              : `Your sync for this period has been used. The next one is available on ${formatNextSync(nextSync ?? new Date().toISOString())}.`}
+              : `Your sync for this period has been used. The next one is available on ${formatNextSync(nextSync ?? new Date().toISOString())}.`}{" "}
+            The cloud keeps your last 7 days; older entries stay on this device.
           </span>
           {onUpgrade && (
             <Button variant="primary" size="sm" className="shrink-0" onClick={onUpgrade}>

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { SyncAllowanceError } from "../../application/sync/syncAllowance";
+import { historyCutoff } from "../../application/sync/historyWindow";
 import { Templates } from "../../types";
 import { FakeGateway } from "./fakeGateway.testSupport";
 import { day, newDevice, tpl } from "./syncDevice.testSupport";
@@ -11,7 +12,7 @@ import { day, newDevice, tpl } from "./syncDevice.testSupport";
  */
 
 const NEXT = "2026-11-01T10:00:00.000Z";
-const allowed = () => ({ begin: vi.fn(async () => {}) });
+const allowed = () => ({ begin: vi.fn(async () => ({ historyDays: null })) });
 const used = () => ({
   begin: vi.fn(async () => {
     throw new SyncAllowanceError(NEXT);
@@ -70,6 +71,7 @@ describe("asking for permission before a sync", () => {
       allowance: {
         begin: async () => {
           if (!open) throw new SyncAllowanceError(NEXT);
+          return { historyDays: null };
         },
       },
     });
@@ -256,5 +258,50 @@ describe("the automatic sync of a Free account only downloads", () => {
 
     expect(result.status).toBe("success");
     expect(cloudKeys(gateway)).toEqual(["t1", "t2", "t3"]);
+  });
+});
+
+describe("the Free plan's 7-day history in the cloud", () => {
+  const ago = (n: number) => historyCutoff(n + 1); // the date n days before today
+  const free = () => ({ begin: vi.fn(async () => ({ historyDays: 7 })) });
+  const cloudDays = (gateway: FakeGateway) => [...gateway.tables.workout_days.keys()].sort();
+
+  it("uploads only the last 7 days, and the device keeps every day", async () => {
+    const gateway = new FakeGateway();
+    const device = newDevice(gateway, { allowance: free() });
+    device.days.data = { [ago(0)]: day(ago(0), "today"), [ago(6)]: day(ago(6), "edge"), [ago(7)]: day(ago(7), "old"), [ago(40)]: day(ago(40), "older") };
+
+    const result = await device.sync();
+
+    expect(result.status).toBe("success");
+    expect(cloudDays(gateway)).toEqual([ago(6), ago(0)].sort());
+    expect(Object.keys(device.days.data).sort()).toEqual([ago(40), ago(7), ago(6), ago(0)].sort());
+  });
+
+  it("still downloads older days that are already in the cloud (an account that used to be Pro)", async () => {
+    const gateway = new FakeGateway();
+    const pro = newDevice(gateway);
+    pro.days.data = { [ago(40)]: day(ago(40), "from Pro days") };
+    await pro.sync();
+
+    const phone = newDevice(gateway, { allowance: free() });
+    await phone.sync();
+
+    expect(Object.keys(phone.days.data)).toEqual([ago(40)]);
+    expect(cloudDays(gateway)).toEqual([ago(40)]); // nothing was removed from the cloud either
+  });
+
+  it("does not send a deletion of an old day", async () => {
+    const gateway = new FakeGateway();
+    const pro = newDevice(gateway);
+    pro.days.data = { [ago(40)]: day(ago(40), "x") };
+    await pro.sync();
+    const phone = newDevice(gateway, { allowance: free() });
+    await phone.sync();
+
+    phone.days.userDeletes(ago(40));
+    await phone.sync();
+
+    expect(cloudDays(gateway)).toEqual([ago(40)]);
   });
 });
