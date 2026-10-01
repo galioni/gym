@@ -153,6 +153,7 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
         description: result.nextAvailableAt
           ? `Nothing is lost: your data is safe on this device. The next sync is available on ${formatNextSync(result.nextAvailableAt)}.`
           : "Nothing is lost: your data is safe on this device.",
+        ...(onUpgrade ? { action: { label: "Upgrade to Pro", onClick: onUpgrade } } : {}),
       });
       return;
     }

@@ -82,3 +82,38 @@ describe("LandingPage", () => {
     expect(screen.getByRole("button", { name: /create account/i })).toBeTruthy();
   });
 });
+
+describe("LandingPage pricing", () => {
+  afterEach(cleanup);
+
+  it("shows the real prices in pounds", () => {
+    const { container } = render(<LandingPage {...defaultProps} />);
+    const text = container.textContent ?? "";
+    expect(text).toContain("£1.99");
+    expect(text).toContain("£0");
+    expect(text).not.toContain("$4.99");
+  });
+
+  it("describes the Free plan honestly: sync is monthly and started by the person, not automatic", () => {
+    const { container } = render(<LandingPage {...defaultProps} />);
+    const text = container.textContent ?? "";
+    expect(text).toContain("one sync every 30 days");
+    expect(text).toContain("1 per day");
+    expect(text).not.toContain("Automatic cloud sync across devices");
+  });
+
+  it("gives Pro concrete reasons: automatic sync, more AI plans with a choice of model, higher limits", () => {
+    const { container } = render(<LandingPage {...defaultProps} />);
+    const text = container.textContent ?? "";
+    expect(text).toContain("Automatic cloud sync across all your devices");
+    expect(text).toContain("10 AI plans per hour");
+    expect(text).toContain("5,000 days");
+  });
+
+  it("promises that ending Pro keeps your data, and no longer mentions a grace period", () => {
+    const { container } = render(<LandingPage {...defaultProps} />);
+    const text = container.textContent ?? "";
+    expect(text).toContain("If Pro ends you keep all of your data");
+    expect(text.toLowerCase()).not.toContain("grace period");
+  });
+});

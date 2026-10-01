@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Dumbbell, Sparkles, ShieldCheck, Zap, RefreshCw, Mail, Eye, EyeOff, Check, Smartphone } from "lucide-react";
 import { Button } from "../../../../components/ui/Button";
+import { CANCEL_NOTE, FREE_PRICE, PRO_PRICE, freePlanFeatures, proPlanFeatures } from "../../../../application/plans/planCatalog";
 
 
 type AuthMode = "signin" | "signup" | "reset";
@@ -168,7 +169,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {[
                 "AI-generated plans — Gemini included free, Claude & ChatGPT for Pro",
                 "Installable PWA — works on iOS, Android, and desktop",
-                "Local-first storage with automatic cloud sync across your devices",
+                "Local-first storage that works offline — cloud sync is automatic on Pro",
                 "No streaks, no gamification — just your workout, tracked",
               ].map((item) => (
                 <li key={item} className="flex items-center gap-3 text-base text-labelSecondary">
@@ -371,19 +372,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div>
                   <div className="text-sm font-bold uppercase tracking-[0.14em] text-labelSecondary">Free</div>
                   <div className="mt-2 flex items-end gap-1">
-                    <span className="text-3xl font-bold text-label">£0</span>
+                    <span className="text-3xl font-bold text-label">{FREE_PRICE}</span>
                     <span className="text-base text-labelSecondary mb-1">forever</span>
                   </div>
                 </div>
                 <ul className="space-y-2.5">
-                  {[
-                    "Daily workout tracking",
-                    "AI plan generation (Gemini)",
-                    "Template & session editor",
-                    "Backup export / import",
-                    "Installable on iOS & Android",
-                    "Automatic cloud sync across devices",
-                  ].map((f) => (
+                  {freePlanFeatures().map((f) => (
                     <li key={f} className="flex items-center gap-2.5 text-base text-labelSecondary">
                       <Check size={13} className="text-primary shrink-0" />
                       {f}
@@ -402,15 +396,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div>
                   <div className="text-sm font-bold uppercase tracking-[0.14em] text-primary">Pro</div>
                   <div className="mt-2 flex items-end gap-1">
-                    <span className="text-3xl font-bold text-label">£1.99</span>
+                    <span className="text-3xl font-bold text-label">{PRO_PRICE}</span>
                     <span className="text-base text-labelSecondary mb-1">/ month</span>
                   </div>
                 </div>
                 <ul className="space-y-2.5">
-                  {[
-                    "Everything in Free",
-                    "Choose your AI model (Claude, ChatGPT, Gemini)",
-                  ].map((f) => (
+                  {proPlanFeatures().map((f) => (
                     <li key={f} className="flex items-center gap-2.5 text-base text-labelSecondary">
                       <Check size={13} className="text-primary shrink-0" />
                       {f}
@@ -421,7 +412,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
             </div>
             <p className="text-center text-sm text-labelTertiary">
-              No contracts. Cancel anytime. 7-day grace period on cancellation.
+              {CANCEL_NOTE}
             </p>
           </RevealSection>
 
