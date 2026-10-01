@@ -26,7 +26,7 @@ vi.mock("./_lib/subscriptionGuard.js", () => ({
   getSubscription: vi.fn(() => Promise.resolve({ plan: "free", status: "inactive", stripeCustomerId: null, currentPeriodEnd: null })),
   hasProAccess: vi.fn(() => false),
 }));
-vi.mock("./_lib/userSettingsKv.js", () => ({
+vi.mock("./_lib/userSettingsStore.js", () => ({
   getUserSettings: vi.fn(() => Promise.resolve({})),
 }));
 

@@ -174,6 +174,37 @@ try {
   res = await call("GET", "/rest/v1/stripe_events", { token: a.token });
   check(res.status === 401 || res.status === 403, "a signed-in user cannot read webhook events", `(${res.status})`);
   await call("DELETE", `/rest/v1/stripe_events?event_id=like.evt_smoke_${tag}_*`, { token: SERVICE, apikey: SERVICE });
+
+  // AI settings: the provider choice lives in user_settings.ai_provider (Postgres), written by the API with the service role.
+  const settingsRow = async () => (await call("GET", `/rest/v1/user_settings?user_id=eq.${a.id}`, { token: SERVICE, apikey: SERVICE })).json?.[0];
+  const api = (method, body) => fetch(`${API}/api/user-settings`, {
+    method, headers: { Authorization: `Bearer ${a.token}`, "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body),
+  });
+
+  res = await api("GET");
+  check(res.status === 200 && (await res.json()).aiProvider === "google", "AI settings: a new user gets the default provider");
+  res = await api("PUT", { aiProvider: "google" });
+  check(res.status === 200, "AI settings: choosing the default provider is accepted");
+  check((await settingsRow())?.ai_provider === "google", "AI settings: and stored in Postgres (user_settings.ai_provider)");
+  res = await api("PUT", { aiProvider: "skynet" });
+  check(res.status === 400, "AI settings: an unknown provider is refused");
+  res = await api("PUT", { aiProvider: "anthropic" });
+  check(res.status === 402 || res.status === 400, "AI settings: a free user cannot save a Pro provider through the API", `(${res.status})`);
+  check((await settingsRow())?.ai_provider === "google", "AI settings: and the stored choice is unchanged");
+
+  // The browser syncs its own columns of the same row; that must not erase the provider.
+  res = await call("POST", "/rest/v1/user_settings?on_conflict=user_id", {
+    token: a.token, headers: { Prefer: "resolution=merge-duplicates,return=representation" }, body: { user_id: a.id, active_plan_id: "plan-smoke" },
+  });
+  check(res.status === 200 || res.status === 201, "AI settings: the browser can sync its own settings columns", `(${res.status} ${res.text.slice(0, 120)})`);
+  check((await settingsRow())?.ai_provider === "google" && (await settingsRow())?.active_plan_id === "plan-smoke", "AI settings: and doing so keeps the provider (and the plan) intact");
+
+  // The column is writable by its owner, so the Pro rule must hold at use time: a free user who writes a Pro provider
+  // straight into their row still sees, and gets, the default.
+  res = await call("PATCH", `/rest/v1/user_settings?user_id=eq.${a.id}`, { token: a.token, headers: { Prefer: "return=minimal" }, body: { ai_provider: "anthropic" } });
+  check(res.status === 204 || res.status === 200, "AI settings: a user can write their own row directly (so the API cannot be the only gate)", `(${res.status})`);
+  res = await api("GET");
+  check((await res.json()).aiProvider === "google", "AI settings: but a free user is still reported (and served) the default provider");
 } finally {
   for (const id of ids) {
     await call("DELETE", `/auth/v1/admin/users/${id}`, { token: SERVICE, apikey: SERVICE });
