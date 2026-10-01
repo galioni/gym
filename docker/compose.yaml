@@ -12,7 +12,6 @@
 #   migrate       (one-shot) applies supabase/migrations to db
 #   rest          Supabase REST API (PostgREST), browser -> DB with RLS
 #   gateway       Supabase's single /auth/v1 + /rest/v1 entrypoint (Kong)
-#   kv, kv-rest   Upstash KV (Redis + Upstash-compatible REST)
 #   deps/web/api  Vite dev server and the Vercel /api functions
 #   mail          (profile) captures GoTrue emails; stands in for the SMTP provider
 #   stripe        (profile) stripe-mock; stands in for api.stripe.com
@@ -123,29 +122,6 @@ services:
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
 
-  kv:
-    <<: *no-autostart
-    image: redis:7
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes:
-      - redisdata:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 3s
-      timeout: 3s
-      retries: 20
-
-  kv-rest:
-    <<: *no-autostart
-    image: hiett/serverless-redis-http:latest
-    depends_on:
-      kv:
-        condition: service_healthy
-    environment:
-      SRH_MODE: env
-      SRH_TOKEN: ${KV_REST_API_TOKEN}
-      SRH_CONNECTION_STRING: redis://kv:6379
-
   # One-shot: installs Linux dependencies into the node_modules volume when package-lock.json changes.
   deps:
     <<: *node
@@ -174,8 +150,6 @@ services:
     depends_on:
       deps:
         condition: service_completed_successfully
-      kv-rest:
-        condition: service_started
       gateway:
         condition: service_started
     env_file:
@@ -238,5 +212,4 @@ services:
 
 volumes:
   pgdata:
-  redisdata:
   node_modules:

@@ -7,7 +7,7 @@
  *   node scripts/local/gym.mjs init [--force]     generate .env.local with local-only secrets
  *   node scripts/local/gym.mjs up [profiles...]   start (profiles: mail, stripe, studio)
  *   node scripts/local/gym.mjs down               stop, keep data
- *   node scripts/local/gym.mjs reset              stop and DELETE all data (Postgres, Redis, node_modules volume)
+ *   node scripts/local/gym.mjs reset              stop and DELETE all data (Postgres, node_modules volume)
  *   node scripts/local/gym.mjs migrate            apply new files from supabase/migrations
  *   node scripts/local/gym.mjs test-db            run the database (RLS) tests against the running stack
  *   node scripts/local/gym.mjs test-sync          two-browser end-to-end sync test (stack must be up)
@@ -78,8 +78,6 @@ function init(force) {
     `SUPABASE_ANON_KEY=${anon}`,
     `SUPABASE_SERVICE_ROLE_KEY=${service}`,
     `SUPABASE_JWT_SECRET=${jwtSecret}`,
-    "KV_REST_API_URL=http://kv-rest:80",
-    `KV_REST_API_TOKEN=${randomBytes(16).toString("hex")}`,
     "",
     "# Stripe: only reachable while the `stripe` profile (stripe-mock) is running.",
     "STRIPE_SECRET_KEY=sk_test_local_mock",

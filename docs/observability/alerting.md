@@ -52,7 +52,7 @@ done
 ```
 
 2. 5xx alert test:
-- In preview only, temporarily set an invalid `KV_REST_API_URL` value and redeploy.
+- In preview only, temporarily set an invalid `SUPABASE_URL` value and redeploy.
 - Send at least 20 authenticated sync requests in 5 minutes.
 - Verify `api_5xx_rate_warning` triggers.
 - Revert env and confirm alert recovers.

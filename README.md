@@ -1,13 +1,12 @@
 # Daily Grind
 
-Local-first workout tracker with AI-generated training plans, cloud sync, and Stripe subscriptions. Built with React + TypeScript (Vite), Vercel serverless API, Supabase auth, Upstash KV.
+Local-first workout tracker with AI-generated training plans, cloud sync, and Stripe subscriptions. Built with React + TypeScript (Vite), Vercel serverless API, Supabase (Postgres + auth).
 
 ## Prerequisites
 
 - **Node.js 20+** (CI runs on Node 20; `node -v` to verify)
 - **Vercel account** — for running the API locally and deploying
 - **Supabase project** — auth (Google OAuth + email/password must be enabled in the Supabase dashboard)
-- **Upstash Redis database** — for cloud sync and subscription state
 - **Stripe account** — for subscription billing
 - **OpenAI API key** — for AI plan generation
 
@@ -79,7 +78,7 @@ Application logic depends on repository interfaces; storage details stay in infr
 - **Backup** — export and import full JSON backup (workout data + templates)
 - **Landing page** — marketing page shown to unauthenticated visitors; supports Google OAuth and email/password sign-in, sign-up (with email confirmation flow), and password reset (with in-app set-password screen)
 - **Subscription** — Stripe-backed Pro plan; free users get local-only access
-- **Account deletion** — permanently deletes the auth account (and with it all Postgres data), any legacy KV sync data, and the Stripe customer record
+- **Account deletion** — permanently deletes the auth account (and with it all Postgres data) and the Stripe customer record
 
 ## User Flow
 
@@ -100,9 +99,6 @@ localStorage keys:
 - Weight reminder: `daily-workout-tracker:weight-reminder`
 - Onboarding complete: `daily-workout-tracker:onboarded:v1`
 
-Upstash KV keys:
-- Legacy cloud sync (no longer written, removed with the account): `sync:{userId}:workout-data`, `sync:{userId}:templates`, `sync:{userId}:plans`
-
 ## API Routes
 
 | Route | Method | Auth | Description |
@@ -112,7 +108,7 @@ Upstash KV keys:
 | `/api/create-checkout-session` | POST | Required | Creates Stripe Checkout session, returns redirect URL. |
 | `/api/billing-portal` | POST | Required | Creates Stripe Customer Portal session, returns redirect URL. |
 | `/api/stripe-webhook` | POST | Stripe signature | Handles `checkout.session.completed`, `customer.subscription.updated/deleted`. Updates the `subscriptions` table; processed event ids are kept in `stripe_events` so retries are not applied twice. |
-| `/api/delete-account` | DELETE | Required | Deletes the Stripe customer, any legacy KV sync data and the Supabase auth account (which removes all of the user's Postgres data). |
+| `/api/delete-account` | DELETE | Required | Deletes the Stripe customer and the Supabase auth account (which removes all of the user's Postgres data). |
 
 ## Subscription Model
 
@@ -150,8 +146,6 @@ Upstash KV keys:
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_JWT_SECRET` — found in Supabase → Project Settings → API → JWT Secret; used to verify tokens in every API handler
 - `SUPABASE_SERVICE_ROLE_KEY` — required for account deletion (`/api/delete-account`)
-- `KV_REST_API_URL` (or `STORAGE_KV_REST_API_URL`)
-- `KV_REST_API_TOKEN` (or `STORAGE_KV_REST_API_TOKEN`)
 - `OPENAI_API_KEY`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET` — from Stripe dashboard after registering the webhook endpoint
@@ -195,7 +189,6 @@ npm run gym:test-sync         # two real browsers, one account: automatic sync, 
 | `migrate` (one-shot) | applies `supabase/migrations` | same image as `db` |
 | `rest` | Supabase REST (PostgREST) | `public.ecr.aws/supabase/postgrest` |
 | `gateway` | Supabase gateway (`/auth/v1`, `/rest/v1`) | `caddy:2-alpine` |
-| `kv` + `kv-rest` | Upstash KV | `redis:7` + `hiett/serverless-redis-http` |
 | `deps`, `web`, `api` | Vite + Vercel `/api` functions | `node:24-bookworm-slim` (`scripts/local/dev-api.ts` replaces `vercel dev`) |
 | `mail` (profile) | SMTP provider | `axllent/mailpit` |
 | `stripe` (profile) | api.stripe.com | `stripe/stripe-mock` |
@@ -205,7 +198,7 @@ Database schema lives in `supabase/migrations` (Supabase CLI layout, so the same
 
 ### How sync works
 
-Workouts, templates, plans and a few account preferences (the active plan and plan details) are stored in the browser (instant, works offline) and in Postgres, which is the source of truth for every signed-in user. Sync runs automatically: after sign-in, a few seconds after edits, when the connection returns, when the tab regains focus and every 5 minutes. It is a three-way merge against the last state both sides agreed on, **item by item** (a day, a template, a plan), so an ordinary edit is never reported as a conflict and edits to different templates on two devices simply combine; only the very same item changed on both is a conflict you are asked about. Deleting an item on one device deletes it on the others unless it was edited elsewhere since (an edit beats a delete). The header shows the live state: Synced, Syncing, Offline, or Needs attention (tap it for details). Deletions propagate as soft deletes. **Free plan:** an account without Pro syncs once every 30 days, in both directions, from Settings → Sync (the app asks before using the month). The first sync on a new device runs on its own but only downloads, so signing in on a new phone restores your data without spending the month; the database refuses uploads outside the monthly window, and Pro syncs automatically and without limit. The allowance is switched by `app_flags.sync_allowance` in the database. The browser talks to Postgres directly through PostgREST with the user's own token; row level security (see `supabase/migrations`) keeps users apart. Billing state and the AI provider choice live in Postgres; KV is no longer used by the app: rate limits are counted in Postgres too, and the only remaining reference is deleting legacy sync keys when an account is deleted. It is removed in the last step of Phase 15.
+Workouts, templates, plans and a few account preferences (the active plan and plan details) are stored in the browser (instant, works offline) and in Postgres, which is the source of truth for every signed-in user. Sync runs automatically: after sign-in, a few seconds after edits, when the connection returns, when the tab regains focus and every 5 minutes. It is a three-way merge against the last state both sides agreed on, **item by item** (a day, a template, a plan), so an ordinary edit is never reported as a conflict and edits to different templates on two devices simply combine; only the very same item changed on both is a conflict you are asked about. Deleting an item on one device deletes it on the others unless it was edited elsewhere since (an edit beats a delete). The header shows the live state: Synced, Syncing, Offline, or Needs attention (tap it for details). Deletions propagate as soft deletes. **Free plan:** an account without Pro syncs once every 30 days, in both directions, from Settings → Sync (the app asks before using the month). The first sync on a new device runs on its own but only downloads, so signing in on a new phone restores your data without spending the month; the database refuses uploads outside the monthly window, and Pro syncs automatically and without limit. The allowance is switched by `app_flags.sync_allowance` in the database. The browser talks to Postgres directly through PostgREST with the user's own token; row level security (see `supabase/migrations`) keeps users apart. Billing state and the AI provider choice live in Postgres; Nothing else stores user data: rate limits are counted in Postgres too.
 
 **Account limits.** The limits depend on the plan and are enforced in the database (`supabase/migrations/*_row_limits.sql`, made plan-aware by `*_plan_row_limits.sql`) because the browser writes to it directly: **Pro** 5,000 days, 200 session templates and 100 plans; **Free** 1,000 days, 5 templates (the 4 built-in starters plus one of your own) and 20 plans. Pro means an active or trialing Pro subscription. Editing existing data always works, deleting frees room, restoring a deleted day counts like a new one, and the check is safe under concurrent requests. Dropping to Free never deletes anything: it only blocks adding beyond the Free limits. When a limit is hit, Postgres rejects only the new items that do not fit, with code `PT422` (HTTP 422). The app uploads in an order that cannot deadlock (edits to items already in the cloud, then deletions, then new items one by one up to the limit), so edits and deletions always sync, the new items that fit are stored, and changes from your other devices still arrive; the app shows a one-time "Cloud storage limit reached" notice and the reason in Settings → Sync, and nothing is lost locally. To change a limit, replace `row_limit(table, is_pro)` in a new migration.
 
@@ -244,8 +237,6 @@ vercel env add SUPABASE_URL production
 vercel env add SUPABASE_ANON_KEY production
 vercel env add SUPABASE_JWT_SECRET production
 vercel env add SUPABASE_SERVICE_ROLE_KEY production
-vercel env add KV_REST_API_URL production
-vercel env add KV_REST_API_TOKEN production
 vercel env add OPENAI_API_KEY production
 vercel env add STRIPE_SECRET_KEY production
 vercel env add STRIPE_WEBHOOK_SECRET production
