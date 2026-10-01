@@ -1,8 +1,9 @@
 import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight, parseJsonBody } from "./_lib/http.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
 import { requireAuth } from "./_lib/authContext.js";
-import { getRequiredVercelKvEnv, getEnabledProviders, type AiProvider } from "./_lib/apiEnv.js";
-import { getUserSettings, setUserSettings } from "./_lib/userSettingsKv.js";
+import { getEnabledProviders, type AiProvider } from "./_lib/apiEnv.js";
+import { getUserSettings, setAiProvider } from "./_lib/userSettingsStore.js";
+import { resolveAiProvider } from "./_lib/aiProvider.js";
 import { getSubscription, hasProAccess } from "./_lib/subscriptionGuard.js";
 
 const VALID_PROVIDERS = new Set<string>(["google", "anthropic", "openai"]);
@@ -22,11 +23,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     const auth = await requireAuth(req, res);
     if (!auth) return;
 
-    const kvEnv = getRequiredVercelKvEnv();
-
     if (req.method === "GET") {
-      const settings = await getUserSettings(auth.userId, kvEnv);
-      res.status(200).json({ aiProvider: settings.aiProvider ?? "google" });
+      // Report what plan generation will actually use, so the screen never shows a choice that is not in effect.
+      const [settings, subscription] = await Promise.all([getUserSettings(auth.userId), getSubscription(auth.userId)]);
+      res.status(200).json({
+        aiProvider: resolveAiProvider(settings.aiProvider, hasProAccess(subscription), getEnabledProviders()),
+      });
       return;
     }
 
@@ -53,8 +55,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       }
     }
 
-    const existing = await getUserSettings(auth.userId, kvEnv);
-    await setUserSettings(auth.userId, { ...existing, aiProvider: provider as AiProvider }, kvEnv);
+    await setAiProvider(auth.userId, provider as AiProvider);
 
     res.status(200).json({ aiProvider: provider });
   } catch (error) {

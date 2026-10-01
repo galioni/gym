@@ -3,7 +3,8 @@ import { requireAuth } from "./_lib/authContext.js";
 import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight, parseJsonBody, getHeader } from "./_lib/http.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
 import { getAiModelForProvider, getEnabledProviders, getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
-import { getUserSettings } from "./_lib/userSettingsKv.js";
+import { getUserSettings } from "./_lib/userSettingsStore.js";
+import { resolveAiProvider } from "./_lib/aiProvider.js";
 import { getSubscription, hasProAccess } from "./_lib/subscriptionGuard.js";
 import { checkRateLimit, FixedWindowRateLimiter } from "./_lib/rateLimiter.js";
 
@@ -168,18 +169,14 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       }
     }
 
-    const kvEnv = getRequiredVercelKvEnv();
     const [subscription, userSettings] = await Promise.all([
       getSubscription(auth.userId),
-      getUserSettings(auth.userId, kvEnv),
+      getUserSettings(auth.userId),
     ]);
 
     const enabledProviders = getEnabledProviders();
     const isPro = hasProAccess(subscription);
-    const requestedProvider = userSettings.aiProvider ?? "google";
-    const provider = isPro && enabledProviders.includes(requestedProvider)
-      ? requestedProvider
-      : "google";
+    const provider = resolveAiProvider(userSettings.aiProvider, isPro, enabledProviders);
 
     const body = parseJsonBody<unknown>(req, null);
     const input = validate(body);

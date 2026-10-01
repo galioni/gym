@@ -65,7 +65,9 @@ KV is still used for billing state, user settings, push subscriptions and rate l
   hits a database error now answers 5xx so Stripe retries, instead of dropping the event. Shipped as two PRs because migrations
   apply on merge: schema first, then code. Nothing was migrated from KV (no subscribers). The `subscription:*`,
   `stripe_customer:*` and `stripe_event:*` KV keys are now unused
-- [ ] User settings (AI provider): use `user_settings`; migrate `api/user-settings` and `api/generate-plan`
+- [x] User settings (slice 15.2, 2026-10-01): the AI provider is `user_settings.ai_provider`; `api/user-settings` and `api/generate-plan` use it
+  through the service role. No schema change. The Pro rule is enforced where the provider is *used* (`resolveAiProvider`), because the
+  column is writable by its owner; `GET` reports the effective provider. The `user_settings:*` KV keys are now unused
 - [ ] Push subscriptions and reminder de-duplication: new table(s) plus a migration; the `/api/push-*` routes the client
   calls are not present in `api/` yet, confirm whether the feature is live before porting
 - [ ] Rate limiting: replace the KV counters (Postgres counter table or a hosted limiter)
