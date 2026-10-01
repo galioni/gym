@@ -1,7 +1,6 @@
 import { requireAuth } from "./_lib/authContext.js";
 import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight, parseJsonBody, isAllowedReturnUrl } from "./_lib/http.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
-import { getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
 import { getSubscription } from "./_lib/subscriptionGuard.js";
 import { createBillingPortalSession } from "./_lib/stripeClient.js";
 
@@ -28,8 +27,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       return;
     }
 
-    const kvEnv = getRequiredVercelKvEnv();
-    const subscription = await getSubscription(auth.userId, kvEnv);
+    const subscription = await getSubscription(auth.userId);
 
     if (!subscription.stripeCustomerId) {
       res.status(400).json({ error: "No active subscription found." });

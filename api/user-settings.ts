@@ -46,7 +46,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     }
 
     if (provider !== "google") {
-      const subscription = await getSubscription(auth.userId, kvEnv);
+      const subscription = await getSubscription(auth.userId);
       if (!hasProAccess(subscription)) {
         res.status(402).json({ error: "Selecting a non-default AI provider requires a Pro subscription." });
         return;

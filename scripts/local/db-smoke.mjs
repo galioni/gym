@@ -5,6 +5,7 @@
  * Complements supabase/tests/rls.test.sql (which forges claims inside Postgres) by proving the JWT secret,
  * role mapping and routing agree across auth, rest and db. Creates two throwaway users and deletes them.
  */
+import { createHmac } from "node:crypto";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -135,6 +136,44 @@ try {
   // Service role (server only) bypasses RLS.
   res = await call("GET", `/rest/v1/workout_days?user_id=eq.${a.id}&day=eq.2026-10-01`, { token: SERVICE, apikey: SERVICE });
   check(res.status === 200 && res.json?.length === 1, "service role can read across users (server-side only)");
+
+  // Billing: real signed Stripe webhooks -> API -> Postgres (subscriptions + stripe_events), then the user-facing endpoint.
+  const API = `http://localhost:${env.GYM_API_PORT ?? 3010}`;
+  const tag = Date.now();
+  const customer = `cus_smoke_${tag}`;
+  const webhook = async (id, type, object) => {
+    const raw = JSON.stringify({ id, type, data: { object } });
+    const t = Math.floor(Date.now() / 1000);
+    const v1 = createHmac("sha256", env.STRIPE_WEBHOOK_SECRET).update(`${t}.${raw}`, "utf8").digest("hex");
+    const r = await fetch(`${API}/api/stripe-webhook`, { method: "POST", headers: { "stripe-signature": `t=${t},v1=${v1}`, "Content-Type": "application/json" }, body: raw });
+    return r.status;
+  };
+  const subscriptionRow = async () => (await call("GET", `/rest/v1/subscriptions?user_id=eq.${a.id}`, { token: SERVICE, apikey: SERVICE })).json?.[0];
+
+  check((await webhook(`evt_smoke_${tag}_1`, "checkout.session.completed", { client_reference_id: a.id, customer })) === 200, "webhook: checkout completed is accepted");
+  let row = await subscriptionRow();
+  check(row?.plan === "pro" && row?.status === "active" && row?.stripe_customer_id === customer, "webhook: the user becomes Pro and is linked to the Stripe customer in Postgres", JSON.stringify(row));
+
+  res = await fetch(`${API}/api/subscription`, { headers: { Authorization: `Bearer ${a.token}` } });
+  const mine = await res.json().catch(() => null);
+  check(res.status === 200 && mine?.plan === "pro" && mine?.stripeCustomerId === customer, "GET /api/subscription returns the Pro plan for the signed-in user", JSON.stringify(mine));
+
+  check((await webhook(`evt_smoke_${tag}_2`, "customer.subscription.updated", { customer, status: "canceled", current_period_end: 1893456000 })) === 200, "webhook: a lifecycle event for a known customer is accepted");
+  row = await subscriptionRow();
+  check(row?.plan === "free" && row?.status === "canceled", "webhook: a canceled subscription drops the user to free", JSON.stringify(row));
+
+  check((await webhook(`evt_smoke_${tag}_2`, "customer.subscription.updated", { customer, status: "active", current_period_end: 1893456000 })) === 200, "webhook: a repeated event id is acknowledged");
+  row = await subscriptionRow();
+  check(row?.plan === "free", "webhook: and not applied a second time (de-duplicated in Postgres)", JSON.stringify(row));
+
+  check((await webhook(`evt_smoke_${tag}_3`, "customer.subscription.updated", { customer: "cus_unknown", status: "active" })) === 200, "webhook: an unknown customer is acknowledged");
+  check((await subscriptionRow())?.plan === "free", "webhook: and changes nobody");
+
+  res = await call("GET", `/rest/v1/stripe_events?event_id=like.evt_smoke_${tag}_*`, { token: SERVICE, apikey: SERVICE });
+  check(res.status === 200 && res.json?.length === 2, "webhook: applied events are recorded (the ignored unknown-customer one is not)", `(${res.text.slice(0, 120)})`);
+  res = await call("GET", "/rest/v1/stripe_events", { token: a.token });
+  check(res.status === 401 || res.status === 403, "a signed-in user cannot read webhook events", `(${res.status})`);
+  await call("DELETE", `/rest/v1/stripe_events?event_id=like.evt_smoke_${tag}_*`, { token: SERVICE, apikey: SERVICE });
 } finally {
   for (const id of ids) {
     await call("DELETE", `/auth/v1/admin/users/${id}`, { token: SERVICE, apikey: SERVICE });

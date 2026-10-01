@@ -1,12 +1,8 @@
 import { requireAuth } from "./_lib/authContext.js";
 import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight, parseJsonBody, isAllowedReturnUrl } from "./_lib/http.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
-import { getRequiredVercelKvEnv, getStripeProPriceId } from "./_lib/apiEnv.js";
-import {
-  getSubscription,
-  setSubscription,
-  setStripeCustomerMapping,
-} from "./_lib/subscriptionGuard.js";
+import { getStripeProPriceId } from "./_lib/apiEnv.js";
+import { getSubscription, setSubscription } from "./_lib/subscriptionGuard.js";
 import {
   createStripeCustomer,
   createCheckoutSession,
@@ -35,8 +31,7 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       return;
     }
 
-    const kvEnv = getRequiredVercelKvEnv();
-    const subscription = await getSubscription(auth.userId, kvEnv);
+    const subscription = await getSubscription(auth.userId);
 
     // Create or reuse Stripe customer
     let stripeCustomerId = subscription.stripeCustomerId;
@@ -44,9 +39,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       const customer = await createStripeCustomer(auth.email, auth.userId);
       stripeCustomerId = customer.id;
 
-      // Store both mappings
-      await setSubscription(auth.userId, { ...subscription, stripeCustomerId }, kvEnv);
-      await setStripeCustomerMapping(stripeCustomerId, auth.userId, kvEnv);
+      // The customer id on the user's subscription row is also how the webhook finds the user later.
+      await setSubscription(auth.userId, { ...subscription, stripeCustomerId });
     }
 
     const session = await createCheckoutSession(

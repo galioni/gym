@@ -1,4 +1,5 @@
-import { RequiredVercelKvEnv } from "./apiEnv.js";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "./supabaseAdmin.js";
 
 export interface SubscriptionInfo {
   plan: "free" | "pro";
@@ -14,20 +15,11 @@ const FREE: SubscriptionInfo = {
   currentPeriodEnd: null,
 };
 
-async function kvPipeline(
-  kvEnv: RequiredVercelKvEnv,
-  commands: unknown[][]
-): Promise<unknown[]> {
-  const response = await fetch(`${kvEnv.kvRestApiUrl}/pipeline`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${kvEnv.kvRestApiToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(commands),
-  });
-  if (!response.ok) throw new Error(`KV pipeline failed: ${response.status}`);
-  return response.json() as Promise<unknown[]>;
+interface SubscriptionRow {
+  plan: string;
+  status: string;
+  stripe_customer_id: string | null;
+  current_period_end: string | null;
 }
 
 /** Full Pro access: active or trialing subscription. */
@@ -38,81 +30,85 @@ export function hasProAccess(subscription: SubscriptionInfo): boolean {
   );
 }
 
-export async function getSubscription(
-  userId: string,
-  kvEnv: RequiredVercelKvEnv
-): Promise<SubscriptionInfo> {
-  try {
-    const results = await kvPipeline(kvEnv, [["GET", `subscription:${userId}`]]);
-    const raw = (results[0] as { result: string | null }).result;
-    if (!raw) return FREE;
-    return JSON.parse(raw) as SubscriptionInfo;
-  } catch {
-    // Fail open — don't block users if KV is unavailable
-    return FREE;
-  }
+function fromRow(row: SubscriptionRow): SubscriptionInfo {
+  return {
+    plan: row.plan === "pro" ? "pro" : "free",
+    status: row.status,
+    stripeCustomerId: row.stripe_customer_id,
+    currentPeriodEnd: row.current_period_end,
+  };
 }
 
-function subscriptionTtlSeconds(info: SubscriptionInfo): number {
-  const THIRTY_DAYS_S = 30 * 24 * 60 * 60;
-  if (info.currentPeriodEnd) {
-    const secondsUntilEnd = Math.floor(
-      (new Date(info.currentPeriodEnd).getTime() - Date.now()) / 1000
-    );
-    // Keep the record for 30 days beyond the period end so webhook delays and
-    // grace-period checks don't cause a surprise downgrade. Minimum 1 day.
-    return Math.max(secondsUntilEnd + THIRTY_DAYS_S, 24 * 60 * 60);
+/**
+ * Reads a user's subscription (table `subscriptions`; no row means free). Fails open to free if the database cannot
+ * be reached, so an outage never locks anyone out of the app, at the cost of a paying user briefly seeing free.
+ */
+export async function getSubscription(
+  userId: string,
+  db: SupabaseClient = getSupabaseAdmin()
+): Promise<SubscriptionInfo> {
+  try {
+    const { data, error } = await db
+      .from("subscriptions")
+      .select("plan, status, stripe_customer_id, current_period_end")
+      .eq("user_id", userId)
+      .maybeSingle<SubscriptionRow>();
+    if (error) throw new Error(error.message);
+    return data ? fromRow(data) : FREE;
+  } catch (err) {
+    console.warn("[subscriptionGuard] Could not read subscription; treating as free", err);
+    return FREE;
   }
-  // No period end (free/inactive) — expire after 30 days; refreshed on next webhook.
-  return THIRTY_DAYS_S;
 }
 
 export async function setSubscription(
   userId: string,
   info: SubscriptionInfo,
-  kvEnv: RequiredVercelKvEnv
+  db: SupabaseClient = getSupabaseAdmin()
 ): Promise<void> {
-  const ttl = subscriptionTtlSeconds(info);
-  await kvPipeline(kvEnv, [
-    ["SET", `subscription:${userId}`, JSON.stringify(info), "EX", ttl],
-  ]);
+  const { error } = await db.from("subscriptions").upsert(
+    {
+      user_id: userId,
+      plan: info.plan,
+      status: info.status,
+      stripe_customer_id: info.stripeCustomerId,
+      current_period_end: info.currentPeriodEnd,
+    },
+    { onConflict: "user_id" }
+  );
+  if (error) throw new Error(`Could not save subscription: ${error.message}`);
 }
 
+/**
+ * Finds the user who owns a Stripe customer. Throws if the database cannot be read: the webhook then answers 5xx and
+ * Stripe retries, instead of silently dropping the event as "unknown customer".
+ */
 export async function getStripeCustomerUserId(
   stripeCustomerId: string,
-  kvEnv: RequiredVercelKvEnv
+  db: SupabaseClient = getSupabaseAdmin()
 ): Promise<string | null> {
-  try {
-    const results = await kvPipeline(kvEnv, [["GET", `stripe_customer:${stripeCustomerId}`]]);
-    const raw = (results[0] as { result: string | null }).result;
-    return raw ?? null;
-  } catch {
-    return null;
-  }
+  const { data, error } = await db
+    .from("subscriptions")
+    .select("user_id")
+    .eq("stripe_customer_id", stripeCustomerId)
+    .maybeSingle<{ user_id: string }>();
+  if (error) throw new Error(`Could not look up Stripe customer: ${error.message}`);
+  return data?.user_id ?? null;
 }
-
-export async function setStripeCustomerMapping(
-  stripeCustomerId: string,
-  userId: string,
-  kvEnv: RequiredVercelKvEnv
-): Promise<void> {
-  await kvPipeline(kvEnv, [["SET", `stripe_customer:${stripeCustomerId}`, userId]]);
-}
-
-const STRIPE_EVENT_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 
 /**
  * Returns true if this Stripe event ID has already been processed.
- * Fails open (returns false) if KV is unreachable — prefer double-processing
- * over silently dropping events.
+ * Fails open (returns false) if the database is unreachable: prefer double-processing (every handler is an
+ * idempotent upsert) over silently dropping events.
  */
 export async function isStripeEventProcessed(
   eventId: string,
-  kvEnv: RequiredVercelKvEnv
+  db: SupabaseClient = getSupabaseAdmin()
 ): Promise<boolean> {
   try {
-    const results = await kvPipeline(kvEnv, [["GET", `stripe_event:${eventId}`]]);
-    return (results[0] as { result: string | null }).result !== null;
+    const { data, error } = await db.from("stripe_events").select("event_id").eq("event_id", eventId).maybeSingle();
+    if (error) throw new Error(error.message);
+    return data !== null;
   } catch {
     return false;
   }
@@ -124,31 +120,12 @@ export async function isStripeEventProcessed(
  */
 export async function markStripeEventProcessed(
   eventId: string,
-  kvEnv: RequiredVercelKvEnv
+  db: SupabaseClient = getSupabaseAdmin()
 ): Promise<void> {
   try {
-    await kvPipeline(kvEnv, [
-      ["SET", `stripe_event:${eventId}`, "1", "EX", String(STRIPE_EVENT_TTL_SECONDS)],
-    ]);
+    const { error } = await db.from("stripe_events").upsert({ event_id: eventId }, { onConflict: "event_id", ignoreDuplicates: true });
+    if (error) throw new Error(error.message);
   } catch (err) {
     console.warn("[subscriptionGuard] Failed to mark stripe event processed", { eventId, err });
   }
-}
-
-/**
- * Atomically writes both the customer→user mapping and the subscription record
- * in a single KV pipeline round-trip. Use this on checkout.session.completed
- * instead of calling setStripeCustomerMapping + setSubscription separately.
- */
-export async function setStripeCustomerMappingAndSubscription(
-  stripeCustomerId: string,
-  userId: string,
-  info: SubscriptionInfo,
-  kvEnv: RequiredVercelKvEnv
-): Promise<void> {
-  const ttl = subscriptionTtlSeconds(info);
-  await kvPipeline(kvEnv, [
-    ["SET", `stripe_customer:${stripeCustomerId}`, userId],
-    ["SET", `subscription:${userId}`, JSON.stringify(info), "EX", ttl],
-  ]);
 }

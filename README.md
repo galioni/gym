@@ -73,13 +73,13 @@ Application logic depends on repository interfaces; storage details stay in infr
 - **Timers** — per-section stopwatch with auto-scroll; running state persists when navigating to Settings and back
 - **Friday weight check** — configurable banner shown on Fridays between midnight and a target time
 - **Duplicate notes/weight** — one-tap copy of the previous day's notes and body weight
-- **Cloud sync** — Pro feature; syncs workout data, templates, and plans across devices via Upstash KV
+- **Cloud sync** — automatic; syncs workout data, templates, plans and preferences across devices through Postgres (free today; planned limits are in `docs/NEXT_PHASES_README.md`)
 - **Conflict resolution** — manual keep-local / keep-cloud picker when sync detects diverged data
 - **Restore points** — pre-sync snapshots with rollback support
 - **Backup** — export and import full JSON backup (workout data + templates)
 - **Landing page** — marketing page shown to unauthenticated visitors; supports Google OAuth and email/password sign-in, sign-up (with email confirmation flow), and password reset (with in-app set-password screen)
 - **Subscription** — Stripe-backed Pro plan; free users get local-only access
-- **Account deletion** — permanently deletes auth account, all KV data, the Stripe customer→user mapping key, and the Stripe customer record
+- **Account deletion** — permanently deletes the auth account (and with it all Postgres data), any legacy KV sync data, and the Stripe customer record
 
 ## User Flow
 
@@ -102,8 +102,6 @@ localStorage keys:
 
 Upstash KV keys:
 - Legacy cloud sync (no longer written, removed with the account): `sync:{userId}:workout-data`, `sync:{userId}:templates`, `sync:{userId}:plans`
-- Subscription: `subscription:{userId}`
-- Stripe customer mapping: `stripe_customer:{stripeCustomerId}` → `userId`
 - Rate limiting: `ratelimit:{routeKey}:{userId}:{windowSlot}`
 
 ## API Routes
@@ -111,19 +109,18 @@ Upstash KV keys:
 | Route | Method | Auth | Description |
 |-------|--------|------|-------------|
 | `/api/generate-plan` | POST | Required | Calls OpenAI `gpt-4o-mini` to generate training templates. Rate-limited: 5/min per IP, 10/hr per user. |
-| `/api/subscription` | GET | Required | Returns current plan and subscription status from KV. |
+| `/api/subscription` | GET | Required | Returns the current plan and subscription status (table `subscriptions` in Postgres). |
 | `/api/create-checkout-session` | POST | Required | Creates Stripe Checkout session, returns redirect URL. |
 | `/api/billing-portal` | POST | Required | Creates Stripe Customer Portal session, returns redirect URL. |
-| `/api/stripe-webhook` | POST | Stripe signature | Handles `checkout.session.completed`, `customer.subscription.updated/deleted`. Updates KV. |
-| `/api/delete-account` | DELETE | Required | Deletes all KV data, Stripe customer key, and Supabase auth account. |
+| `/api/stripe-webhook` | POST | Stripe signature | Handles `checkout.session.completed`, `customer.subscription.updated/deleted`. Updates the `subscriptions` table; processed event ids are kept in `stripe_events` so retries are not applied twice. |
+| `/api/delete-account` | DELETE | Required | Deletes the Stripe customer, any legacy KV sync data and the Supabase auth account (which removes all of the user's Postgres data). |
 
 ## Subscription Model
 
 - **Free**: local workout tracking, templates, AI plan generation
-- **Pro**: cloud sync across devices (gated at API level — 402 for free users)
-- **Grace period**: read-only cloud access continues for 7 days after a Pro subscription lapses, so recently-expired users can still retrieve their data
+- **Pro**: choice of AI model for plan generation (gated at API level — 402 for free users)
 
-Subscription state is stored in Upstash KV (not Supabase). The Stripe webhook writes to KV on payment events. Sync routes read from KV on every request.
+Subscription state is stored in Postgres (table `subscriptions`, one row per user; the Stripe customer id on that row is how the webhook finds the user). Only the server writes it, with the service-role key; a user can read their own row. Today the only Pro benefit is choosing the AI model; the planned Free/Pro limits are specified in `docs/NEXT_PHASES_README.md`.
 
 ## Authentication
 
@@ -200,7 +197,7 @@ Database schema lives in `supabase/migrations` (Supabase CLI layout, so the same
 
 ### How sync works
 
-Workouts, templates, plans and a few account preferences (the active plan and plan details) are stored in the browser (instant, works offline) and in Postgres, which is the source of truth for every signed-in user. Sync runs automatically: after sign-in, a few seconds after edits, when the connection returns, when the tab regains focus and every 5 minutes. It is a three-way merge against the last state both sides agreed on, **item by item** (a day, a template, a plan), so an ordinary edit is never reported as a conflict and edits to different templates on two devices simply combine; only the very same item changed on both is a conflict you are asked about. Deleting an item on one device deletes it on the others unless it was edited elsewhere since (an edit beats a delete). The header shows the live state: Synced, Syncing, Offline, or Needs attention (tap it for details). Deletions propagate as soft deletes. The browser talks to Postgres directly through PostgREST with the user's own token; row level security (see `supabase/migrations`) keeps users apart. KV is still used for billing state, rate limits and push subscriptions.
+Workouts, templates, plans and a few account preferences (the active plan and plan details) are stored in the browser (instant, works offline) and in Postgres, which is the source of truth for every signed-in user. Sync runs automatically: after sign-in, a few seconds after edits, when the connection returns, when the tab regains focus and every 5 minutes. It is a three-way merge against the last state both sides agreed on, **item by item** (a day, a template, a plan), so an ordinary edit is never reported as a conflict and edits to different templates on two devices simply combine; only the very same item changed on both is a conflict you are asked about. Deleting an item on one device deletes it on the others unless it was edited elsewhere since (an edit beats a delete). The header shows the live state: Synced, Syncing, Offline, or Needs attention (tap it for details). Deletions propagate as soft deletes. The browser talks to Postgres directly through PostgREST with the user's own token; row level security (see `supabase/migrations`) keeps users apart. Billing state lives in Postgres; KV is still used for AI settings, rate limits and push subscriptions.
 
 **Account limits.** Each account can store up to 5,000 days, 200 session templates and 100 plans, enforced in the database (`supabase/migrations/*_row_limits.sql`) because the browser writes to it directly. Editing existing data always works, deleting frees room, and the check is safe under concurrent requests. When a limit is hit, Postgres rejects the write with code `PT422` (HTTP 422); the app shows a one-time "Cloud storage limit reached" notice and the reason in Settings → Sync, and nothing is lost locally. To change a limit, replace `row_limit()` in a new migration.
 
@@ -212,7 +209,7 @@ Ports (localhost only): app 5180, API 3010, gateway 54321, Postgres 54322, Mailp
 
 Notes:
 - Sign-ups auto-confirm by default. To test confirmation emails set `GYM_AUTOCONFIRM=false` in `.env.local`, recreate `auth`, and start the `mail` profile.
-- Pro is stored in KV. Grant it to a local user: `docker compose -p gym-app exec kv redis-cli SET subscription:<userId> '{"plan":"pro","status":"active","stripeCustomerId":"cus_local","currentPeriodEnd":"2099-01-01T00:00:00.000Z"}'`
+- Pro is a row in `public.subscriptions`. Grant it to a local user: `docker compose --env-file .env.local -f docker/compose.yaml -p gym-app exec db psql -U supabase_admin -d postgres -c "insert into public.subscriptions (user_id, plan, status) values ('<userId>', 'pro', 'active') on conflict (user_id) do update set plan = 'pro', status = 'active'"`
 - Not available offline: Google sign-in, web-push delivery, AI plan generation (needs a provider key).
 - `gym:init` refuses to overwrite a generated `.env.local` because an existing Postgres volume keeps its original password; `gym:reset` first, then `gym:init -- --force`.
 

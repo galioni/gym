@@ -7,16 +7,11 @@ import { createMockResponse } from "./_lib/testHelpers";
 // ── module mocks ─────────────────────────────────────────────────────────────
 
 vi.mock("./_lib/apiEnv.js", () => ({
-  getRequiredVercelKvEnv: vi.fn(() => ({
-    kvRestApiUrl: "https://kv.test",
-    kvRestApiToken: "test-token",
-  })),
   getStripeWebhookSecret: vi.fn(() => TEST_SECRET),
 }));
 
 vi.mock("./_lib/subscriptionGuard.js", () => ({
   getStripeCustomerUserId: vi.fn(),
-  setStripeCustomerMappingAndSubscription: vi.fn(),
   setSubscription: vi.fn(),
   isStripeEventProcessed: vi.fn(),
   markStripeEventProcessed: vi.fn(),
@@ -33,13 +28,11 @@ import {
   getStripeCustomerUserId,
   isStripeEventProcessed,
   markStripeEventProcessed,
-  setStripeCustomerMappingAndSubscription,
   setSubscription,
 } from "./_lib/subscriptionGuard.js";
 import { getStripeSubscription } from "./_lib/stripeClient.js";
 
 const mockGetStripeCustomerUserId = vi.mocked(getStripeCustomerUserId);
-const mockSetStripeCustomerMappingAndSubscription = vi.mocked(setStripeCustomerMappingAndSubscription);
 const mockSetSubscription = vi.mocked(setSubscription);
 const mockIsStripeEventProcessed = vi.mocked(isStripeEventProcessed);
 const mockMarkStripeEventProcessed = vi.mocked(markStripeEventProcessed);
@@ -92,7 +85,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockIsStripeEventProcessed.mockResolvedValue(false);
   mockMarkStripeEventProcessed.mockResolvedValue(undefined);
-  mockSetStripeCustomerMappingAndSubscription.mockResolvedValue(undefined);
   mockSetSubscription.mockResolvedValue(undefined);
   mockGetStripeSubscription.mockResolvedValue({
     id: "sub_456",
@@ -162,7 +154,7 @@ describe("POST /api/stripe-webhook — request validation", () => {
 });
 
 describe("POST /api/stripe-webhook — checkout.session.completed", () => {
-  it("fetches the subscription directly and writes its real status/period end to KV", async () => {
+  it("fetches the subscription directly and saves its real status/period end", async () => {
     const body = stripeEvent("checkout.session.completed", {
       client_reference_id: "user-abc",
       customer: "cus_123",
@@ -176,17 +168,15 @@ describe("POST /api/stripe-webhook — checkout.session.completed", () => {
     expect(state.statusCode).toBe(200);
     expect((state.jsonPayload as { received: boolean }).received).toBe(true);
     expect(mockGetStripeSubscription).toHaveBeenCalledWith("sub_456");
-    expect(mockSetStripeCustomerMappingAndSubscription).toHaveBeenCalledOnce();
-    expect(mockSetStripeCustomerMappingAndSubscription).toHaveBeenCalledWith(
-      "cus_123",
+    expect(mockSetSubscription).toHaveBeenCalledOnce();
+    expect(mockSetSubscription).toHaveBeenCalledWith(
       "user-abc",
       expect.objectContaining({
         plan: "pro",
         status: "active",
         stripeCustomerId: "cus_123",
         currentPeriodEnd: new Date(DEFAULT_SUB_PERIOD_END_UNIX * 1000).toISOString(),
-      }),
-      expect.any(Object)
+      })
     );
   });
 
@@ -194,8 +184,7 @@ describe("POST /api/stripe-webhook — checkout.session.completed", () => {
     // Regression test: previously currentPeriodEnd was hardcoded to null here and
     // only filled in by a later customer.subscription.updated event. If that event
     // happened to arrive first, the customer→user mapping didn't exist yet, so it was
-    // silently dropped and currentPeriodEnd stayed null — putting the KV record on a
-    // flat 30-day TTL instead of one tied to the real billing period.
+    // silently dropped and currentPeriodEnd stayed null — leaving the stored subscription without its real billing period.
     const body = stripeEvent("checkout.session.completed", {
       client_reference_id: "user-abc",
       customer: "cus_123",
@@ -206,7 +195,7 @@ describe("POST /api/stripe-webhook — checkout.session.completed", () => {
 
     await handler(req, res);
 
-    const writtenInfo = mockSetStripeCustomerMappingAndSubscription.mock.calls[0][2];
+    const writtenInfo = mockSetSubscription.mock.calls[0][1];
     expect(writtenInfo.currentPeriodEnd).not.toBeNull();
   });
 
@@ -224,20 +213,18 @@ describe("POST /api/stripe-webhook — checkout.session.completed", () => {
     await handler(req, res);
 
     expect(state.statusCode).toBe(200);
-    expect(mockSetStripeCustomerMappingAndSubscription).toHaveBeenCalledWith(
-      "cus_123",
+    expect(mockSetSubscription).toHaveBeenCalledWith(
       "user-abc",
       expect.objectContaining({
         plan: "pro",
         status: "active",
         stripeCustomerId: "cus_123",
         currentPeriodEnd: null,
-      }),
-      expect.any(Object)
+      })
     );
   });
 
-  it("returns 200 without writing KV when client_reference_id is missing", async () => {
+  it("returns 200 without saving a subscription when client_reference_id is missing", async () => {
     const body = stripeEvent("checkout.session.completed", {
       customer: "cus_123",
       subscription: "sub_456",
@@ -249,10 +236,10 @@ describe("POST /api/stripe-webhook — checkout.session.completed", () => {
     await handler(req, res);
 
     expect(state.statusCode).toBe(200);
-    expect(mockSetStripeCustomerMappingAndSubscription).not.toHaveBeenCalled();
+    expect(mockSetSubscription).not.toHaveBeenCalled();
   });
 
-  it("returns 200 without writing KV when customer is missing", async () => {
+  it("returns 200 without saving a subscription when customer is missing", async () => {
     const body = stripeEvent("checkout.session.completed", {
       client_reference_id: "user-abc",
       // no customer
@@ -263,7 +250,7 @@ describe("POST /api/stripe-webhook — checkout.session.completed", () => {
     await handler(req, res);
 
     expect(state.statusCode).toBe(200);
-    expect(mockSetStripeCustomerMappingAndSubscription).not.toHaveBeenCalled();
+    expect(mockSetSubscription).not.toHaveBeenCalled();
   });
 });
 
@@ -292,8 +279,7 @@ describe("POST /api/stripe-webhook — customer.subscription.updated", () => {
         status: "active",
         stripeCustomerId: "cus_123",
         currentPeriodEnd: PERIOD_END_ISO,
-      }),
-      expect.any(Object)
+      })
     );
   });
 
@@ -311,8 +297,7 @@ describe("POST /api/stripe-webhook — customer.subscription.updated", () => {
 
     expect(mockSetSubscription).toHaveBeenCalledWith(
       "user-trial",
-      expect.objectContaining({ plan: "pro", status: "trialing" }),
-      expect.any(Object)
+      expect.objectContaining({ plan: "pro", status: "trialing" })
     );
   });
 
@@ -331,12 +316,11 @@ describe("POST /api/stripe-webhook — customer.subscription.updated", () => {
     expect(state.statusCode).toBe(200);
     expect(mockSetSubscription).toHaveBeenCalledWith(
       "user-lapsed",
-      expect.objectContaining({ plan: "free", status: "canceled" }),
-      expect.any(Object)
+      expect.objectContaining({ plan: "free", status: "canceled" })
     );
   });
 
-  it("returns 200 without writing KV when customer id is missing", async () => {
+  it("returns 200 without saving a subscription when customer id is missing", async () => {
     const body = stripeEvent("customer.subscription.updated", {
       status: "active",
     });
@@ -349,7 +333,7 @@ describe("POST /api/stripe-webhook — customer.subscription.updated", () => {
     expect(mockSetSubscription).not.toHaveBeenCalled();
   });
 
-  it("returns 200 without writing KV when customer has no user mapping", async () => {
+  it("returns 200 without saving a subscription when customer has no user mapping", async () => {
     mockGetStripeCustomerUserId.mockResolvedValue(null);
     const body = stripeEvent("customer.subscription.updated", {
       customer: "cus_unknown",
@@ -382,8 +366,7 @@ describe("POST /api/stripe-webhook — customer.subscription.deleted", () => {
     expect(state.statusCode).toBe(200);
     expect(mockSetSubscription).toHaveBeenCalledWith(
       "user-deleted",
-      expect.objectContaining({ plan: "free", status: "canceled", currentPeriodEnd: null }),
-      expect.any(Object)
+      expect.objectContaining({ plan: "free", status: "canceled", currentPeriodEnd: null })
     );
   });
 });
@@ -398,7 +381,7 @@ describe("POST /api/stripe-webhook — unknown event types", () => {
 
     expect(state.statusCode).toBe(200);
     expect(mockSetSubscription).not.toHaveBeenCalled();
-    expect(mockSetStripeCustomerMappingAndSubscription).not.toHaveBeenCalled();
+    expect(mockSetSubscription).not.toHaveBeenCalled();
   });
 });
 
@@ -418,7 +401,7 @@ describe("POST /api/stripe-webhook — idempotency", () => {
 
     expect(state.statusCode).toBe(200);
     expect((state.jsonPayload as { received: boolean }).received).toBe(true);
-    expect(mockSetStripeCustomerMappingAndSubscription).not.toHaveBeenCalled();
+    expect(mockSetSubscription).not.toHaveBeenCalled();
     expect(mockMarkStripeEventProcessed).not.toHaveBeenCalled();
   });
 
@@ -436,7 +419,7 @@ describe("POST /api/stripe-webhook — idempotency", () => {
     await handler(req, res);
 
     expect(state.statusCode).toBe(200);
-    expect(mockMarkStripeEventProcessed).toHaveBeenCalledWith("evt_new_001", expect.any(Object));
+    expect(mockMarkStripeEventProcessed).toHaveBeenCalledWith("evt_new_001");
   });
 
   it("marks event processed after customer.subscription.updated", async () => {
@@ -454,22 +437,22 @@ describe("POST /api/stripe-webhook — idempotency", () => {
     await handler(req, res);
 
     expect(state.statusCode).toBe(200);
-    expect(mockMarkStripeEventProcessed).toHaveBeenCalledWith("evt_sub_update_001", expect.any(Object));
+    expect(mockMarkStripeEventProcessed).toHaveBeenCalledWith("evt_sub_update_001");
   });
 
-  it("processes event normally when KV is down (isStripeEventProcessed returns false)", async () => {
-    mockIsStripeEventProcessed.mockResolvedValue(false); // KV down, fail open
+  it("processes event normally when the database is down (isStripeEventProcessed returns false)", async () => {
+    mockIsStripeEventProcessed.mockResolvedValue(false); // database down, fail open
 
     const body = stripeEvent("checkout.session.completed", {
       client_reference_id: "user-abc",
       customer: "cus_123",
-    }, "evt_kv_down");
+    }, "evt_db_down");
     const req = makeRequest(body);
     const { res, state } = createMockResponse();
 
     await handler(req, res);
 
     expect(state.statusCode).toBe(200);
-    expect(mockSetStripeCustomerMappingAndSubscription).toHaveBeenCalledOnce();
+    expect(mockSetSubscription).toHaveBeenCalledOnce();
   });
 });
