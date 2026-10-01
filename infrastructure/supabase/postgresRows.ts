@@ -25,6 +25,8 @@ export interface WorkoutDayRow {
   check_notes: string;
   updated_at?: string;
   deleted_at: string | null;
+  /** Hash of the content the day had when it was deleted. The database blanks the content of deleted days. */
+  deleted_hash?: string | null;
 }
 
 export interface TemplateRow {
@@ -80,6 +82,7 @@ export function dayToRow(userId: string, date: string, day: DayData): WorkoutDay
     weight: clampText(day.weight, 32),
     check_notes: clampText(day.checkNotes, 20000),
     deleted_at: null,
+    deleted_hash: null,
   };
 }
 
