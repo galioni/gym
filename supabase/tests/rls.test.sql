@@ -363,6 +363,87 @@ end $$;
 select gym_test.expect_count($$select 1 from public.stripe_events where event_id in ('evt_new', 'evt_recent')$$, 2, 'newer event ids are kept');
 
 -- ===========================================================================
+-- Rate limiting: sliding log, atomic, server only
+-- ===========================================================================
+select gym_test.become_service();
+do $$
+declare r record;
+begin
+  select * into r from public.consume_rate_limit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'gen', 2, 3600);
+  if not r.allowed then raise exception 'FAIL first call must be allowed'; end if;
+  select * into r from public.consume_rate_limit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'gen', 2, 3600);
+  if not r.allowed then raise exception 'FAIL second call must be allowed'; end if;
+  select * into r from public.consume_rate_limit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'gen', 2, 3600);
+  if r.allowed or r.retry_after_seconds not between 3590 and 3600 then
+    raise exception 'FAIL third call must be refused with ~1h retry, got % / %', r.allowed, r.retry_after_seconds;
+  end if;
+  raise notice 'ok   - two calls allowed, the third refused with an exact retry-after';
+end $$;
+select gym_test.expect_count($$select 1 from public.rate_events where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' and route = 'gen'$$, 2,
+  'refused calls are not recorded');
+do $$
+declare r record;
+begin
+  select * into r from public.consume_rate_limit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'other-route', 2, 3600);
+  if not r.allowed then raise exception 'FAIL another route has its own allowance'; end if;
+  select * into r from public.consume_rate_limit('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'gen', 2, 3600);
+  if not r.allowed then raise exception 'FAIL another user has their own allowance'; end if;
+  raise notice 'ok   - routes and users are limited independently';
+end $$;
+
+-- Exactness: a single old call decides when the next one is allowed.
+select gym_test.become_admin();
+insert into public.rate_events (user_id, route, at) values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'daily', now() - interval '50 minutes');
+select gym_test.become_service();
+do $$
+declare r record;
+begin
+  select * into r from public.consume_rate_limit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'daily', 1, 3600);
+  if r.allowed or r.retry_after_seconds not between 590 and 610 then
+    raise exception 'FAIL a call 50 minutes ago blocks a 1-per-hour limit for ~10 more minutes, got % / %', r.allowed, r.retry_after_seconds;
+  end if;
+  select * into r from public.consume_rate_limit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'daily', 1, 86400);
+  if r.allowed or r.retry_after_seconds not between 86400 - 3000 - 10 and 86400 - 3000 + 10 then
+    raise exception 'FAIL the same call blocks a 1-per-day limit for ~23h10m, got % / %', r.allowed, r.retry_after_seconds;
+  end if;
+  raise notice 'ok   - the window is sliding: the same call is old enough for one limit and not for another';
+end $$;
+select gym_test.become_admin();
+update public.rate_events set at = now() - interval '2 hours' where route = 'daily';
+select gym_test.become_service();
+do $$
+declare r record;
+begin
+  select * into r from public.consume_rate_limit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'daily', 1, 3600);
+  if not r.allowed then raise exception 'FAIL a call older than the window no longer counts'; end if;
+  raise notice 'ok   - calls older than the window stop counting';
+end $$;
+
+select gym_test.expect_error($$select * from public.consume_rate_limit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'bad', 0, 60)$$, '22023', 'a limit of zero is rejected');
+select gym_test.expect_error($$select * from public.consume_rate_limit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'bad', 1, 0)$$, '22023', 'a zero-length window is rejected');
+
+select gym_test.become('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+select gym_test.expect_error($$select * from public.consume_rate_limit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'gen', 100, 60)$$, '42501', 'a signed-in user cannot call the limiter (they could only grant themselves allowance)');
+select gym_test.expect_error($$select * from public.rate_events$$, '42501', 'a signed-in user cannot read rate events');
+select gym_test.become_anon();
+select gym_test.expect_error($$select * from public.consume_rate_limit('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'gen', 100, 60)$$, '42501', 'anon cannot call the limiter');
+select gym_test.become_service();
+select gym_test.expect_error($$select public.purge_rate_events()$$, '42501', 'the service role cannot run the purge through the API');
+
+select gym_test.become_admin();
+insert into public.rate_events (user_id, route, at) values
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'purge-old', now() - interval '3 days'),
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'purge-new', now() - interval '1 day');
+do $$
+declare removed bigint;
+begin
+  removed := public.purge_rate_events();
+  if removed <> 1 then raise exception 'FAIL the purge should remove only the 3-day-old event, removed %', removed; end if;
+  raise notice 'ok   - the purge removes events older than 2 days and keeps the rest';
+end $$;
+select gym_test.expect_count($$select 1 from public.rate_events where route = 'purge-new'$$, 1, 'a one-day-old event survives the purge (the longest plan window is a day)');
+
+-- ===========================================================================
 -- Account deletion cascades to all user data
 -- ===========================================================================
 select gym_test.become_admin();
@@ -372,7 +453,8 @@ select gym_test.expect_count($$
   union all select 1 from public.templates where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
   union all select 1 from public.plans where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
   union all select 1 from public.user_settings where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
-  union all select 1 from public.subscriptions where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$, 0,
+  union all select 1 from public.subscriptions where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+  union all select 1 from public.rate_events where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'$$, 0,
   'deleting a user removes all of their rows');
 select gym_test.expect_count($$select 1 from public.workout_days where user_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'$$, 1,
   'other users'' data is untouched by that deletion');
