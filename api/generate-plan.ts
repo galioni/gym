@@ -9,7 +9,7 @@ import { describeGeneratePlanLimit, generatePlanLimit } from "./_lib/planLimits.
 import { getSubscription, hasProAccess } from "./_lib/subscriptionGuard.js";
 import { checkRateLimit, FixedWindowRateLimiter } from "./_lib/rateLimiter.js";
 
-// IP-based burst protection — first line of defense before Redis auth check.
+// IP-based burst protection — first line of defense before the per-user check.
 const ipLimiter = new FixedWindowRateLimiter({ maxRequests: 5, windowMs: 60_000 });
 
 const VALID_GOALS = new Set(["strength", "muscle", "weight_loss", "endurance", "active"]);

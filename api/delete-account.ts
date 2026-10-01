@@ -2,28 +2,9 @@ import { createClient } from "@supabase/supabase-js";
 import { requireAuth } from "./_lib/authContext.js";
 import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight } from "./_lib/http.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
-import { getRequiredApiEnv, getRequiredVercelKvEnv } from "./_lib/apiEnv.js";
+import { getRequiredApiEnv } from "./_lib/apiEnv.js";
 import { getSubscription } from "./_lib/subscriptionGuard.js";
 import { deleteStripeCustomer } from "./_lib/stripeClient.js";
-
-async function deleteKvKeys(
-  keys: string[],
-  kvRestApiUrl: string,
-  kvRestApiToken: string
-): Promise<void> {
-  if (keys.length === 0) return;
-  const response = await fetch(`${kvRestApiUrl}/pipeline`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${kvRestApiToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(keys.map((key) => ["DEL", key])),
-  });
-  if (!response.ok) {
-    throw new Error(`KV delete pipeline failed: ${response.status}`);
-  }
-}
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   const observation = attachApiRequestObservability(req, res, "/api/delete-account");
@@ -40,8 +21,6 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     if (!auth) return;
     observation.setUserId(auth.userId);
 
-    const kvEnv = getRequiredVercelKvEnv();
-
     // Read the subscription first: it holds the Stripe customer id, which is gone once the auth user is deleted.
     let stripeCustomerId: string | null = null;
     try {
@@ -51,15 +30,8 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       // Non-fatal — proceed even if subscription lookup fails.
     }
 
-    // Delete all server-side data for this user.
-    // Everything current (workouts, settings, subscription) lives in Postgres and goes with the auth user through the
-    // cascade below. Only legacy KV sync documents (no longer written) need deleting here.
-    const keysToDelete = [
-      `sync:${auth.userId}:workout-data`,
-      `sync:${auth.userId}:templates`,
-      `sync:${auth.userId}:plans`,
-    ];
-    await deleteKvKeys(keysToDelete, kvEnv.kvRestApiUrl, kvEnv.kvRestApiToken);
+    // Everything else (workouts, settings, subscription) lives in Postgres and goes with the auth user through the cascade
+    // below.
 
     // Best-effort: delete the Stripe customer record. Non-fatal if it fails.
     if (stripeCustomerId) {

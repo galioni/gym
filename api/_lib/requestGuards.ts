@@ -43,7 +43,7 @@ function getClientIp(req: ApiRequest): string {
 /**
  * Shared abuse-protection guards for sync API routes.
  * Uses an in-memory FixedWindowRateLimiter for IP-based burst protection.
- * For per-user cross-instance limits use the Redis-backed checkRateLimit in your handler.
+ * For per-user cross-instance limits use the Postgres-backed limiter (consume_rate_limit) in your handler.
  */
 export class SyncRequestGuards {
   public constructor(
