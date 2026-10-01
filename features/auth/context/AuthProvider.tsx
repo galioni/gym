@@ -3,10 +3,9 @@ import { AuthService } from "../../../application/auth/AuthService";
 import { AuthSession } from "../../../interfaces/auth/AuthSession";
 import { SupabaseAuthSessionRepository } from "../../../infrastructure/auth/supabase/SupabaseAuthSessionRepository";
 import { AuthViewModel } from "../types/AuthViewModel";
+import { AuthContext } from "./AuthContext";
 
 const defaultAuthService = new AuthService(new SupabaseAuthSessionRepository());
-
-export const AuthContext = React.createContext<AuthViewModel | undefined>(undefined);
 
 interface AuthProviderProps {
   children: React.ReactNode;

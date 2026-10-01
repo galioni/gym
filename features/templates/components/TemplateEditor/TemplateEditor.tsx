@@ -10,7 +10,6 @@ import {
   CreateSessionTypeResult,
   DeleteSessionTypeResult,
   RenameSessionTypeResult,
-  isBuiltInSessionType,
 } from "../../../../application/workout/sessionTypes/sessionTypeRules";
 import { TemplateRowList } from "./TemplateRowList";
 import { ExerciseLibraryEntry } from "../../../../application/workout/exerciseLibrary";
@@ -164,7 +163,6 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
     }
   };
 
-  const isCustomSession = !isBuiltInSessionType(session);
   const currentOption = sessionOptions.find((o) => o.value === session);
 
   return (
@@ -185,13 +183,13 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                 if (e.key === "Escape") { setIsRenaming(false); setRenameLabel(""); }
               }}
               placeholder="Session name"
-              className="flex-1 bg-background/70 border border-primary/40 rounded-xl px-3 py-2 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-primary/50"
+              className="flex-1 bg-background/70 border border-primary/40 rounded-xl px-3 py-2 text-sm text-label outline-none focus:ring-2 focus:ring-primary/50"
             />
             <button
               type="button"
               onClick={() => void handleRenameSubmit()}
               disabled={renameLabel.trim().length === 0}
-              className="text-primary hover:text-white disabled:opacity-40 transition-colors"
+              className="text-primary hover:text-label disabled:opacity-40 transition-colors"
               title="Confirm rename"
             >
               <Check size={16} />
@@ -199,7 +197,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
             <button
               type="button"
               onClick={() => { setIsRenaming(false); setRenameLabel(""); }}
-              className="text-slate-500 hover:text-slate-300 transition-colors"
+              className="text-labelTertiary hover:text-labelSecondary transition-colors"
               title="Cancel"
             >
               <X size={16} />
@@ -213,7 +211,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                 setSession(e.target.value as SessionType);
                 setIsCreating(false);
               }}
-              className="flex-1 min-w-0 bg-background/70 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
+              className="flex-1 min-w-0 bg-background/70 border border-border rounded-xl px-3 py-2 text-sm text-label focus:ring-2 focus:ring-primary/50 outline-none"
             >
               {(() => {
                 const userOpts = sessionOptions.filter((o) => o.source !== "ai");
@@ -238,7 +236,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
             <button
               type="button"
               onClick={() => { setIsRenaming(true); setRenameLabel(currentOption?.label ?? ""); }}
-              className="text-slate-500 hover:text-slate-300 transition-colors p-1"
+              className="text-labelTertiary hover:text-labelSecondary transition-colors p-1"
               title="Rename session type"
             >
               <Pencil size={15} />
@@ -246,7 +244,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
             <button
               type="button"
               onClick={() => void handleDeleteSession()}
-              className="text-slate-500 hover:text-red-400 transition-colors p-1"
+              className="text-labelTertiary hover:text-dangerText transition-colors p-1"
               title="Delete session type"
             >
               <Trash2 size={15} />
@@ -257,7 +255,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
               className={`flex items-center gap-1 px-2 sm:px-3 py-2 rounded-xl border text-sm transition-colors shrink-0 ${
                 isCreating
                   ? "border-primary/40 bg-primary/10 text-primary"
-                  : "border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/30"
+                  : "border-border text-labelSecondary hover:text-label hover:border-borderStrong"
               }`}
               title="Add new session type"
             >
@@ -277,7 +275,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
               AI Generated
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-wider text-slate-400 border border-white/10 bg-white/5 px-1.5 py-0.5 rounded">
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-wider text-labelSecondary border border-border bg-fill/5 px-1.5 py-0.5 rounded">
               User Created
             </span>
           )}
@@ -288,8 +286,8 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
       {!isRenaming && (
         <div className="mb-4">
           <div className="flex items-center gap-1.5 mb-1.5">
-            <Youtube size={12} className="text-red-400/70" />
-            <span className="text-[11px] text-slate-500 font-medium">Session video URL</span>
+            <Youtube size={12} className="text-dangerText/70" />
+            <span className="text-[11px] text-labelTertiary font-medium">Session video URL</span>
           </div>
           <input
             type="url"
@@ -297,14 +295,14 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
             onChange={(e) => setVideoUrl(e.target.value)}
             onBlur={handleVideoUrlBlur}
             placeholder="https://youtube.com/watch?v=..."
-            className={`w-full bg-background/70 border rounded-xl px-3 py-2 text-sm text-slate-200 outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-slate-600 ${
+            className={`w-full bg-background/70 border rounded-xl px-3 py-2 text-sm text-label outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-labelTertiary ${
               videoUrl.trim().length > 0 && !YOUTUBE_URL_RE.test(videoUrl.trim())
                 ? "border-danger/50"
-                : "border-white/10"
+                : "border-border"
             }`}
           />
           {videoUrl.trim().length > 0 && !YOUTUBE_URL_RE.test(videoUrl.trim()) && (
-            <p className="mt-1 text-[11px] text-red-400">Must be a valid YouTube URL</p>
+            <p className="mt-1 text-[11px] text-dangerText">Must be a valid YouTube URL</p>
           )}
         </div>
       )}
@@ -323,7 +321,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
               if (e.key === "Escape") { setIsCreating(false); setNewLabel(""); }
             }}
             placeholder="e.g. Morning Yoga"
-            className="flex-1 bg-background/70 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-primary/50"
+            className="flex-1 bg-background/70 border border-border rounded-xl px-3 py-2 text-sm text-label outline-none focus:ring-2 focus:ring-primary/50"
           />
           <Button
             variant="primary"
@@ -352,7 +350,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
               type="button"
               onClick={() => setSection(s)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                section === s ? "bg-white/10 text-white" : "text-slate-400 hover:text-slate-200"
+                section === s ? "bg-fill/10 text-label" : "text-labelSecondary hover:text-label"
               }`}
             >
               {s === "warmup" ? "Warm-up" : "Main"}
@@ -389,7 +387,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
 
       {/* Validation errors */}
       {errors.length > 0 && (
-        <div className="mb-3 rounded-xl border border-danger/40 bg-danger/10 p-3 text-xs text-red-200">
+        <div className="mb-3 rounded-xl border border-danger/40 bg-danger/10 p-3 text-xs text-dangerText">
           {errors[0].message}
         </div>
       )}
@@ -398,7 +396,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
       <TemplateRowList section={section} rows={rows} onRowsChange={setRows} library={exerciseLibrary} />
 
       {/* Footer */}
-      <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/10">
+      <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
         <Button
           variant="ghost"
           size="sm"

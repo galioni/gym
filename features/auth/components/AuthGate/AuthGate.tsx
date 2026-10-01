@@ -8,12 +8,12 @@ interface AuthGateProps {
 }
 
 export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
-  const { isLoading, isWorking, isPasswordRecovery, session, error, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, updatePassword, signOut } = useAuthSession();
+  const { isLoading, isWorking, isPasswordRecovery, session, error, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, updatePassword } = useAuthSession();
 
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-5">
-        <div className="rounded-2xl border border-white/10 bg-surface/70 px-6 py-4 text-sm text-slate-300">
+        <div className="rounded-2xl border border-border bg-surface/70 px-6 py-4 text-sm text-labelSecondary">
           Restoring secure session...
         </div>
       </div>

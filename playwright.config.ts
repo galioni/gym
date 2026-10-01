@@ -24,7 +24,6 @@ export default defineConfig({
       VITE_SUPABASE_URL: "https://placeholder.supabase.co",
       VITE_SUPABASE_ANON_KEY: "placeholder",
       VITE_SUPABASE_REDIRECT_URL: "http://localhost:4173",
-      VITE_SYNC_API_BASE_URL: "http://localhost:4173",
     },
   },
 });

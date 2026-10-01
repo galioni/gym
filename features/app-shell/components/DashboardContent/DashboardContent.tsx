@@ -1,6 +1,6 @@
 import React from "react";
 import { Youtube } from "lucide-react";
-import { DayData, Plan, SessionOption, SessionType } from "../../../../types";
+import { DayData, Plan, SessionOption } from "../../../../types";
 import { DashboardWorkoutGrid } from "./DashboardWorkoutGrid";
 import { MobileSessionControls } from "./MobileSessionControls";
 import { WeekPlanBar } from "./WeekPlanBar";
@@ -66,7 +66,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
 
       <div>
         <div className="flex items-center gap-2">
-          <h1 className="display-title text-2xl sm:text-3xl text-white leading-tight">
+          <h1 className="display-title text-2xl sm:text-3xl text-label leading-tight">
             {sessionLabel}
           </h1>
           {isAiSession && (
@@ -79,7 +79,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
               href={sessionVideoUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 self-center px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors text-xs font-medium"
+              className="inline-flex items-center gap-1.5 self-center px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-dangerText hover:bg-red-500/20 hover:text-dangerText transition-colors text-xs font-medium"
             >
               <Youtube size={13} />
               Watch
@@ -87,7 +87,7 @@ export const DashboardContent: React.FC<DashboardContentProps> = ({
           )}
         </div>
         {sessionFocus && (
-          <p className="text-sm text-slate-400 mt-0.5">{sessionFocus}</p>
+          <p className="text-sm text-labelSecondary mt-0.5">{sessionFocus}</p>
         )}
         {activePlan && allData && (
           <div className="mt-2">

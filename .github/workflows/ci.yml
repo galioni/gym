@@ -6,9 +6,14 @@ on:
   pull_request:
     branches: [main]
 
+# A newer push to the same branch makes the older run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ci:
-    name: Audit · Type-check · Test · Build · E2E
+    name: Audit · Lint · Type-check · Test · Build · E2E
     runs-on: ubuntu-latest
 
     steps:
@@ -27,6 +32,9 @@ jobs:
       - name: Audit dependencies
         run: npm audit --audit-level=high
 
+      - name: Lint
+        run: npx eslint . --max-warnings 0
+
       - name: Type check
         run: npx tsc --noEmit
 
@@ -39,7 +47,6 @@ jobs:
           VITE_SUPABASE_URL: https://placeholder.supabase.co
           VITE_SUPABASE_ANON_KEY: placeholder
           VITE_SUPABASE_REDIRECT_URL: http://localhost:5173
-          VITE_SYNC_API_BASE_URL: http://localhost:5173
 
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
@@ -53,4 +60,90 @@ jobs:
         with:
           name: playwright-report
           path: playwright-report/
+          retention-days: 7
+
+  # The real stack: Postgres + Auth + REST gateway + the app, in Docker, from an EMPTY database.
+  # Starting it applies every migration from scratch (so a migration that does not apply cleanly fails
+  # here), then the database tests prove row level security, limits and constraints, and the two-browser
+  # test proves sync end to end on each engine / device profile.
+  stack:
+    name: Database & sync · ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Chromium desktop
+            browser: chromium
+            device: ""
+            scenarios: sync,delete,settings
+            db-tests: true
+          - name: WebKit desktop
+            browser: webkit
+            device: ""
+            scenarios: sync,delete,settings
+            db-tests: false
+          # Deleting a day is swipe-only on a phone, so the phone profile runs the sync scenario.
+          - name: iPhone 13 (WebKit)
+            browser: webkit
+            device: iPhone 13
+            scenarios: sync
+            db-tests: false
+    env:
+      GYM_BROWSER: ${{ matrix.browser }}
+      GYM_DEVICE: ${{ matrix.device }}
+      GYM_SCENARIOS: ${{ matrix.scenarios }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Playwright browser
+        run: npx playwright install ${{ matrix.browser }} --with-deps
+
+      - name: Generate local-only secrets
+        run: npm run gym:init
+
+      - name: Start the stack (applies all migrations to an empty database)
+        run: npm run gym:up
+
+      - name: Wait for the app
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:5180/ >/dev/null && exit 0
+            sleep 2
+          done
+          echo "app did not come up" >&2
+          exit 1
+
+      - name: Migrations are idempotent
+        run: npm run gym:migrate
+
+      - name: Database tests (RLS, limits, constraints) and API smoke test
+        if: matrix.db-tests
+        run: npm run gym:test-db
+
+      - name: Two-browser sync test
+        run: npm run gym:test-sync
+
+      - name: Collect stack logs
+        if: failure()
+        run: docker compose --env-file .env.local -f docker/compose.yaml -p gym-app logs --no-color > stack-logs.txt || true
+
+      - name: Upload stack logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: stack-logs-${{ strategy.job-index }}
+          path: stack-logs.txt
           retention-days: 7

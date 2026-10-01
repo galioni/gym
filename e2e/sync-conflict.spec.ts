@@ -1,52 +1,11 @@
 import { test, expect } from "@playwright/test";
+import { buildMockSession, SUPABASE_SESSION_KEY } from "./helpers/mockSession";
 
 const ONBOARDING_KEY = "daily-workout-tracker:onboarded:v1";
 const WORKOUT_KEY = "daily-workout-tracker:v2";
 const SYNC_SETTINGS_KEY = "daily-workout-tracker:sync-settings:v1";
-// @supabase/auth-js GoTrueClient default storage key
-const SUPABASE_SESSION_KEY = "supabase.auth.token";
 
-function buildMockSession() {
-  const b64url = (data: unknown) =>
-    Buffer.from(JSON.stringify(data))
-      .toString("base64")
-      .replace(/=/g, "")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
-
-  const jwt = [
-    b64url({ alg: "HS256", typ: "JWT" }),
-    b64url({
-      sub: "user-e2e-sync",
-      email: "sync-e2e@example.com",
-      role: "authenticated",
-      aud: "authenticated",
-      exp: 1893456000,
-      iat: 1718352000,
-    }),
-    "fakesig",
-  ].join(".");
-
-  return {
-    access_token: jwt,
-    token_type: "bearer",
-    expires_in: 3600,
-    expires_at: 1893456000,
-    refresh_token: "fake-refresh-sync-e2e",
-    user: {
-      id: "user-e2e-sync",
-      aud: "authenticated",
-      role: "authenticated",
-      email: "sync-e2e@example.com",
-      app_metadata: {},
-      user_metadata: {},
-      created_at: "2024-01-01T00:00:00.000Z",
-      updated_at: "2024-01-01T00:00:00.000Z",
-    },
-  };
-}
-
-const MOCK_SESSION = buildMockSession();
+const MOCK_SESSION = buildMockSession({ id: "user-e2e-sync", email: "sync-e2e@example.com" });
 
 // Local workout data — has Squats in main for 2026-01-01
 const LOCAL_WORKOUT = {
@@ -68,56 +27,49 @@ const LOCAL_WORKOUT = {
   },
 };
 
-// Cloud workout data for the same date but with different exercises — triggers a conflict
-const CLOUD_WORKOUT_RESPONSE = {
-  version: 1,
-  updatedAt: "2026-06-10T14:00:00.000Z",
-  data: {
-    "2026-01-01": {
-      date: "2026-01-01",
-      sessionType: "gym",
-      warmup: [],
-      main: [{ id: "m1", text: "Deadlifts", target: "3×5", done: true }],
-      warmupNotes: "",
-      mainNotes: "cloud version",
-      warmupTimerMs: 0,
-      mainTimerMs: 0,
-      weight: "",
-      checkNotes: "",
-    },
-  },
+// The same date in Postgres with different exercises: the sync cannot tell who is right, so it is a conflict.
+const CLOUD_DAY_ROW = {
+  user_id: "user-e2e-sync",
+  day: "2026-01-01",
+  session_type: "gym",
+  warmup: [],
+  main: [{ id: "m1", text: "Deadlifts", target: "3×5", done: true }],
+  warmup_notes: "",
+  main_notes: "cloud version",
+  warmup_timer_ms: 0,
+  main_timer_ms: 0,
+  weight: "",
+  check_notes: "",
+  updated_at: "2026-06-10T14:00:00.000Z",
+  deleted_at: null,
 };
 
 test.describe("Sync conflict resolution UI", () => {
   test.beforeEach(async ({ page }) => {
-    // Abort Supabase auth endpoint calls — fake JWT avoids refresh
+    // Abort any other Supabase call (auth refresh etc.) — the fake JWT never needs one
     await page.route("**placeholder.supabase.co/**", (route) => route.abort());
 
-    // Mock cloud workout-data endpoint — returns conflicting data
-    await page.route("**/api/workout-data", async (route) => {
+    // PostgREST (registered after the catch-all above, so these take precedence). Reads return the
+    // conflicting day; writes are accepted.
+    await page.route("**placeholder.supabase.co/rest/v1/workout_days*", async (route) => {
       if (route.request().method() === "GET") {
-        await route.fulfill({ json: CLOUD_WORKOUT_RESPONSE });
+        await route.fulfill({ json: [CLOUD_DAY_ROW] });
       } else {
-        await route.fulfill({ json: { ok: true } });
+        await route.fulfill({ status: 201, json: [] });
       }
     });
-
-    // Mock templates — no cloud data (404 → no template conflict)
-    await page.route("**/api/templates*", async (route) => {
-      await route.fulfill({ status: 404, json: { error: "not found" } });
-    });
-
-    // Mock plans — no cloud data
-    await page.route("**/api/plans*", async (route) => {
-      await route.fulfill({ status: 404, json: { error: "not found" } });
-    });
+    for (const table of ["templates", "plans", "user_settings"]) {
+      await page.route(`**placeholder.supabase.co/rest/v1/${table}*`, async (route) => {
+        await route.fulfill(route.request().method() === "GET" ? { json: [] } : { status: 201, json: [] });
+      });
+    }
 
     await page.addInitScript(
       ({ sessionKey, sessionValue, onboardingKey, workoutKey, workoutValue, syncKey }) => {
         localStorage.setItem(sessionKey, JSON.stringify(sessionValue));
         localStorage.setItem(onboardingKey, "true");
         localStorage.setItem(workoutKey, JSON.stringify(workoutValue));
-        // No lastSyncedAt → first sync; both local and cloud have changes → conflict
+        // No sync base yet → local and cloud differ on the same day → conflict
         localStorage.setItem(syncKey, JSON.stringify({ mode: "cloud", lastSyncedAt: null, lastError: null }));
       },
       {
@@ -140,9 +92,7 @@ test.describe("Sync conflict resolution UI", () => {
     // Wait for the sync panel to appear
     await expect(page.getByText("Sync Settings")).toBeVisible({ timeout: 10_000 });
 
-    // Trigger sync
-    await page.getByRole("button", { name: "Sync Now" }).click();
-
+    // Sync runs on its own after sign-in, so the conflict is already waiting; no button press needed.
     // Wait for conflict UI to appear
     await expect(page.getByText("Workout data conflict")).toBeVisible({ timeout: 15_000 });
 
@@ -156,8 +106,10 @@ test.describe("Sync conflict resolution UI", () => {
     await page.getByTitle("Settings").click();
     await expect(page.getByText("Sync Settings")).toBeVisible({ timeout: 10_000 });
 
-    await page.getByRole("button", { name: "Sync Now" }).click();
     await expect(page.getByText("Workout data conflict")).toBeVisible({ timeout: 15_000 });
+
+    // Sync Now stays disabled until a side is chosen
+    await expect(page.getByRole("button", { name: "Sync Now" })).toBeDisabled();
 
     // Click "Keep this device" — the button should become highlighted (primary variant)
     const keepLocal = page.getByRole("button", { name: "Keep this device" });

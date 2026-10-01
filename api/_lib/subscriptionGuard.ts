@@ -30,25 +30,12 @@ async function kvPipeline(
   return response.json() as Promise<unknown[]>;
 }
 
-const GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-
 /** Full Pro access: active or trialing subscription. */
 export function hasProAccess(subscription: SubscriptionInfo): boolean {
   return (
     subscription.plan === "pro" &&
     (subscription.status === "active" || subscription.status === "trialing")
   );
-}
-
-/**
- * Read-only grace period access: allows GET requests for 7 days after
- * currentPeriodEnd so recently-lapsed users can still retrieve their data.
- */
-export function hasProReadAccess(subscription: SubscriptionInfo): boolean {
-  if (hasProAccess(subscription)) return true;
-  if (!subscription.currentPeriodEnd) return false;
-  const periodEnd = new Date(subscription.currentPeriodEnd).getTime();
-  return Date.now() <= periodEnd + GRACE_PERIOD_MS;
 }
 
 export async function getSubscription(

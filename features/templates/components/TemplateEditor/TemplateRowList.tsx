@@ -89,7 +89,7 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
               }
             }}
             onDragEnd={() => setDragIndex(null)}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-background/40 text-slate-500 cursor-default sm:cursor-grab sm:active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-background/40 text-labelTertiary cursor-default sm:cursor-grab sm:active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
             title="Drag to reorder"
             aria-label="Reorder row"
           >
@@ -118,7 +118,7 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
             onChange={(event) => handleRowChange(index, "target", event.target.value)}
             placeholder="Target (e.g. 3x8-12)"
             maxLength={TEMPLATE_TARGET_MAX_LENGTH}
-            className="col-span-3 bg-background/60 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-primary/50 sm:col-span-1"
+            className="col-span-3 bg-background/60 border border-border rounded-xl px-3 py-2 text-sm text-label outline-none focus:ring-2 focus:ring-primary/50 sm:col-span-1"
           />
           <Button
             variant="ghost"
@@ -137,14 +137,14 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
                 onChange={(event) => handleRowChange(index, "videoUrl", event.target.value)}
                 placeholder="YouTube URL (optional)"
                 autoFocus={!row.videoUrl}
-                className={`w-full bg-background/60 border rounded-lg px-2.5 py-1.5 text-[11px] text-slate-400 outline-none focus:ring-2 placeholder:text-slate-600 ${
+                className={`w-full bg-background/60 border rounded-lg px-2.5 py-1.5 text-[11px] text-labelSecondary outline-none focus:ring-2 placeholder:text-labelTertiary ${
                   row.videoUrl && !isValidYouTubeUrl(row.videoUrl)
                     ? "border-red-500/60 focus:ring-red-500/40"
-                    : "border-white/10 focus:ring-primary/50"
+                    : "border-border focus:ring-primary/50"
                 }`}
               />
               {row.videoUrl && !isValidYouTubeUrl(row.videoUrl) && (
-                <p className="flex items-center gap-1 text-xs text-red-400 pl-1">
+                <p className="flex items-center gap-1 text-xs text-dangerText pl-1">
                   <AlertCircle size={11} />
                   Must be a valid YouTube URL
                 </p>
@@ -155,7 +155,7 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
               <button
                 type="button"
                 onClick={() => setExpandedUrlRows((prev) => new Set(prev).add(row.id ?? `${section}-${index}`))}
-                className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
+                className="flex items-center gap-1.5 text-[11px] text-labelTertiary hover:text-labelSecondary transition-colors"
               >
                 <Link size={11} />
                 Add YT Link
@@ -170,7 +170,7 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
                 onChange={(event) => handleRowChange(index, "equipment", event.target.value)}
                 placeholder="Equipment (e.g. Barbell + squat rack)"
                 maxLength={50}
-                className="w-full bg-background/60 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-400 outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-slate-600"
+                className="w-full bg-background/60 border border-border rounded-lg px-2.5 py-1.5 text-[11px] text-labelSecondary outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-labelTertiary"
               />
               <textarea
                 value={row.description ?? ""}
@@ -178,7 +178,7 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
                 placeholder="How to perform (e.g. Feet shoulder-width apart, descend until thighs parallel, drive through heels)"
                 maxLength={200}
                 rows={2}
-                className="w-full bg-background/60 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-400 outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-slate-600 resize-none"
+                className="w-full bg-background/60 border border-border rounded-lg px-2.5 py-1.5 text-[11px] text-labelSecondary outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-labelTertiary resize-none"
               />
             </div>
           ) : (
@@ -186,7 +186,7 @@ export const TemplateRowList: React.FC<TemplateRowListProps> = ({
               <button
                 type="button"
                 onClick={() => setExpandedDetailRows((prev) => new Set(prev).add(row.id ?? `${section}-${index}`))}
-                className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
+                className="flex items-center gap-1.5 text-[11px] text-labelTertiary hover:text-labelSecondary transition-colors"
               >
                 <Info size={11} />
                 Add equipment &amp; description

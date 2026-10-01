@@ -44,10 +44,12 @@ export const SwipeToDeleteRow: React.FC<SwipeToDeleteRowProps> = ({ onDelete, ch
       {/* Red delete affordance revealed on swipe */}
       <div
         className={`absolute inset-y-0 right-0 flex items-center justify-center w-20 rounded-r-xl transition-colors ${
+          offset === 0 ? "invisible" : ""
+        } ${
           isFullyRevealed ? "bg-red-500" : "bg-red-500/15"
         }`}
       >
-        <Trash2 size={15} className={isFullyRevealed ? "text-white" : "text-red-400/70"} />
+        <Trash2 size={15} className={isFullyRevealed ? "text-white" : "text-dangerText/70"} />
       </div>
 
       <div

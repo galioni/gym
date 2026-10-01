@@ -8,12 +8,12 @@ interface CardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> 
 
 export const Card: React.FC<CardProps> = ({ className, title, headerAction, children, ...props }) => {
   return (
-    <div className={cn("glass rounded-[var(--radius-card)] p-5 md:p-6 border border-white/10", className)} {...props}>
+    <div className={cn("glass rounded-[var(--radius-card)] p-5 md:p-6 border border-border", className)} {...props}>
       {(title || headerAction) && (
-        <div className="mb-4 pb-2.5 border-b border-white/10">
+        <div className="mb-4 pb-2.5 border-b border-border">
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
             {title && (
-              <h2 className="display-title leading-tight text-xl sm:text-2xl md:text-[1.72rem] text-white tracking-[0.04em] break-words">
+              <h2 className="display-title leading-tight text-xl sm:text-2xl md:text-[1.72rem] text-label tracking-[0.04em] break-words">
                 {title}
               </h2>
             )}

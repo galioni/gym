@@ -1,9 +1,31 @@
-import { STORAGE_KEY, STORAGE_SCHEMA_VERSION, TEMPLATES } from "../../constants";
+import { DELETED_DAYS_STORAGE_KEY, STORAGE_KEY, STORAGE_SCHEMA_VERSION, TEMPLATES } from "../../constants";
 import { DayData } from "../../types";
 import { WorkoutDataRepository } from "../../interfaces/workout/WorkoutDataRepository";
-import { sanitizeDayDataRecord } from "../../application/workout/data/dayDataRules";
+import { sanitizeDayData, sanitizeDayDataRecord } from "../../application/workout/data/dayDataRules";
+import { dayContentHash } from "../../application/sync/contentHash";
+import { Tombstones } from "../../application/sync/deletionReconciliation";
 import { WorkoutDataSnapshot } from "../../application/sync/syncTypes";
 import { migrateRawWorkoutSnapshot } from "../../application/sync/migrations/snapshotMigrations";
+
+function readTombstones(): Tombstones {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(DELETED_DAYS_STORAGE_KEY) ?? "{}") as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed as Record<string, unknown>).filter(([, hash]) => typeof hash === "string")
+    ) as Tombstones;
+  } catch {
+    return {};
+  }
+}
+
+function writeTombstones(tombstones: Tombstones): void {
+  if (Object.keys(tombstones).length === 0) {
+    localStorage.removeItem(DELETED_DAYS_STORAGE_KEY);
+  } else {
+    localStorage.setItem(DELETED_DAYS_STORAGE_KEY, JSON.stringify(tombstones));
+  }
+}
 
 export class LocalStorageWorkoutDataRepository implements WorkoutDataRepository {
   public async readSnapshot(): Promise<WorkoutDataSnapshot | null> {
@@ -15,7 +37,7 @@ export class LocalStorageWorkoutDataRepository implements WorkoutDataRepository 
       const parsed = JSON.parse(raw) as unknown;
       const snapshot: WorkoutDataSnapshot = migrateRawWorkoutSnapshot(parsed);
       await this.writeSnapshot(snapshot);
-      return snapshot;
+      return { ...snapshot, deletedDays: readTombstones() };
     } catch (error) {
       console.error("Failed to parse workout storage, resetting to empty state.", error);
       localStorage.removeItem(STORAGE_KEY);
@@ -29,14 +51,31 @@ export class LocalStorageWorkoutDataRepository implements WorkoutDataRepository 
         `Cannot write workout data schema version ${snapshot.version}: app supports up to v${STORAGE_SCHEMA_VERSION}.`
       );
     }
+    const data = sanitizeDayDataRecord(snapshot.data, TEMPLATES);
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
         version: snapshot.version,
         updatedAt: snapshot.updatedAt,
-        data: sanitizeDayDataRecord(snapshot.data, TEMPLATES),
+        data,
       })
     );
+
+    // A day that is present again is no longer deleted; sync may also pass the exact set of tombstones to keep.
+    const tombstones = readTombstones();
+    for (const date of Object.keys(data)) delete tombstones[date];
+    if (snapshot.deletedDays) {
+      for (const date of Object.keys(tombstones)) {
+        if (!(date in snapshot.deletedDays)) delete tombstones[date];
+      }
+    }
+    writeTombstones(tombstones);
+  }
+
+  public async recordDeletion(date: string, day: DayData): Promise<void> {
+    const tombstones = readTombstones();
+    tombstones[date] = dayContentHash(sanitizeDayData(day, date, TEMPLATES));
+    writeTombstones(tombstones);
   }
 
   public async readAll(): Promise<Record<string, DayData>> {

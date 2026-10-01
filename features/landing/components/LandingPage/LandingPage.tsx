@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Dumbbell, Sparkles, ShieldCheck, Zap, RefreshCw, Mail, Eye, EyeOff, Check, X, Smartphone } from "lucide-react";
+import { Dumbbell, Sparkles, ShieldCheck, Zap, RefreshCw, Mail, Eye, EyeOff, Check, Smartphone } from "lucide-react";
 import { Button } from "../../../../components/ui/Button";
+
 
 type AuthMode = "signin" | "signup" | "reset";
 
@@ -15,10 +16,10 @@ interface LandingPageProps {
 
 function FeatureCard({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-2 transition-transform duration-300 hover:-translate-y-1 hover:border-white/20">
+    <div className="rounded-2xl border border-border bg-tile p-5 space-y-2 transition-transform duration-300 hover:-translate-y-1 hover:border-borderStrong">
       <div className="text-primary">{icon}</div>
-      <div className="text-base font-semibold text-white">{title}</div>
-      <div className="text-base text-slate-400 leading-relaxed">{body}</div>
+      <div className="text-base font-semibold text-label">{title}</div>
+      <div className="text-base text-labelSecondary leading-relaxed">{body}</div>
     </div>
   );
 }
@@ -136,12 +137,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const busy = isWorking || isSubmitting;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background text-slate-200">
+    <div className="relative min-h-screen overflow-hidden bg-background text-label">
 
       {/* Background gradient */}
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(160deg,rgb(10_13_19),rgb(6_10_17))]" />
-      <div className="motion-orb-a pointer-events-none absolute -top-20 -left-20 w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,rgb(72_213_151_/_0.12),transparent_65%)]" />
-      <div className="motion-orb-b pointer-events-none absolute -top-10 right-0 w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,rgb(111_208_255_/_0.15),transparent_65%)]" />
+      <div className="pointer-events-none absolute inset-0 landing-backdrop" />
+      <div className="motion-orb-a pointer-events-none absolute -top-20 -left-20 w-[600px] h-[600px] rounded-full landing-orb-a" />
+      <div className="motion-orb-b pointer-events-none absolute -top-10 right-0 w-[500px] h-[500px] rounded-full landing-orb-b" />
 
       <div className="relative mx-auto max-w-6xl px-5 lg:px-10">
 
@@ -156,8 +157,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
             <div className="motion-rise motion-delay-1">
-              <h1 className="display-title text-6xl sm:text-7xl lg:text-8xl text-white leading-none">Daily Grind</h1>
-              <p className="mt-4 text-lg text-slate-300 leading-relaxed max-w-md mx-auto lg:mx-0">
+              <h1 className="display-title text-6xl sm:text-7xl lg:text-8xl text-label leading-none">Daily Grind</h1>
+              <p className="mt-4 text-lg text-labelSecondary leading-relaxed max-w-md mx-auto lg:mx-0">
                 Tell the AI your goals. Get a personalised training plan in seconds. Track it every day — on any device.
               </p>
             </div>
@@ -167,10 +168,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {[
                 "AI-generated plans — Gemini included free, Claude & ChatGPT for Pro",
                 "Installable PWA — works on iOS, Android, and desktop",
-                "Local-first storage, cloud sync across devices on Pro",
+                "Local-first storage with automatic cloud sync across your devices",
                 "No streaks, no gamification — just your workout, tracked",
               ].map((item) => (
-                <li key={item} className="flex items-center gap-3 text-base text-slate-300">
+                <li key={item} className="flex items-center gap-3 text-base text-labelSecondary">
                   <Check size={16} className="text-primary shrink-0" />
                   {item}
                 </li>
@@ -180,11 +181,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           {/* Right: auth box */}
           <div className="motion-rise motion-delay-2 mt-10 lg:mt-0 lg:w-[22rem] lg:shrink-0 space-y-4">
-            <div className="rounded-[1.4rem] border border-white/10 bg-surface/60 backdrop-blur-xl p-5 space-y-4">
+            <div className="rounded-[1.4rem] border border-border bg-surface/60 backdrop-blur-xl p-5 space-y-4">
 
               {/* Mode tabs */}
               {!resetSent && !confirmationPending && (
-                <div className="flex rounded-xl border border-white/10 overflow-hidden text-base font-medium">
+                <div className="flex rounded-xl border border-border overflow-hidden text-base font-medium">
                   {(["signin", "signup"] as AuthMode[]).map((mode) => (
                     <button
                       key={mode}
@@ -193,7 +194,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       className={`flex-1 py-2 transition-colors ${
                         authMode === mode
                           ? "bg-primary/20 text-primary"
-                          : "text-slate-400 hover:text-slate-200"
+                          : "text-labelSecondary hover:text-label"
                       }`}
                     >
                       {mode === "signin" ? "Sign in" : "Sign up"}
@@ -204,7 +205,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
               {confirmationPending ? (
                 <div className="text-center space-y-3 py-2">
-                  <div className="text-base text-slate-200">
+                  <div className="text-base text-label">
                     Check your email to confirm your account, then sign in.
                   </div>
                   <button
@@ -217,7 +218,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </div>
               ) : resetSent ? (
                 <div className="text-center space-y-3 py-2">
-                  <div className="text-base text-slate-200">Check your email for a password reset link.</div>
+                  <div className="text-base text-label">Check your email for a password reset link.</div>
                   <button
                     type="button"
                     onClick={() => switchMode("signin")}
@@ -228,18 +229,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </div>
               ) : authMode === "reset" ? (
                 <form onSubmit={(e) => void handleEmailSubmit(e)} className="space-y-3">
-                  <p className="text-base text-slate-400">Enter your email and we'll send you a reset link.</p>
+                  <p className="text-base text-labelSecondary">Enter your email and we'll send you a reset link.</p>
                   <input
                     type="email"
                     autoComplete="email"
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-background/70 border border-white/10 rounded-xl px-3 py-2.5 text-base text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-primary/50 outline-none"
+                    className="w-full bg-background/70 border border-border rounded-xl px-3 py-2.5 text-base text-label placeholder-labelTertiary focus:ring-2 focus:ring-primary/50 outline-none"
                     required
                   />
                   {displayError && (
-                    <p className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-200">{displayError}</p>
+                    <p className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-dangerText">{displayError}</p>
                   )}
                   <Button variant="primary" size="md" className="w-full text-base py-3" type="submit" disabled={busy}>
                     {busy ? "Sending..." : "Send reset link"}
@@ -247,7 +248,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <button
                     type="button"
                     onClick={() => switchMode("signin")}
-                    className="w-full text-sm text-slate-500 hover:text-slate-400 transition-colors"
+                    className="w-full text-sm text-labelTertiary hover:text-labelSecondary transition-colors"
                   >
                     Back to sign in
                   </button>
@@ -260,7 +261,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-background/70 border border-white/10 rounded-xl px-3 py-2.5 text-base text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-primary/50 outline-none"
+                    className="w-full bg-background/70 border border-border rounded-xl px-3 py-2.5 text-base text-label placeholder-labelTertiary focus:ring-2 focus:ring-primary/50 outline-none"
                     required
                   />
                   <div className="relative">
@@ -270,14 +271,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       placeholder="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-background/70 border border-white/10 rounded-xl px-3 py-2.5 pr-10 text-base text-slate-200 placeholder-slate-600 focus:ring-2 focus:ring-primary/50 outline-none"
+                      className="w-full bg-background/70 border border-border rounded-xl px-3 py-2.5 pr-10 text-base text-label placeholder-labelTertiary focus:ring-2 focus:ring-primary/50 outline-none"
                       required
                       minLength={authMode === "signup" ? 8 : undefined}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-labelTertiary hover:text-labelSecondary transition-colors"
                       tabIndex={-1}
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
@@ -285,7 +286,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     </button>
                   </div>
                   {displayError && (
-                    <p className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-200">{displayError}</p>
+                    <p className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-dangerText">{displayError}</p>
                   )}
                   <Button variant="primary" size="md" className="w-full gap-2 text-base py-3" type="submit" disabled={busy}>
                     <Mail size={14} />
@@ -295,7 +296,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <button
                       type="button"
                       onClick={() => switchMode("reset")}
-                      className="w-full text-sm text-slate-500 hover:text-slate-400 transition-colors"
+                      className="w-full text-sm text-labelTertiary hover:text-labelSecondary transition-colors"
                     >
                       Forgot password?
                     </button>
@@ -306,9 +307,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {authMode !== "reset" && !resetSent && !confirmationPending && (
                 <>
                   <div className="relative flex items-center gap-3">
-                    <div className="flex-1 border-t border-white/10" />
-                    <span className="text-sm text-slate-600 uppercase tracking-widest">or</span>
-                    <div className="flex-1 border-t border-white/10" />
+                    <div className="flex-1 border-t border-border" />
+                    <span className="text-sm text-labelTertiary uppercase tracking-widest">or</span>
+                    <div className="flex-1 border-t border-border" />
                   </div>
                   <Button
                     variant="secondary"
@@ -324,7 +325,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               )}
             </div>
 
-            <p className="text-center text-sm text-slate-600 uppercase tracking-[0.14em]">
+            <p className="text-center text-sm text-labelTertiary uppercase tracking-[0.14em]">
               No credit card required
             </p>
           </div>
@@ -335,7 +336,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           {/* Features */}
           <RevealSection className="space-y-5">
-            <p className="text-center text-sm font-bold uppercase tracking-[0.2em] text-slate-400">Features</p>
+            <p className="text-center text-sm font-bold uppercase tracking-[0.2em] text-labelSecondary">Features</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <FeatureCard
                 icon={<Sparkles size={20} />}
@@ -362,16 +363,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           {/* Pricing */}
           <RevealSection className="space-y-5">
-            <p className="text-center text-sm font-bold uppercase tracking-[0.2em] text-slate-400">Pricing</p>
+            <p className="text-center text-sm font-bold uppercase tracking-[0.2em] text-labelSecondary">Pricing</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
 
               {/* Free */}
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-5">
+              <div className="rounded-2xl border border-border bg-tile p-6 space-y-5">
                 <div>
-                  <div className="text-sm font-bold uppercase tracking-[0.14em] text-slate-400">Free</div>
+                  <div className="text-sm font-bold uppercase tracking-[0.14em] text-labelSecondary">Free</div>
                   <div className="mt-2 flex items-end gap-1">
-                    <span className="text-3xl font-bold text-white">$0</span>
-                    <span className="text-base text-slate-400 mb-1">forever</span>
+                    <span className="text-3xl font-bold text-label">$0</span>
+                    <span className="text-base text-labelSecondary mb-1">forever</span>
                   </div>
                 </div>
                 <ul className="space-y-2.5">
@@ -381,16 +382,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     "Template & session editor",
                     "Backup export / import",
                     "Installable on iOS & Android",
+                    "Automatic cloud sync across devices",
                   ].map((f) => (
-                    <li key={f} className="flex items-center gap-2.5 text-base text-slate-300">
+                    <li key={f} className="flex items-center gap-2.5 text-base text-labelSecondary">
                       <Check size={13} className="text-primary shrink-0" />
                       {f}
                     </li>
                   ))}
-                  <li className="flex items-center gap-2.5 text-base text-slate-500">
-                    <X size={12} className="shrink-0" />
-                    Cloud sync
-                  </li>
                 </ul>
               </div>
 
@@ -404,19 +402,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <div>
                   <div className="text-sm font-bold uppercase tracking-[0.14em] text-primary">Pro</div>
                   <div className="mt-2 flex items-end gap-1">
-                    <span className="text-3xl font-bold text-white">$4.99</span>
-                    <span className="text-base text-slate-400 mb-1">/ month</span>
+                    <span className="text-3xl font-bold text-label">$4.99</span>
+                    <span className="text-base text-labelSecondary mb-1">/ month</span>
                   </div>
                 </div>
                 <ul className="space-y-2.5">
                   {[
                     "Everything in Free",
-                    "Cloud sync across devices",
-                    "Conflict resolution",
-                    "Restore points & rollback",
                     "Choose your AI model (Claude, ChatGPT, Gemini)",
                   ].map((f) => (
-                    <li key={f} className="flex items-center gap-2.5 text-base text-slate-300">
+                    <li key={f} className="flex items-center gap-2.5 text-base text-labelSecondary">
                       <Check size={13} className="text-primary shrink-0" />
                       {f}
                     </li>
@@ -425,7 +420,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
 
             </div>
-            <p className="text-center text-sm text-slate-600">
+            <p className="text-center text-sm text-labelTertiary">
               No contracts. Cancel anytime. 7-day grace period on cancellation.
             </p>
           </RevealSection>
@@ -433,8 +428,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {/* How it works */}
           <RevealSection className="space-y-8">
             <div className="text-center space-y-2">
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400">How it works</p>
-              <p className="text-slate-300 text-lg">From zero to training in under two minutes.</p>
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-labelSecondary">How it works</p>
+              <p className="text-labelSecondary text-lg">From zero to training in under two minutes.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 relative">
               {/* Connector line — desktop only */}
@@ -446,18 +441,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 { step: "3", label: "Get your plan", desc: "The AI builds a full training programme tailored to you.", icon: <Sparkles size={22} /> },
                 { step: "4", label: "Track every session", desc: "Open the app, check off your sets. That's the whole habit.", icon: <RefreshCw size={22} /> },
               ].map(({ step, label, desc, icon }) => (
-                <div key={step} className="flex flex-col items-center text-center gap-3 px-4 py-6 rounded-2xl border border-white/8 bg-white/4 transition-transform duration-300 hover:-translate-y-1 hover:border-white/20">
+                <div key={step} className="flex flex-col items-center text-center gap-3 px-4 py-6 rounded-2xl border border-border bg-tile transition-transform duration-300 hover:-translate-y-1 hover:border-borderStrong">
                   <div className="relative">
                     <div className="w-14 h-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                       {icon}
                     </div>
-                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-black text-[10px] font-black flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-onPrimary text-[10px] font-black flex items-center justify-center">
                       {step}
                     </span>
                   </div>
                   <div className="space-y-1">
-                    <div className="text-lg font-semibold text-white">{label}</div>
-                    <div className="text-base text-slate-400 leading-relaxed">{desc}</div>
+                    <div className="text-lg font-semibold text-label">{label}</div>
+                    <div className="text-base text-labelSecondary leading-relaxed">{desc}</div>
                   </div>
                 </div>
               ))}

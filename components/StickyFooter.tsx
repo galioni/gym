@@ -36,11 +36,11 @@ export const StickyFooter: React.FC<StickyFooterProps> = ({ day, isSaving, onCle
   }, [onHeightChange]);
   
   return (
-    <div ref={containerRef} className="fixed bottom-0 left-0 right-0 z-50 glass-panel border-t border-white/15 p-3 md:p-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-[0_-8px_28px_rgba(0,0,0,0.32)] motion-rise">
+    <div ref={containerRef} className="fixed bottom-0 left-0 right-0 z-50 glass-panel border-t border-borderStrong p-3 md:p-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-footer motion-rise">
       <div className="max-w-4xl mx-auto flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-5">
         <div className="flex-1 flex flex-col gap-2">
           <div className="flex justify-between items-center px-0.5">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.16em]">Daily Progress</span>
+            <span className="text-[10px] font-bold text-labelSecondary uppercase tracking-[0.16em]">Daily Progress</span>
             <div className="flex items-center gap-2">
               {activeTimer && (
                 <button
@@ -52,7 +52,7 @@ export const StickyFooter: React.FC<StickyFooterProps> = ({ day, isSaving, onCle
                   {activeTimer.section === "warmup" ? "Warm-up" : "Main"}
                 </button>
               )}
-              <span className={cn("text-xs font-bold", progress === 100 ? "text-accent" : "text-white")}>{progress}%</span>
+              <span className={cn("text-xs font-bold", progress === 100 ? "text-accentText" : "text-label")}>{progress}%</span>
               <Button
                 variant="danger"
                 size="icon"
@@ -64,20 +64,20 @@ export const StickyFooter: React.FC<StickyFooterProps> = ({ day, isSaving, onCle
               </Button>
             </div>
           </div>
-          <div className="h-2.5 w-full bg-black/50 rounded-full overflow-hidden">
+          <div className="h-2.5 w-full bg-track rounded-full overflow-hidden">
             <div
-              className={cn("h-full transition-all duration-700 ease-out shadow-[0_0_18px_rgba(255,122,26,0.6)]", progress === 100 ? "bg-accent" : "bg-primary")}
+              className={cn("h-full transition-all duration-700 ease-out shadow-glow", progress === 100 ? "bg-accent" : "bg-primary")}
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
 
-        <div className="hidden sm:flex items-center gap-3 pl-3 border-l border-white/10">
+        <div className="hidden sm:flex items-center gap-3 pl-3 border-l border-border">
           <div
             aria-live="polite"
             className={cn(
               "min-w-[74px] flex items-center gap-1.5 text-xs font-medium transition-all duration-300",
-              isSaving ? "opacity-100 text-slate-300 translate-y-0" : "opacity-0 translate-y-2"
+              isSaving ? "opacity-100 text-labelSecondary translate-y-0" : "opacity-0 translate-y-2"
             )}
           >
             <Save size={12} className="animate-pulse" />
@@ -92,8 +92,8 @@ export const StickyFooter: React.FC<StickyFooterProps> = ({ day, isSaving, onCle
           >
             <Trash2 size={18} />
           </Button>
-          <span className="hidden md:inline-flex items-center text-[10px] text-slate-600 select-none" title="Press ? to see all keyboard shortcuts">
-            <kbd className="font-mono bg-white/5 border border-white/10 rounded px-1.5 py-0.5 text-slate-500">?</kbd>
+          <span className="hidden md:inline-flex items-center text-[10px] text-labelTertiary select-none" title="Press ? to see all keyboard shortcuts">
+            <kbd className="font-mono bg-fill/5 border border-border rounded px-1.5 py-0.5 text-labelTertiary">?</kbd>
           </span>
         </div>
       </div>

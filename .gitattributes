@@ -1,0 +1,4 @@
+# Mounted into Linux containers: must stay LF even with core.autocrlf=true.
+docker/** text eol=lf
+scripts/local/** text eol=lf
+supabase/** text eol=lf

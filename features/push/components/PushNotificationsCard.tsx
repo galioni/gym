@@ -39,7 +39,7 @@ export const PushNotificationsCard: React.FC = () => {
   if (!isSupported) {
     return (
       <Card title="Push Notifications">
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-labelTertiary">
           Push notifications are not supported in this browser.
         </p>
       </Card>
@@ -52,30 +52,30 @@ export const PushNotificationsCard: React.FC = () => {
     <Card title="Push Notifications">
       <div className="space-y-4">
         {!session && (
-          <p className="text-xs text-amber-400">Sign in to enable push notifications.</p>
+          <p className="text-xs text-warningText">Sign in to enable push notifications.</p>
         )}
 
         {permission === "denied" && (
-          <p className="text-xs text-amber-400">
+          <p className="text-xs text-warningText">
             Notifications are blocked. Enable them in your browser or OS settings.
           </p>
         )}
 
         {error && (
-          <p className="text-xs text-red-400">{error}</p>
+          <p className="text-xs text-dangerText">{error}</p>
         )}
 
         <div className="flex items-center justify-between min-h-[44px]">
           <div>
-            <div className="text-sm text-slate-300">Workout reminders</div>
-            <div className="text-xs text-slate-500 mt-0.5">
+            <div className="text-sm text-labelSecondary">Workout reminders</div>
+            <div className="text-xs text-labelTertiary mt-0.5">
               Daily push notification at your chosen time
             </div>
           </div>
           <div className="flex items-center gap-2 min-h-[44px] pl-4">
             {isLoading && (
               <svg
-                className="animate-spin h-4 w-4 text-slate-400 shrink-0"
+                className="animate-spin h-4 w-4 text-labelSecondary shrink-0"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -92,7 +92,7 @@ export const PushNotificationsCard: React.FC = () => {
               onClick={() => void handleToggle()}
               disabled={isLoading || !session || permission === "denied"}
               className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-40 ${
-                isSubscribed ? "bg-primary" : "bg-white/20"
+                isSubscribed ? "bg-primary" : "bg-fill/20"
               }`}
             >
               <span
@@ -105,7 +105,7 @@ export const PushNotificationsCard: React.FC = () => {
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-sm text-slate-300">Reminder time</span>
+          <span className="text-sm text-labelSecondary">Reminder time</span>
           <select
             value={displayMinute}
             onChange={(e) => {
@@ -114,7 +114,7 @@ export const PushNotificationsCard: React.FC = () => {
               if (isSubscribed) void updateReminderMinute(m);
             }}
             disabled={isLoading}
-            className="bg-background/70 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none disabled:opacity-40"
+            className="bg-background/70 border border-border rounded-xl px-3 py-2 text-sm text-label focus:ring-2 focus:ring-primary/50 outline-none disabled:opacity-40"
           >
             {MINUTE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -122,7 +122,7 @@ export const PushNotificationsCard: React.FC = () => {
           </select>
         </div>
 
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-labelTertiary">
           Times shown in your local timezone. Notifications are sent once per day.
         </p>
       </div>

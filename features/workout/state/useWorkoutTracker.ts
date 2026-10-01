@@ -35,7 +35,12 @@ interface UseWorkoutTrackerResult {
  * UI-focused state coordinator for the daily tracker.
  * Persistence details are delegated to the application/infrastructure layers.
  */
-export function useWorkoutTracker(service: WorkoutDataService, templates: Templates): UseWorkoutTrackerResult {
+export function useWorkoutTracker(
+  service: WorkoutDataService,
+  templates: Templates,
+  /** Increment to re-read storage (a sync or another tab changed it). */
+  reloadToken = 0
+): UseWorkoutTrackerResult {
   const [currentDate, setCurrentDate] = useState<string>(() => {
     return toLocalDateKey(new Date());
   });
@@ -111,6 +116,23 @@ export function useWorkoutTracker(service: WorkoutDataService, templates: Templa
     }
   }, [service]);
 
+  // Storage changed underneath us: re-read it. Pending edits are saved first, and if the user types while
+  // we load we keep their state (the next change signal reloads again) rather than overwrite it.
+  useEffect(() => {
+    if (reloadToken === 0) return;
+    let cancelled = false;
+    const reload = async () => {
+      await flushPersist();
+      const loaded = await service.loadAllData();
+      if (cancelled || pendingPersistRef.current) return;
+      setAllData(loaded);
+    };
+    void reload().catch((error) => console.error("Failed to reload workout data", error));
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadToken, flushPersist, service]);
+
   const schedulePersist = useCallback(
     (newData: Record<string, DayData>, debounceMs = 0) => {
       pendingPersistRef.current = newData;
@@ -178,12 +200,14 @@ export function useWorkoutTracker(service: WorkoutDataService, templates: Templa
   const deleteDay = useCallback(
     (dateKey: string) => {
       setAllData((previousData) => {
-        const { [dateKey]: _removed, ...nextData } = previousData;
+        const { [dateKey]: removed, ...nextData } = previousData;
+        // Tombstone first so sync deletes the day everywhere instead of restoring it from the cloud.
+        if (removed) void service.recordDeletion(dateKey, removed);
         schedulePersist(nextData, 0);
         return nextData;
       });
     },
-    [schedulePersist]
+    [schedulePersist, service]
   );
 
   const clearCurrentDay = useCallback(() => {

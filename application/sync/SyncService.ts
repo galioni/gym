@@ -8,6 +8,7 @@ import { PlansRepository } from "../../interfaces/workout/PlansRepository";
 import {
   ConflictResolution,
   PlansSnapshot,
+  SettingsSnapshot,
   SyncConflict,
   SyncRestorePoint,
   SyncEntity,
@@ -15,8 +16,28 @@ import {
   TemplateSnapshot,
   WorkoutDataSnapshot,
 } from "./syncTypes";
-import { CloudApiPaymentRequiredError } from "../../infrastructure/workout/cloud/cloudApiError";
 import { DayData } from "../../types";
+import { stableSerialize } from "./contentHash";
+import { CloudLimitError } from "./syncErrors";
+import { reconcileDeletions } from "./deletionReconciliation";
+import {
+  agreedBase,
+  baseDaysFrom,
+  Collection,
+  EMPTY_SYNC_BASE,
+  mergeCollection,
+  mergeWorkoutDays,
+  SyncBase,
+} from "./syncMerge";
+import {
+  collectionToPlans,
+  collectionToSettings,
+  collectionToTemplates,
+  plansToCollection,
+  settingsToCollection,
+  templatesToCollection,
+} from "./collections";
+import { AccountSettingsRepository } from "../../interfaces/workout/AccountSettingsRepository";
 
 type ConflictResolutionMap = Partial<Record<SyncEntity, ConflictResolution>>;
 
@@ -59,19 +80,8 @@ interface SyncServiceDeps {
   cloudTemplateRepository: TemplateRepository | null;
   localPlansRepository?: PlansRepository | null;
   cloudPlansRepository?: PlansRepository | null;
-}
-
-function stableSerialize(value: unknown): string {
-  if (value === null || typeof value !== "object") {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableSerialize(item)).join(",")}]`;
-  }
-  const entries = Object.entries(value as Record<string, unknown>)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, val]) => `${JSON.stringify(key)}:${stableSerialize(val)}`);
-  return `{${entries.join(",")}}`;
+  localSettingsRepository?: AccountSettingsRepository | null;
+  cloudSettingsRepository?: AccountSettingsRepository | null;
 }
 
 function collectDiffPaths(
@@ -123,30 +133,59 @@ function collectDiffPaths(
   return diffs;
 }
 
-function hasConflict<T extends { updatedAt: string; data: unknown }>(
-  local: T | null,
-  cloud: T | null
-): boolean {
-  if (!local || !cloud) {
-    return false;
-  }
-  return stableSerialize(local.data) !== stableSerialize(cloud.data);
-}
-
-/**
- * Returns date keys present in both snapshots with differing content.
- * Date keys that exist only on one side are not conflicts — they auto-merge.
- */
-function findTrueWorkoutConflictKeys(
-  local: Record<string, DayData>,
-  cloud: Record<string, DayData>
-): string[] {
-  return Object.keys(local).filter(
-    (key) => key in cloud && stableSerialize(local[key]) !== stableSerialize(cloud[key])
+function isSettingsSnapshot(value: unknown): value is SettingsSnapshot {
+  return (
+    isRecord(value) &&
+    typeof value["version"] === "number" &&
+    typeof value["updatedAt"] === "string" &&
+    isRecord(value["data"])
   );
 }
 
+type Snap = { version: number; updatedAt: string; data: unknown };
+
+/**
+ * One keyed collection synced item by item (templates, plans, account settings). The adapters keep the merge
+ * and the write path generic; each entity only says how to read, write, validate and describe its items.
+ */
+interface CollectionSync {
+  entity: SyncEntity;
+  baseKey: "templates" | "plans" | "settings";
+  /** Preferences nobody should be asked about: on a both-changed item this device simply wins. */
+  quiet: boolean;
+  local: Snap | null;
+  cloud: Snap | null;
+  readLocal(): Promise<Snap | null>;
+  writeLocal(next: Snap): Promise<void>;
+  writeCloud(next: Snap): Promise<void>;
+  isValid(snapshot: unknown): boolean;
+  toCollection(data: unknown): Collection<unknown>;
+  fromCollection(collection: Collection<unknown>): unknown;
+  describeConflicts(keys: string[], local: Collection<unknown>, cloud: Collection<unknown>): string[];
+}
+
+interface SyncRun {
+  /** Local snapshots as read at the start of the run; local writes are skipped if local changed since. */
+  expected: {
+    workout: WorkoutDataSnapshot | null;
+    templates: TemplateSnapshot | null;
+    plans: PlansSnapshot | null;
+    settings: SettingsSnapshot | null;
+  };
+  /** A local write changed data, so in-memory state is stale. */
+  applied: boolean;
+}
+
+function tombstonesOf(snapshot: unknown): unknown {
+  return snapshot && typeof snapshot === "object" && "deletedDays" in snapshot
+    ? (snapshot as { deletedDays?: unknown }).deletedDays ?? {}
+    : {};
+}
+
 export class SyncService {
+  private inFlight: Promise<SyncNowResult> | null = null;
+  private run: SyncRun = { expected: { workout: null, templates: null, plans: null, settings: null }, applied: false };
+
   public constructor(private readonly deps: SyncServiceDeps) {}
 
   public async getSettings(): Promise<SyncSettings> {
@@ -205,8 +244,56 @@ export class SyncService {
     return { status: "success", conflicts: [], message: "Rollback completed from restore point." };
   }
 
+  /**
+   * Runs one sync. Calls are single-flight: an automatic sync and a manual one never overlap. A call
+   * without a conflict resolution joins the running sync; one with a resolution waits for it, then runs.
+   */
   public async syncNow(
-    resolution: ConflictResolutionMap = {}
+    resolution: ConflictResolutionMap = {},
+    options: { automatic?: boolean } = {}
+  ): Promise<SyncNowResult> {
+    if (this.inFlight) {
+      if (Object.keys(resolution).length === 0) {
+        return this.inFlight;
+      }
+      await this.inFlight.catch(() => undefined);
+    }
+    const running = this.runSync(resolution, options.automatic === true);
+    this.inFlight = running;
+    try {
+      return await running;
+    } finally {
+      if (this.inFlight === running) {
+        this.inFlight = null;
+      }
+    }
+  }
+
+  /**
+   * Writes to local storage only if local storage still holds what this run read. If the user edited in
+   * the meantime the write is skipped (their edit is newer than our merge) and the next sync picks it up.
+   */
+  private async writeLocal<T extends { data: unknown }>(
+    repository: { readSnapshot(): Promise<T | null>; writeSnapshot(snapshot: T): Promise<void> },
+    expected: T | null,
+    next: T
+  ): Promise<void> {
+    const current = await repository.readSnapshot();
+    if (
+      stableSerialize(current?.data ?? null) !== stableSerialize(expected?.data ?? null) ||
+      stableSerialize(tombstonesOf(current)) !== stableSerialize(tombstonesOf(expected))
+    ) {
+      return;
+    }
+    await repository.writeSnapshot(next);
+    if (stableSerialize(next.data) !== stableSerialize(expected?.data ?? null)) {
+      this.run.applied = true;
+    }
+  }
+
+  private async runSync(
+    resolution: ConflictResolutionMap,
+    automatic: boolean
   ): Promise<SyncNowResult> {
     const settings = await this.getSettings();
 
@@ -221,52 +308,94 @@ export class SyncService {
     }
 
     try {
+      const base: SyncBase = (await this.deps.settingsRepository.readSyncBase?.()) ?? EMPTY_SYNC_BASE;
       const localWorkout = await this.deps.localWorkoutRepository.readSnapshot();
       const localTemplates = await this.deps.localTemplateRepository.readSnapshot();
       const localPlans = this.deps.localPlansRepository ? await this.deps.localPlansRepository.readSnapshot() : null;
+      const localAccount = this.deps.localSettingsRepository ? await this.deps.localSettingsRepository.readSnapshot() : null;
       const cloudWorkout = await this.deps.cloudWorkoutRepository.readSnapshot();
       const cloudTemplates = await this.deps.cloudTemplateRepository.readSnapshot();
       const cloudPlans = this.deps.cloudPlansRepository ? await this.deps.cloudPlansRepository.readSnapshot() : null;
+      const cloudAccount = this.deps.cloudSettingsRepository ? await this.deps.cloudSettingsRepository.readSnapshot() : null;
 
-      await this.createRestorePoint(localWorkout, localTemplates, localPlans);
+      this.run = {
+        expected: { workout: localWorkout, templates: localTemplates, plans: localPlans, settings: localAccount },
+        applied: false,
+      };
+      const collections = this.buildCollections({
+        localTemplates, cloudTemplates, localPlans, cloudPlans, localAccount, cloudAccount,
+      });
+
+      // Apply deletions first so a day deleted on one side is not restored from the other by the merge below.
+      const deletions = reconcileDeletions(
+        localWorkout?.data ?? {},
+        localWorkout?.deletedDays ?? {},
+        cloudWorkout?.data ?? {},
+        cloudWorkout?.deletedDays ?? {}
+      );
+      const hasDeletions = Object.keys(deletions.deleteInCloud).length > 0 || deletions.deleteLocally.length > 0;
+      // Merge inputs carry no tombstones: repositories read deletedDays on a write as an instruction (delete these / keep these).
+      const localWorkoutMerged = localWorkout
+        ? { version: localWorkout.version, updatedAt: localWorkout.updatedAt, data: deletions.local }
+        : null;
+      const cloudWorkoutMerged = cloudWorkout
+        ? { version: cloudWorkout.version, updatedAt: cloudWorkout.updatedAt, data: deletions.cloud }
+        : null;
+
+      // Three-way decisions: what changed since both sides last agreed (base), not merely "they differ".
+      const unresolvedWorkout =
+        localWorkoutMerged && cloudWorkoutMerged
+          ? mergeWorkoutDays(localWorkoutMerged.data, cloudWorkoutMerged.data, base.days)
+          : null;
+      const previews = collections.map((collection) => ({
+        collection,
+        merge:
+          collection.local && collection.cloud
+            ? mergeCollection(
+                collection.toCollection(collection.local.data),
+                collection.toCollection(collection.cloud.data),
+                base[collection.baseKey],
+                { localWinsConflicts: collection.quiet }
+              )
+            : null,
+      }));
+
+      // A manual sync always takes a restore point (before anything else). Automatic syncs run constantly,
+      // so they only snapshot local data when they are about to change something.
+      if (!automatic) {
+        await this.createRestorePoint(localWorkout, localTemplates, localPlans);
+      }
 
       const conflicts: SyncConflict[] = [];
-      if (localWorkout && cloudWorkout && stableSerialize(localWorkout.data) !== stableSerialize(cloudWorkout.data)) {
-        const trueConflictKeys = findTrueWorkoutConflictKeys(localWorkout.data, cloudWorkout.data);
-        if (trueConflictKeys.length > 0) {
-          // Scope previewPaths to only the truly conflicting dates, not the auto-mergeable ones.
-          const previewPaths = trueConflictKeys
-            .flatMap((key) =>
-              collectDiffPaths(
-                (localWorkout.data as Record<string, unknown>)[key],
-                (cloudWorkout.data as Record<string, unknown>)[key],
-                key
-              ).slice(0, 3)
-            )
-            .slice(0, 12);
-          conflicts.push({
-            entity: "workoutData",
-            localUpdatedAt: localWorkout.updatedAt,
-            cloudUpdatedAt: cloudWorkout.updatedAt,
-            previewPaths,
-          });
-        }
-        // No true conflicts: non-overlapping date diffs will auto-merge in syncWorkoutData.
-      }
-      if (hasConflict(localTemplates, cloudTemplates)) {
+      if (localWorkoutMerged && cloudWorkoutMerged && unresolvedWorkout && unresolvedWorkout.conflictKeys.length > 0) {
+        // Scope previewPaths to only the truly conflicting dates, not the auto-mergeable ones.
+        const previewPaths = unresolvedWorkout.conflictKeys
+          .flatMap((key) =>
+            collectDiffPaths(
+              (localWorkoutMerged.data as Record<string, unknown>)[key],
+              (cloudWorkoutMerged.data as Record<string, unknown>)[key],
+              key
+            ).slice(0, 3)
+          )
+          .slice(0, 12);
         conflicts.push({
-          entity: "templates",
-          localUpdatedAt: localTemplates!.updatedAt,
-          cloudUpdatedAt: cloudTemplates!.updatedAt,
-          previewPaths: collectDiffPaths(localTemplates?.data, cloudTemplates?.data).slice(0, 12),
+          entity: "workoutData",
+          localUpdatedAt: localWorkoutMerged.updatedAt,
+          cloudUpdatedAt: cloudWorkoutMerged.updatedAt,
+          previewPaths,
         });
       }
-      if (this.deps.localPlansRepository && this.deps.cloudPlansRepository && hasConflict(localPlans, cloudPlans)) {
+      for (const { collection, merge } of previews) {
+        if (!merge || collection.quiet || merge.conflictKeys.length === 0) continue;
         conflicts.push({
-          entity: "plans",
-          localUpdatedAt: localPlans!.updatedAt,
-          cloudUpdatedAt: cloudPlans!.updatedAt,
-          previewPaths: collectDiffPaths(localPlans?.data, cloudPlans?.data).slice(0, 12),
+          entity: collection.entity,
+          localUpdatedAt: collection.local!.updatedAt,
+          cloudUpdatedAt: collection.cloud!.updatedAt,
+          previewPaths: collection.describeConflicts(
+            merge.conflictKeys,
+            collection.toCollection(collection.local!.data),
+            collection.toCollection(collection.cloud!.data)
+          ),
         });
       }
 
@@ -279,9 +408,44 @@ export class SyncService {
         };
       }
 
-      await this.syncWorkoutData(localWorkout, cloudWorkout, resolution.workoutData);
-      await this.syncTemplates(localTemplates, cloudTemplates, resolution.templates);
-      await this.syncPlans(localPlans, cloudPlans, resolution.plans);
+      const workoutMerge =
+        localWorkoutMerged && cloudWorkoutMerged
+          ? mergeWorkoutDays(localWorkoutMerged.data, cloudWorkoutMerged.data, base.days, resolution.workoutData)
+          : null;
+
+      if (automatic) {
+        const workoutWork =
+          (localWorkoutMerged === null) !== (cloudWorkoutMerged === null) ||
+          (workoutMerge !== null &&
+            localWorkoutMerged !== null &&
+            cloudWorkoutMerged !== null &&
+            (stableSerialize(workoutMerge.merged) !== stableSerialize(localWorkoutMerged.data) ||
+              stableSerialize(workoutMerge.merged) !== stableSerialize(cloudWorkoutMerged.data)));
+        // Restore points cover workouts, templates and plans; a settings-only change does not need one.
+        const collectionWork = previews.some(({ collection, merge }) => {
+          if (collection.entity === "settings") return false;
+          if ((collection.local === null) !== (collection.cloud === null)) return true;
+          if (!merge || !collection.local || !collection.cloud) return false;
+          const mergedData = collection.fromCollection(merge.merged);
+          return (
+            stableSerialize(mergedData) !== stableSerialize(collection.local.data) ||
+            stableSerialize(mergedData) !== stableSerialize(collection.cloud.data)
+          );
+        });
+        if (hasDeletions || workoutWork || collectionWork) {
+          await this.createRestorePoint(localWorkout, localTemplates, localPlans);
+        }
+      }
+
+      const finalDays = await this.syncWorkoutData(localWorkoutMerged, cloudWorkoutMerged, workoutMerge);
+      const nextBase: SyncBase = { days: baseDaysFrom(finalDays), templates: base.templates, plans: base.plans, settings: base.settings };
+      for (const collection of collections) {
+        nextBase[collection.baseKey] = await this.applyCollection(collection, base[collection.baseKey], resolution[collection.entity]);
+      }
+      await this.applyDeletions(deletions, cloudWorkout, localWorkout);
+
+      // Everything above succeeded: record what both sides now agree on for the next three-way merge.
+      await this.deps.settingsRepository.writeSyncBase?.(nextBase);
 
       const syncedAt = new Date().toISOString();
       await this.deps.settingsRepository.writeSettings({
@@ -294,22 +458,178 @@ export class SyncService {
         status: "success",
         conflicts: [],
         message: "Sync completed.",
+        appliedToLocal: this.run.applied,
       };
     } catch (error) {
-      if (error instanceof CloudApiPaymentRequiredError) {
-        return {
-          status: "upgradeRequired",
-          conflicts: [],
-          message: "Cloud sync requires a Pro subscription.",
-        };
-      }
       const message =
         error instanceof Error ? error.message : "Unknown sync error";
       await this.deps.settingsRepository.writeSettings({
         ...settings,
         lastError: message,
       });
-      return { status: "error", conflicts: [], message };
+      return {
+        status: "error",
+        conflicts: [],
+        message,
+        ...(error instanceof CloudLimitError ? { reason: "storageLimit" as const } : {}),
+      };
+    }
+  }
+
+  private buildCollections(input: {
+    localTemplates: TemplateSnapshot | null;
+    cloudTemplates: TemplateSnapshot | null;
+    localPlans: PlansSnapshot | null;
+    cloudPlans: PlansSnapshot | null;
+    localAccount: SettingsSnapshot | null;
+    cloudAccount: SettingsSnapshot | null;
+  }): CollectionSync[] {
+    const { expected } = this.run;
+    const collections: CollectionSync[] = [];
+
+    const cloudTemplates = this.deps.cloudTemplateRepository;
+    if (cloudTemplates) {
+      collections.push({
+        entity: "templates",
+        baseKey: "templates",
+        quiet: false,
+        local: input.localTemplates,
+        cloud: input.cloudTemplates,
+        readLocal: () => this.deps.localTemplateRepository.readSnapshot(),
+        writeLocal: (next) => this.writeLocal(this.deps.localTemplateRepository, expected.templates, next as TemplateSnapshot),
+        writeCloud: (next) => cloudTemplates.writeSnapshot(next as TemplateSnapshot),
+        isValid: isTemplateSnapshot,
+        toCollection: (data) => templatesToCollection(data as TemplateSnapshot["data"]),
+        fromCollection: (collection) => collectionToTemplates(collection as Collection<TemplateSnapshot["data"][string]>),
+        describeConflicts: (keys, local, cloud) =>
+          keys.flatMap((key) => collectDiffPaths(local.items[key], cloud.items[key], key).slice(0, 3)).slice(0, 12),
+      });
+    }
+
+    const localPlans = this.deps.localPlansRepository;
+    const cloudPlans = this.deps.cloudPlansRepository;
+    if (localPlans && cloudPlans) {
+      collections.push({
+        entity: "plans",
+        baseKey: "plans",
+        quiet: false,
+        local: input.localPlans,
+        cloud: input.cloudPlans,
+        readLocal: () => localPlans.readSnapshot(),
+        writeLocal: (next) => this.writeLocal(localPlans, expected.plans, next as PlansSnapshot),
+        writeCloud: (next) => cloudPlans.writeSnapshot(next as PlansSnapshot),
+        isValid: isPlansSnapshot,
+        toCollection: (data) => plansToCollection(data as PlansSnapshot["data"]),
+        fromCollection: (collection) => collectionToPlans(collection as Collection<PlansSnapshot["data"][number]>),
+        // Plan ids are opaque, so name the plans that clash.
+        describeConflicts: (keys, local) => keys.map((key) => (local.items[key] as { label?: string })?.label ?? key),
+      });
+    }
+
+    const localAccount = this.deps.localSettingsRepository;
+    const cloudAccount = this.deps.cloudSettingsRepository;
+    if (localAccount && cloudAccount) {
+      collections.push({
+        entity: "settings",
+        baseKey: "settings",
+        quiet: true,
+        local: input.localAccount,
+        cloud: input.cloudAccount,
+        readLocal: () => localAccount.readSnapshot(),
+        writeLocal: (next) => this.writeLocal(localAccount, expected.settings, next as SettingsSnapshot),
+        writeCloud: (next) => cloudAccount.writeSnapshot(next as SettingsSnapshot),
+        isValid: isSettingsSnapshot,
+        toCollection: (data) => settingsToCollection(data as SettingsSnapshot["data"]),
+        fromCollection: (collection) => collectionToSettings(collection),
+        describeConflicts: (keys) => keys,
+      });
+    }
+    return collections;
+  }
+
+  /**
+   * Syncs one keyed collection item by item and returns the base to store: the items both sides now verifiably
+   * hold identically (see agreedBase).
+   */
+  private async applyCollection(
+    collection: CollectionSync,
+    baseMap: Record<string, string>,
+    resolution: ConflictResolution | undefined
+  ): Promise<Record<string, string>> {
+    const { local, cloud } = collection;
+    let finalCollection: Collection<unknown>;
+
+    if (!local && !cloud) {
+      return {};
+    } else if (local && !cloud) {
+      await collection.writeCloud(local);
+      finalCollection = collection.toCollection(local.data);
+    } else if (!local && cloud) {
+      if (!collection.isValid(cloud)) {
+        throw new Error(`Cloud ${collection.entity} data failed integrity check and was not written locally.`);
+      }
+      await collection.writeLocal(cloud);
+      finalCollection = collection.toCollection(cloud.data);
+    } else {
+      if (!local || !cloud) return {};
+      if (!collection.isValid(cloud)) {
+        throw new Error(`Cloud ${collection.entity} data failed integrity check and was not written locally.`);
+      }
+      const { merged } = mergeCollection(
+        collection.toCollection(local.data),
+        collection.toCollection(cloud.data),
+        baseMap,
+        { resolution, localWinsConflicts: collection.quiet }
+      );
+      const mergedSnapshot: Snap = { version: local.version, updatedAt: new Date().toISOString(), data: collection.fromCollection(merged) };
+      if (stableSerialize(mergedSnapshot.data) !== stableSerialize(cloud.data)) {
+        await collection.writeCloud(mergedSnapshot);
+      }
+      if (stableSerialize(mergedSnapshot.data) !== stableSerialize(local.data)) {
+        await collection.writeLocal(mergedSnapshot);
+      }
+      finalCollection = merged;
+    }
+
+    const localAfter = await collection.readLocal();
+    return agreedBase(finalCollection, localAfter ? collection.toCollection(localAfter.data) : null, baseMap);
+  }
+
+  /**
+   * Finishes deletions after the merge: soft-deletes days in the cloud, removes days deleted elsewhere from
+   * local storage, and clears local tombstones (every one is settled by now: applied, moot, or overridden
+   * by a newer edit). A failure above throws before this point, so unsettled tombstones are retried.
+   */
+  private async applyDeletions(
+    deletions: ReturnType<typeof reconcileDeletions>,
+    cloudWorkout: WorkoutDataSnapshot | null,
+    localWorkout: WorkoutDataSnapshot | null
+  ): Promise<void> {
+    if (Object.keys(deletions.deleteInCloud).length > 0 && this.deps.cloudWorkoutRepository) {
+      await this.deps.cloudWorkoutRepository.writeSnapshot({
+        version: cloudWorkout?.version ?? 1,
+        updatedAt: new Date().toISOString(),
+        data: deletions.cloud,
+        deletedDays: deletions.deleteInCloud,
+      });
+    }
+
+    const hadTombstones = Object.keys(localWorkout?.deletedDays ?? {}).length > 0;
+    if (deletions.deleteLocally.length === 0 && !hadTombstones) {
+      return;
+    }
+    // Read-then-write with no network in between, so no extra conflict guard is needed here.
+    const current = await this.deps.localWorkoutRepository.readSnapshot();
+    if (!current) {
+      return;
+    }
+    const data = { ...current.data };
+    for (const date of deletions.deleteLocally) {
+      delete data[date];
+    }
+    await this.deps.localWorkoutRepository.writeSnapshot({ ...current, data, deletedDays: {} });
+    if (deletions.deleteLocally.length > 0) {
+      this.run.applied = true;
     }
   }
 
@@ -330,154 +650,38 @@ export class SyncService {
     await this.deps.settingsRepository.writeRestorePoints(updated);
   }
 
+  /** Returns the days both sides agree on after this sync (the new base). */
   private async syncWorkoutData(
     local: WorkoutDataSnapshot | null,
     cloud: WorkoutDataSnapshot | null,
-    resolution: ConflictResolution | undefined
-  ): Promise<void> {
+    merge: { merged: Record<string, DayData> } | null
+  ): Promise<Record<string, DayData>> {
     if (!this.deps.cloudWorkoutRepository) {
-      return;
+      return {};
     }
 
     if (local && !cloud) {
       await this.deps.cloudWorkoutRepository.writeSnapshot(local);
-      return;
+      return local.data;
     }
     if (!local && cloud) {
       if (!isWorkoutDataSnapshot(cloud)) {
         throw new Error("Cloud workout data failed integrity check and was not written locally.");
       }
-      await this.deps.localWorkoutRepository.writeSnapshot(cloud);
-      return;
+      await this.writeLocal(this.deps.localWorkoutRepository, this.run.expected.workout, cloud);
+      return cloud.data;
     }
-    if (!local || !cloud) {
-      return;
-    }
-
-    if (stableSerialize(local.data) === stableSerialize(cloud.data)) {
-      if (local.updatedAt >= cloud.updatedAt) {
-        await this.deps.cloudWorkoutRepository.writeSnapshot(local);
-      } else {
-        if (!isWorkoutDataSnapshot(cloud)) {
-          throw new Error("Cloud workout data failed integrity check and was not written locally.");
-        }
-        await this.deps.localWorkoutRepository.writeSnapshot(cloud);
-      }
-      return;
+    if (!local || !cloud || !merge) {
+      return {};
     }
 
-    // Merge-aware resolution: neither side loses its unique dates.
-    const mergedAt = new Date().toISOString();
-    if (resolution === "keepLocal") {
-      // Local wins for same-date conflicts; cloud-only dates are preserved.
-      const merged: WorkoutDataSnapshot = { ...local, data: { ...cloud.data, ...local.data }, updatedAt: mergedAt };
+    const merged: WorkoutDataSnapshot = { version: local.version, updatedAt: new Date().toISOString(), data: merge.merged };
+    if (stableSerialize(merge.merged) !== stableSerialize(cloud.data)) {
       await this.deps.cloudWorkoutRepository.writeSnapshot(merged);
-      await this.deps.localWorkoutRepository.writeSnapshot(merged);
-    } else if (resolution === "keepCloud") {
-      if (!isWorkoutDataSnapshot(cloud)) {
-        throw new Error("Cloud workout data failed integrity check and was not written locally.");
-      }
-      // Cloud wins for same-date conflicts; local-only dates are preserved.
-      const merged: WorkoutDataSnapshot = { ...cloud, data: { ...local.data, ...cloud.data }, updatedAt: mergedAt };
-      await this.deps.cloudWorkoutRepository.writeSnapshot(merged);
-      await this.deps.localWorkoutRepository.writeSnapshot(merged);
-    } else {
-      // Auto-merge: syncNow guarantees no same-date conflicts on this path.
-      const merged: WorkoutDataSnapshot = { ...local, data: { ...cloud.data, ...local.data }, updatedAt: mergedAt };
-      await this.deps.cloudWorkoutRepository.writeSnapshot(merged);
-      await this.deps.localWorkoutRepository.writeSnapshot(merged);
     }
-  }
-
-  private async syncTemplates(
-    local: TemplateSnapshot | null,
-    cloud: TemplateSnapshot | null,
-    resolution: ConflictResolution | undefined
-  ): Promise<void> {
-    if (!this.deps.cloudTemplateRepository) {
-      return;
+    if (stableSerialize(merge.merged) !== stableSerialize(local.data)) {
+      await this.writeLocal(this.deps.localWorkoutRepository, this.run.expected.workout, merged);
     }
-
-    if (local && !cloud) {
-      await this.deps.cloudTemplateRepository.writeSnapshot(local);
-      return;
-    }
-    if (!local && cloud) {
-      if (!isTemplateSnapshot(cloud)) {
-        throw new Error("Cloud template data failed integrity check and was not written locally.");
-      }
-      await this.deps.localTemplateRepository.writeSnapshot(cloud);
-      return;
-    }
-    if (!local || !cloud) {
-      return;
-    }
-
-    if (stableSerialize(local.data) === stableSerialize(cloud.data)) {
-      if (local.updatedAt >= cloud.updatedAt) {
-        await this.deps.cloudTemplateRepository.writeSnapshot(local);
-      } else {
-        if (!isTemplateSnapshot(cloud)) {
-          throw new Error("Cloud template data failed integrity check and was not written locally.");
-        }
-        await this.deps.localTemplateRepository.writeSnapshot(cloud);
-      }
-      return;
-    }
-
-    if (resolution === "keepLocal") {
-      await this.deps.cloudTemplateRepository.writeSnapshot(local);
-    } else if (resolution === "keepCloud") {
-      if (!isTemplateSnapshot(cloud)) {
-        throw new Error("Cloud template data failed integrity check and was not written locally.");
-      }
-      await this.deps.localTemplateRepository.writeSnapshot(cloud);
-    }
-  }
-
-  private async syncPlans(
-    local: PlansSnapshot | null,
-    cloud: PlansSnapshot | null,
-    resolution: ConflictResolution | undefined
-  ): Promise<void> {
-    if (!this.deps.localPlansRepository || !this.deps.cloudPlansRepository) {
-      return;
-    }
-
-    if (local && !cloud) {
-      await this.deps.cloudPlansRepository.writeSnapshot(local);
-      return;
-    }
-    if (!local && cloud) {
-      if (!isPlansSnapshot(cloud)) {
-        throw new Error("Cloud plans data failed integrity check and was not written locally.");
-      }
-      await this.deps.localPlansRepository.writeSnapshot(cloud);
-      return;
-    }
-    if (!local || !cloud) {
-      return;
-    }
-
-    if (stableSerialize(local.data) === stableSerialize(cloud.data)) {
-      if (local.updatedAt >= cloud.updatedAt) {
-        await this.deps.cloudPlansRepository.writeSnapshot(local);
-      } else {
-        if (!isPlansSnapshot(cloud)) {
-          throw new Error("Cloud plans data failed integrity check and was not written locally.");
-        }
-        await this.deps.localPlansRepository.writeSnapshot(cloud);
-      }
-      return;
-    }
-
-    if (resolution === "keepLocal") {
-      await this.deps.cloudPlansRepository.writeSnapshot(local);
-    } else if (resolution === "keepCloud") {
-      if (!isPlansSnapshot(cloud)) {
-        throw new Error("Cloud plans data failed integrity check and was not written locally.");
-      }
-      await this.deps.localPlansRepository.writeSnapshot(cloud);
-    }
+    return merge.merged;
   }
 }

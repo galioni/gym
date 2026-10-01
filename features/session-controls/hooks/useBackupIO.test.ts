@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useBackupIO } from "./useBackupIO";
 import {
   STORAGE_KEY,
-  SYNC_RESTORE_POINTS_STORAGE_KEY,
   SYNC_SETTINGS_STORAGE_KEY,
   TEMPLATE_STORAGE_KEY,
 } from "../../../constants";

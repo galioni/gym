@@ -1,5 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { RefreshCw } from "lucide-react";
+import { deriveSyncStatus } from "../../../../application/sync/syncStatus";
+import { useOnlineStatus } from "../../hooks/useOnlineStatus";
+import { SyncStatusIndicator } from "../SyncStatusIndicator/SyncStatusIndicator";
 import { Card } from "../../../../components/ui/Card";
 import { Button } from "../../../../components/ui/Button";
 import {
@@ -65,9 +68,10 @@ function formatConflictPath(entity: SyncEntity, path: string): string {
     return `${session} — ${sec}${n}`;
   }
   if (entity === "plans") {
-    const [idx, field] = parts;
-    const n = idx !== undefined ? ` #${Number(idx) + 1}` : "";
-    return field ? `Plan${n} ${field}` : `Plan${n}`;
+    return `Plan "${path}"`;
+  }
+  if (entity === "settings") {
+    return path === "activePlanId" ? "Active plan" : "Plan details";
   }
   return path;
 }
@@ -79,13 +83,11 @@ interface SyncSettingsPanelProps {
   conflicts: SyncConflict[];
   restorePoints: SyncRestorePoint[];
   isSyncing: boolean;
-  isUpgradeRequired: boolean;
   onSyncNow: (
     resolution?: Partial<Record<SyncEntity, ConflictResolution>>
   ) => Promise<SyncNowResult>;
   onRollback: (id: string) => Promise<SyncNowResult>;
   onPruneRestorePoints: () => Promise<void>;
-  onUpgrade: () => Promise<void>;
 }
 
 export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
@@ -95,18 +97,21 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
   conflicts,
   restorePoints,
   isSyncing,
-  isUpgradeRequired,
   onSyncNow,
   onRollback,
   onPruneRestorePoints,
-  onUpgrade,
 }) => {
   const { showToast } = useFeedback();
   const { session } = useAuthSession();
   const isAuthenticated = Boolean(session);
   const [resolutions, setResolutions] = useState<Partial<Record<SyncEntity, ConflictResolution>>>({});
 
+  const isOnline = useOnlineStatus();
+  const status = deriveSyncStatus({ isSyncing, isOnline, conflictCount: conflicts.length, lastError, lastSyncedAt });
+  // The red banner below carries the error text; the headline only summarises it.
+  const headlineDetail = lastError && status.detail === lastError ? "Sync hit a problem. Your data is safe on this device." : status.detail;
   const hasConflicts = conflicts.length > 0;
+  const showMessage = Boolean(syncMessage) && syncMessage !== lastError && !hasConflicts && syncMessage !== "Sync completed.";
   const canResolve = useMemo(
     () => conflicts.every((conflict) => Boolean(resolutions[conflict.entity])),
     [conflicts, resolutions]
@@ -167,41 +172,31 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
           disabled={isSyncing || !isAuthenticated || (hasConflicts && !canResolve)}
         >
           <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} />
-          {isSyncing ? "Syncing..." : "Sync Now"}
+          {isSyncing ? "Syncing..." : "Sync now"}
         </Button>
       }
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-        <div className="bg-background/70 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 flex items-center">
-          Sync Mode: CLOUD
-        </div>
-        <div className="text-xs text-slate-400 flex items-center break-words">
-          Last sync: {lastSyncedAt ? new Date(lastSyncedAt).toLocaleString() : "Never"}
-        </div>
-        <div className="text-xs flex items-center break-words">
-          {isAuthenticated ? (
-            <span className="text-slate-400">Auth: {session?.user.email ?? "Google OAuth"}</span>
-          ) : (
-            <span className="text-amber-400">Not signed in — sync disabled</span>
-          )}
+      <div className="mb-4 flex items-start gap-3 rounded-xl border border-border bg-background/40 p-3">
+        <SyncStatusIndicator status={status} onClick={() => undefined} className="-m-1 shrink-0 pointer-events-none" />
+        <div className="min-w-0 space-y-0.5">
+          <div className="text-sm font-semibold text-label">Your data syncs automatically</div>
+          <div className="text-xs text-labelSecondary">{headlineDetail}</div>
+          <div className="text-xs text-labelTertiary break-words">
+            {isAuthenticated ? `Signed in as ${session?.user.email ?? "Google"}` : "Not signed in — sync disabled"}
+            {lastSyncedAt ? ` · last sync ${new Date(lastSyncedAt).toLocaleString()}` : ""}
+          </div>
         </div>
       </div>
 
-      {isUpgradeRequired && (
-        <div className="mb-3 rounded-xl border border-primary/30 bg-primary/10 p-3 flex items-center justify-between gap-3">
-          <p className="text-xs text-orange-100">Cloud sync requires a Pro subscription.</p>
-          <Button size="sm" variant="primary" className="shrink-0" onClick={() => void onUpgrade().catch(() => showToast({ tone: "error", title: "Could not start checkout. Try again." }))}>
-            Upgrade
-          </Button>
-        </div>
-      )}
-      {!isUpgradeRequired && syncMessage && (
-        <div className="mb-3 rounded-xl border border-white/10 bg-background/40 p-3 text-xs text-slate-300">
+      {/* The headline already says "synced" / "needs your decision" / the error; only show other messages
+          (for example a rollback result) so nothing is said twice. */}
+      {showMessage && (
+        <div className="mb-3 rounded-xl border border-border bg-background/40 p-3 text-xs text-labelSecondary">
           {syncMessage}
         </div>
       )}
-      {!isUpgradeRequired && lastError && (
-        <div className="mb-3 rounded-xl border border-danger/40 bg-danger/10 p-3 text-xs text-red-200">
+      {lastError && (
+        <div className="mb-3 rounded-xl border border-danger/40 bg-danger/10 p-3 text-xs text-dangerText">
           {lastError}
         </div>
       )}
@@ -221,26 +216,26 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
               <div key={conflict.entity} className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3 space-y-2.5">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <div className="text-sm font-semibold text-white">{entityLabel} conflict</div>
-                    <div className="text-xs text-slate-400 mt-0.5">
+                    <div className="text-sm font-semibold text-label">{entityLabel} conflict</div>
+                    <div className="text-xs text-labelSecondary mt-0.5">
                       This device {relativeTime(conflict.localUpdatedAt)}
                       {" · "}
                       Cloud {relativeTime(conflict.cloudUpdatedAt)}
                       {localNewer
                         ? <span className="text-primary"> · This device is newer</span>
-                        : <span className="text-slate-400"> · Cloud is newer</span>}
+                        : <span className="text-labelSecondary"> · Cloud is newer</span>}
                     </div>
                   </div>
                 </div>
 
                 {conflict.previewPaths.length > 0 && (
-                  <div className="rounded-lg border border-white/10 bg-background/40 px-2.5 py-2">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500 mb-1.5">
+                  <div className="rounded-lg border border-border bg-background/40 px-2.5 py-2">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-labelTertiary mb-1.5">
                       What differs
                     </div>
                     <ul className="space-y-0.5">
                       {conflict.previewPaths.map((path) => (
-                        <li key={`${conflict.entity}-${path}`} className="text-xs text-slate-300">
+                        <li key={`${conflict.entity}-${path}`} className="text-xs text-labelSecondary">
                           {formatConflictPath(conflict.entity, path)}
                         </li>
                       ))}
@@ -248,10 +243,11 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
                   </div>
                 )}
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2" role="group" aria-label={`${entityLabel} conflict: choose a version`}>
                   <Button
                     size="sm"
-                    variant={chosen === "keepLocal" ? "primary" : "ghost"}
+                    aria-pressed={chosen === "keepLocal"}
+                    variant={chosen === "keepLocal" ? "primary" : "secondary"}
                     onClick={() =>
                       setResolutions((current) => ({ ...current, [conflict.entity]: "keepLocal" }))
                     }
@@ -260,7 +256,8 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
                   </Button>
                   <Button
                     size="sm"
-                    variant={chosen === "keepCloud" ? "primary" : "ghost"}
+                    aria-pressed={chosen === "keepCloud"}
+                    variant={chosen === "keepCloud" ? "primary" : "secondary"}
                     onClick={() =>
                       setResolutions((current) => ({ ...current, [conflict.entity]: "keepCloud" }))
                     }
@@ -270,7 +267,7 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
                 </div>
 
                 {chosen && (
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-labelTertiary">
                     {chosen === "keepLocal"
                       ? "This device's version wins for overlapping changes. Any cloud-only changes are preserved."
                       : "Cloud version wins for overlapping changes. Any local-only changes are preserved."}
@@ -279,21 +276,34 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
               </div>
             );
           })}
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <Button
+              size="sm"
+              variant="primary"
+              className="gap-2"
+              onClick={() => void handleSyncNow()}
+              disabled={isSyncing || !canResolve}
+            >
+              <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} />
+              Apply choices and sync
+            </Button>
+            {!canResolve && <p className="text-xs text-labelSecondary">Choose a version for each conflict above.</p>}
+          </div>
         </div>
       )}
 
       {restorePoints.length > 0 && (
-        <div className="mt-4 rounded-xl border border-white/10 p-3">
+        <div className="mt-4 rounded-xl border border-border p-3">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <div className="text-sm text-white font-semibold">Pre-sync Restore Points</div>
-              <div className="text-xs text-slate-500 mt-0.5">Snapshots saved automatically before each sync. Roll back if a sync overwrote something you wanted to keep.</div>
+              <div className="text-sm text-label font-semibold">Safety snapshots</div>
+              <div className="text-xs text-labelTertiary mt-0.5">Saved automatically before a sync that changes your data. Roll back if a sync overwrote something you wanted to keep.</div>
             </div>
             {restorePoints.length > 1 && (
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-xs text-slate-400 hover:text-red-400"
+                className="text-xs text-labelSecondary hover:text-dangerText"
                 onClick={() => void onPruneRestorePoints()}
               >
                 Keep newest only
@@ -302,8 +312,8 @@ export const SyncSettingsPanel: React.FC<SyncSettingsPanelProps> = ({
           </div>
           <div className="space-y-2">
             {restorePoints.map((point) => (
-              <div key={point.id} className="flex flex-col items-start gap-2 rounded-lg border border-white/10 p-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-xs text-slate-300">
+              <div key={point.id} className="flex flex-col items-start gap-2 rounded-lg border border-border p-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-xs text-labelSecondary">
                   {new Date(point.createdAt).toLocaleString()}
                 </div>
                 <Button size="sm" variant="ghost" onClick={() => void handleRollback(point.id)}>

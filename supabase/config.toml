@@ -1,0 +1,10 @@
+# Minimal Supabase CLI configuration so `supabase link` and `supabase db push` work against the migrations in
+# ./migrations. The local development stack does not use this file: it runs from docker/compose.yaml.
+# Everything not listed takes the CLI's defaults.
+project_id = "gym-app"
+
+[db]
+major_version = 17
+
+[db.migrations]
+enabled = true

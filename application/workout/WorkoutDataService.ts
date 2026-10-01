@@ -14,5 +14,10 @@ export class WorkoutDataService {
   public async saveAllData(data: Record<string, DayData>): Promise<void> {
     await this.repository.writeAll(data);
   }
+
+  /** Call when the user deletes a day, before persisting the record without it. */
+  public async recordDeletion(date: string, day: DayData): Promise<void> {
+    await this.repository.recordDeletion?.(date, day);
+  }
 }
 

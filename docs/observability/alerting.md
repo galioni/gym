@@ -2,8 +2,8 @@
 
 This app emits structured API lifecycle logs from:
 
-- `/api/workout-data`
-- `/api/templates`
+- `/api/subscription`
+- `/api/generate-plan`
 
 ## Required log fields
 
@@ -40,14 +40,14 @@ Evaluate over a rolling 5-minute window per environment:
 Run these checks against preview/staging before enabling production paging:
 
 1. Auth failure alert test:
-- Send at least 25 unauthenticated requests to `/api/workout-data` within 5 minutes.
+- Send at least 25 unauthenticated requests to `/api/subscription` within 5 minutes.
 - Verify `api_auth_failures_warning` triggers.
 
 Example:
 
 ```bash
 for i in {1..25}; do
-  curl -s -o /dev/null -w "%{http_code}\n" https://<your-preview-domain>/api/workout-data
+  curl -s -o /dev/null -w "%{http_code}\n" https://<your-preview-domain>/api/subscription
 done
 ```
 

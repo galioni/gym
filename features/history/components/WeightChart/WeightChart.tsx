@@ -2,9 +2,10 @@ import { useMemo } from "react";
 import { DayData } from "../../../../types";
 import { fromLocalDateKey } from "../../../../utils";
 
-const PRIMARY = "rgb(255,122,26)";
-const AREA_TOP = "rgba(255,122,26,0.18)";
-const AREA_BOTTOM = "rgba(255,122,26,0.01)";
+// Applied through style (not SVG attributes) so they follow the active theme's primary token.
+const PRIMARY = "rgb(var(--color-primary))";
+const AREA_TOP = "rgb(var(--color-primary) / 0.18)";
+const AREA_BOTTOM = "rgb(var(--color-primary) / 0.01)";
 
 function parseWeight(raw: string): number | null {
   if (!raw.trim()) return null;
@@ -35,7 +36,7 @@ export function WeightChart({ allData }: WeightChartProps) {
 
   if (entries.length === 0) {
     return (
-      <p className="text-xs text-slate-600 text-center py-3">
+      <p className="text-xs text-labelTertiary text-center py-3">
         No weight logged yet — add your weight in the daily tracker.
       </p>
     );
@@ -50,8 +51,8 @@ export function WeightChart({ allData }: WeightChartProps) {
   if (entries.length === 1) {
     return (
       <div className="flex items-baseline gap-3">
-        <span className="text-2xl font-bold text-white">{latest.weight} kg</span>
-        <span className="text-xs text-slate-500">{formatDate(latest.date)}</span>
+        <span className="text-2xl font-bold text-label">{latest.weight} kg</span>
+        <span className="text-xs text-labelTertiary">{formatDate(latest.date)}</span>
       </div>
     );
   }
@@ -84,10 +85,10 @@ export function WeightChart({ allData }: WeightChartProps) {
     <div className="space-y-1.5">
       <div className="flex items-baseline justify-between">
         <div className="flex items-baseline gap-2.5">
-          <span className="text-2xl font-bold text-white">{latest.weight} kg</span>
-          <span className="text-xs text-slate-400">{deltaLabel}</span>
+          <span className="text-2xl font-bold text-label">{latest.weight} kg</span>
+          <span className="text-xs text-labelSecondary">{deltaLabel}</span>
         </div>
-        <span className="text-[11px] text-slate-600">
+        <span className="text-[11px] text-labelTertiary">
           {entries.length} entries
         </span>
       </div>
@@ -100,15 +101,15 @@ export function WeightChart({ allData }: WeightChartProps) {
       >
         <defs>
           <linearGradient id="wgt-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={AREA_TOP} />
-            <stop offset="100%" stopColor={AREA_BOTTOM} />
+            <stop offset="0%" style={{ stopColor: AREA_TOP }} />
+            <stop offset="100%" style={{ stopColor: AREA_BOTTOM }} />
           </linearGradient>
         </defs>
         <polygon points={areaPts} fill="url(#wgt-fill)" />
         <polyline
           points={linePts}
           fill="none"
-          stroke={PRIMARY}
+          style={{ stroke: PRIMARY }}
           strokeWidth="2.5"
           strokeLinejoin="round"
           strokeLinecap="round"
@@ -121,18 +122,18 @@ export function WeightChart({ allData }: WeightChartProps) {
                 cx={toX(i)}
                 cy={toY(e.weight)}
                 r="3.5"
-                fill={PRIMARY}
+                style={{ fill: PRIMARY }}
                 vectorEffect="non-scaling-stroke"
               />
             ))
           : <>
-              <circle cx={toX(0)} cy={toY(first.weight)} r="3.5" fill={PRIMARY} vectorEffect="non-scaling-stroke" />
-              <circle cx={W} cy={toY(latest.weight)} r="3.5" fill={PRIMARY} vectorEffect="non-scaling-stroke" />
+              <circle cx={toX(0)} cy={toY(first.weight)} r="3.5" style={{ fill: PRIMARY }} vectorEffect="non-scaling-stroke" />
+              <circle cx={W} cy={toY(latest.weight)} r="3.5" style={{ fill: PRIMARY }} vectorEffect="non-scaling-stroke" />
             </>
         }
       </svg>
 
-      <div className="flex justify-between text-[10px] text-slate-600">
+      <div className="flex justify-between text-[10px] text-labelTertiary">
         <span>{formatDate(first.date)}</span>
         <span>{formatDate(latest.date)}</span>
       </div>

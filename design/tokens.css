@@ -1,4 +1,5 @@
-:root {
+:root,
+[data-theme="editorial-sport"] {
   --font-display: "Bebas Neue", "Oswald", sans-serif;
   --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", monospace;
@@ -13,6 +14,45 @@
   --color-accent: 134 228 166;
   --color-danger: 255 130 130;
 
+  /* Semantic layer: text, fills and overlays that must flip between themes. */
+  --color-label: 255 255 255;
+  --color-label-secondary: 160 174 192;
+  --color-label-tertiary: 143 155 171;
+  --color-fill: 255 255 255;
+  --color-on-primary: 0 0 0;
+  --color-danger-text: 249 142 142;
+  --color-accent-text: 134 228 166;
+  --color-warning-text: 251 191 36;
+  --color-success-text: 74 222 128;
+  --color-info-text: 147 197 253;
+  --color-overlay: 2 6 23;
+  --border-opacity-strong: 0.2;
+
+  --scrollbar-thumb: #334155;
+  --shadow-pop: 0 24px 70px rgb(0 0 0 / 0.55);
+  --shadow-toast: 0 18px 32px rgb(0 0 0 / 0.35);
+  --shadow-footer: 0 -8px 28px rgb(0 0 0 / 0.32);
+  --shadow-glow: 0 0 18px rgb(var(--color-primary) / 0.55);
+  --shadow-row: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+  --scrim: rgb(0 0 0 / 0.6);
+  --tile: rgb(255 255 255 / 0.05);
+  --landing-backdrop: linear-gradient(160deg, rgb(10 13 19), rgb(6 10 17));
+  --landing-orb-a: radial-gradient(circle, rgb(72 213 151 / 0.12), transparent 65%);
+  --landing-orb-b: radial-gradient(circle, rgb(111 208 255 / 0.15), transparent 65%);
+  --track: rgb(0 0 0 / 0.5);
+  --display-transform: uppercase;
+  --display-tracking: 0.06em;
+  --display-weight: 400;
+  --glass-shadow: 0 22px 45px rgb(0 0 0 / 0.28);
+  --glass-blur: blur(16px);
+  --glass-panel-blur: blur(12px);
+  --bar-opacity: 0.8;
+  --bar-blur: blur(24px);
+  --body-background-image:
+    radial-gradient(circle at 0% 0%, rgb(255 122 26 / 0.18), transparent 38%),
+    radial-gradient(circle at 100% 0%, rgb(72 213 151 / 0.15), transparent 40%),
+    linear-gradient(145deg, rgb(9 12 18), rgb(12 16 24) 46%, rgb(8 13 23));
+
   --border-opacity: 0.12;
   --glass-surface-opacity: 0.78;
   --glass-panel-opacity: 0.66;
@@ -24,4 +64,67 @@
   --motion-standard: 240ms;
   --motion-slow: 520ms;
   --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  color-scheme: dark;
+}
+
+/*
+ Apple HIG light theme. Colour values follow the iOS system palette; primary,
+ link and status text colours are darkened where the stock values miss WCAG AA
+ on white (stock systemBlue #007AFF is 4.0:1 and #0071E3 is 4.2:1 on the grey page, so primary is Apple link blue #0066CC at 5.0:1; checked by design/tokens.contrast.test.ts).
+*/
+[data-theme="apple-light"] {
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+
+  --color-background: 242 242 247; /* systemGroupedBackground */
+  --color-surface: 255 255 255; /* secondarySystemGroupedBackground */
+  --color-surface-highlight: 229 229 234; /* systemGray5 */
+  --color-border: 60 60 67; /* separator base */
+  --color-primary: 0 102 204;
+  --color-primary-hover: 0 113 227;
+  --color-accent: 52 199 89; /* systemGreen: fills and progress only */
+  --color-danger: 255 59 48; /* systemRed */
+
+  --color-label: 0 0 0;
+  --color-label-secondary: 72 72 74; /* 9.3:1 on white */
+  --color-label-tertiary: 110 110 115; /* #6E6E73, 5.1:1 on white: safe for small content text */
+  --color-fill: 60 60 67;
+  --color-on-primary: 255 255 255;
+  --color-danger-text: 215 0 21;
+  --color-accent-text: 26 120 50;
+  --color-warning-text: 158 88 0;
+  --color-success-text: 26 120 50;
+  --color-info-text: 0 102 204;
+  --color-overlay: 255 255 255;
+
+  --border-opacity: 0.18;
+  --border-opacity-strong: 0.29;
+  --glass-surface-opacity: 0.72;
+  --glass-panel-opacity: 0.88;
+  --bar-opacity: 0.88;
+
+  --radius-card: 1.25rem;
+  --radius-control: 0.75rem;
+
+  --scrollbar-thumb: #c7c7cc;
+  --shadow-pop: 0 20px 60px rgb(0 0 0 / 0.18), 0 2px 8px rgb(0 0 0 / 0.06);
+  --shadow-toast: 0 8px 28px rgb(0 0 0 / 0.14), 0 1px 3px rgb(0 0 0 / 0.06);
+  --shadow-footer: 0 -4px 20px rgb(0 0 0 / 0.05);
+  --shadow-glow: none;
+  --shadow-row: 0 1px 2px rgb(0 0 0 / 0.05);
+  --scrim: rgb(0 0 0 / 0.35);
+  --tile: rgb(255 255 255);
+  --landing-backdrop: none;
+  --landing-orb-a: none;
+  --landing-orb-b: radial-gradient(circle, rgb(0 113 227 / 0.08), transparent 65%);
+  --track: rgb(120 120 128 / 0.2);
+  --display-transform: none;
+  --display-tracking: -0.022em;
+  --display-weight: 700;
+  --glass-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 8px 24px rgb(0 0 0 / 0.06);
+  --glass-blur: blur(20px) saturate(180%);
+  --glass-panel-blur: blur(20px) saturate(180%);
+  --bar-blur: blur(20px) saturate(180%);
+  --body-background-image: none;
+  color-scheme: light;
 }

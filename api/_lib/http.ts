@@ -1,7 +1,7 @@
 const ALLOWED_METHODS = new Set(["GET", "PUT", "POST", "DELETE", "OPTIONS"]);
 
 function buildDefaultAllowedCorsOrigins(): Set<string> {
-  const origins = new Set(["http://localhost:5173"]);
+  const origins = new Set(["http://localhost:5180"]);
   // VERCEL_PROJECT_PRODUCTION_URL is the stable production domain (no protocol prefix)
   const prodUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL;
   // VERCEL_URL is the deployment-specific domain (preview + production)

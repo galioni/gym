@@ -14,6 +14,7 @@ export default defineConfig({
       "features/**/*.test.tsx",
       "components/**/*.test.ts",
       "components/**/*.test.tsx",
+      "design/**/*.test.ts",
     ],
   },
 });

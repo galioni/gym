@@ -305,7 +305,7 @@ describe("POST /api/stripe-webhook — customer.subscription.updated", () => {
       current_period_end: PERIOD_END_UNIX,
     });
     const req = makeRequest(body);
-    const { res, state } = createMockResponse();
+    const { res } = createMockResponse();
 
     await handler(req, res);
 

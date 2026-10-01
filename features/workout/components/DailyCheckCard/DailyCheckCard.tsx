@@ -46,7 +46,7 @@ export const DailyCheckCard: React.FC<DailyCheckCardProps> = ({ day, onUpdateFie
     >
       <div className="flex gap-4 items-start">
         <div className="w-36 shrink-0">
-          <label className="text-xs text-slate-500 font-medium uppercase tracking-[0.18em] block mb-1.5">
+          <label className="text-xs text-labelTertiary font-medium uppercase tracking-[0.18em] block mb-1.5">
             Weight (kg)
           </label>
           <input
@@ -58,14 +58,14 @@ export const DailyCheckCard: React.FC<DailyCheckCardProps> = ({ day, onUpdateFie
             placeholder="e.g. 79.5"
             value={day.weight}
             onChange={handleWeightChange}
-            className={`w-full bg-background/50 border rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 outline-none transition-colors ${weightError ? "border-danger/50 focus:ring-danger/40" : "border-white/10 focus:ring-primary/50"}`}
+            className={`w-full bg-background/50 border rounded-xl px-3 py-2 text-sm text-label focus:ring-2 outline-none transition-colors ${weightError ? "border-danger/50 focus:ring-danger/40" : "border-border focus:ring-primary/50"}`}
           />
           {weightError && (
-            <div className="mt-1 text-xs text-red-400">{weightError}</div>
+            <div className="mt-1 text-xs text-dangerText">{weightError}</div>
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <label className="text-xs text-slate-500 font-medium uppercase tracking-[0.18em] block mb-1.5">
+          <label className="text-xs text-labelTertiary font-medium uppercase tracking-[0.18em] block mb-1.5">
             Check-in Notes
           </label>
           <input
@@ -73,7 +73,7 @@ export const DailyCheckCard: React.FC<DailyCheckCardProps> = ({ day, onUpdateFie
             placeholder="Sleep quality, stress levels, soreness..."
             value={day.checkNotes}
             onChange={(event) => onUpdateField({ checkNotes: event.target.value })}
-            className="w-full bg-background/50 border border-white/10 rounded-xl px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-primary/50 outline-none"
+            className="w-full bg-background/50 border border-border rounded-xl px-3 py-2 text-sm text-label focus:ring-2 focus:ring-primary/50 outline-none"
           />
         </div>
       </div>

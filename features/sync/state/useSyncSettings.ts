@@ -14,12 +14,12 @@ import {
 interface UseSyncSettingsResult {
   settings: SyncSettings;
   isSyncing: boolean;
-  isUpgradeRequired: boolean;
   conflicts: SyncConflict[];
   restorePoints: SyncRestorePoint[];
   syncMessage: string;
   syncNow: (
-    resolution?: Partial<Record<SyncEntity, ConflictResolution>>
+    resolution?: Partial<Record<SyncEntity, ConflictResolution>>,
+    options?: { automatic?: boolean }
   ) => Promise<SyncNowResult>;
   rollbackToRestorePoint: (id: string) => Promise<SyncNowResult>;
   pruneRestorePoints: () => Promise<void>;
@@ -32,7 +32,6 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
     lastError: null,
   });
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isUpgradeRequired, setIsUpgradeRequired] = useState(false);
   const [conflicts, setConflicts] = useState<SyncConflict[]>([]);
   const [restorePoints, setRestorePoints] = useState<SyncRestorePoint[]>([]);
   const [syncMessage, setSyncMessage] = useState("");
@@ -68,10 +67,11 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
     async (
       resolution: Partial<
         Record<SyncEntity, ConflictResolution>
-      > = {}
+      > = {},
+      options: { automatic?: boolean } = {}
     ) => {
       setIsSyncing(true);
-      const result = await service.syncNow(resolution);
+      const result = await service.syncNow(resolution, options);
       const loadedSettings = await service.getSettings();
       const loadedRestorePoints = await service.getRestorePoints();
       if (!mountedRef.current) {
@@ -79,7 +79,6 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
       }
       setSyncMessage(result.message);
       setConflicts(result.conflicts);
-      setIsUpgradeRequired(result.status === "upgradeRequired");
       setSettings(loadedSettings);
       setRestorePoints(loadedRestorePoints);
       setIsSyncing(false);
@@ -115,7 +114,6 @@ export function useSyncSettings(service: SyncService): UseSyncSettingsResult {
   return {
     settings,
     isSyncing,
-    isUpgradeRequired,
     conflicts,
     restorePoints,
     syncMessage,
