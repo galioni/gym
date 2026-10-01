@@ -16,6 +16,7 @@ export const PLAN_FACTS = {
     plans: 20,
     aiPlansPerDay: 1,
     syncEveryDays: 30,
+    historyDays: 7,
   },
   pro: {
     templates: 200,
@@ -34,6 +35,7 @@ export function freePlanFeatures(): string[] {
     `AI plan generation (Gemini): ${f.aiPlansPerDay} per day`,
     `Up to ${f.templates} session templates and ${f.plans} plans`,
     `Cloud sync: one sync every ${f.syncEveryDays} days, started by you`,
+    `${f.historyDays} days of history in the cloud (older entries stay on your device)`,
     "Backup export / import",
     "Installable on iOS & Android",
   ];
