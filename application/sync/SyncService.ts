@@ -22,6 +22,8 @@ import { CloudLimitError } from "./syncErrors";
 import { reconcileDeletions } from "./deletionReconciliation";
 import {
   agreedBase,
+  baseAfterPartialWrite,
+  collectionHashes,
   baseDaysFrom,
   Collection,
   EMPTY_SYNC_BASE,
@@ -156,6 +158,7 @@ interface CollectionSync {
   local: Snap | null;
   cloud: Snap | null;
   readLocal(): Promise<Snap | null>;
+  readCloud(): Promise<Snap | null>;
   writeLocal(next: Snap): Promise<void>;
   writeCloud(next: Snap): Promise<void>;
   isValid(snapshot: unknown): boolean;
@@ -437,15 +440,39 @@ export class SyncService {
         }
       }
 
-      const finalDays = await this.syncWorkoutData(localWorkoutMerged, cloudWorkoutMerged, workoutMerge);
-      const nextBase: SyncBase = { days: baseDaysFrom(finalDays), templates: base.templates, plans: base.plans, settings: base.settings };
-      for (const collection of collections) {
-        nextBase[collection.baseKey] = await this.applyCollection(collection, base[collection.baseKey], resolution[collection.entity]);
-      }
-      await this.applyDeletions(deletions, cloudWorkout, localWorkout);
+      // Deletions reach the cloud first. They free room, and without that an account at its limit that deletes one day and
+      // adds another could never sync: the new day would be refused before the old one was removed.
+      await this.applyCloudDeletions(deletions, cloudWorkout);
 
-      // Everything above succeeded: record what both sides now agree on for the next three-way merge.
+      // An account limit refuses only the NEW items that do not fit. The rest of the run still completes and its result is
+      // recorded, so that edits made afterwards are recognised as edits and not as clashes with an unknown ancestor. The
+      // limit is reported at the end.
+      let limitError: CloudLimitError | null = null;
+      let finalDays: Record<string, DayData>;
+      let daysBase: Record<string, string> | null = null;
+      try {
+        finalDays = await this.syncWorkoutData(localWorkoutMerged, cloudWorkoutMerged, workoutMerge);
+      } catch (error) {
+        if (!(error instanceof CloudLimitError)) throw error;
+        limitError = error;
+        finalDays = {};
+        daysBase = await this.daysBaseAfterPartialWrite(base.days);
+      }
+      const nextBase: SyncBase = { days: daysBase ?? baseDaysFrom(finalDays), templates: base.templates, plans: base.plans, settings: base.settings };
+      for (const collection of collections) {
+        try {
+          nextBase[collection.baseKey] = await this.applyCollection(collection, base[collection.baseKey], resolution[collection.entity]);
+        } catch (error) {
+          if (!(error instanceof CloudLimitError)) throw error;
+          limitError ??= error;
+          nextBase[collection.baseKey] = await this.collectionBaseAfterPartialWrite(collection, base[collection.baseKey]);
+        }
+      }
+      await this.applyLocalDeletions(deletions, localWorkout);
+
+      // Record what both sides now verifiably agree on for the next three-way merge (all of it, or the part that was accepted).
       await this.deps.settingsRepository.writeSyncBase?.(nextBase);
+      if (limitError) throw limitError;
 
       const syncedAt = new Date().toISOString();
       await this.deps.settingsRepository.writeSettings({
@@ -496,6 +523,7 @@ export class SyncService {
         local: input.localTemplates,
         cloud: input.cloudTemplates,
         readLocal: () => this.deps.localTemplateRepository.readSnapshot(),
+        readCloud: () => cloudTemplates.readSnapshot(),
         writeLocal: (next) => this.writeLocal(this.deps.localTemplateRepository, expected.templates, next as TemplateSnapshot),
         writeCloud: (next) => cloudTemplates.writeSnapshot(next as TemplateSnapshot),
         isValid: isTemplateSnapshot,
@@ -516,6 +544,7 @@ export class SyncService {
         local: input.localPlans,
         cloud: input.cloudPlans,
         readLocal: () => localPlans.readSnapshot(),
+        readCloud: () => cloudPlans.readSnapshot(),
         writeLocal: (next) => this.writeLocal(localPlans, expected.plans, next as PlansSnapshot),
         writeCloud: (next) => cloudPlans.writeSnapshot(next as PlansSnapshot),
         isValid: isPlansSnapshot,
@@ -536,6 +565,7 @@ export class SyncService {
         local: input.localAccount,
         cloud: input.cloudAccount,
         readLocal: () => localAccount.readSnapshot(),
+        readCloud: () => cloudAccount.readSnapshot(),
         writeLocal: (next) => this.writeLocal(localAccount, expected.settings, next as SettingsSnapshot),
         writeCloud: (next) => cloudAccount.writeSnapshot(next as SettingsSnapshot),
         isValid: isSettingsSnapshot,
@@ -582,12 +612,21 @@ export class SyncService {
         { resolution, localWinsConflicts: collection.quiet }
       );
       const mergedSnapshot: Snap = { version: local.version, updatedAt: new Date().toISOString(), data: collection.fromCollection(merged) };
+      // An account limit refuses only new items. What came from other devices still has to reach this one, so the local
+      // write goes ahead and the limit is reported afterwards.
+      let refused: CloudLimitError | null = null;
       if (stableSerialize(mergedSnapshot.data) !== stableSerialize(cloud.data)) {
-        await collection.writeCloud(mergedSnapshot);
+        try {
+          await collection.writeCloud(mergedSnapshot);
+        } catch (error) {
+          if (!(error instanceof CloudLimitError)) throw error;
+          refused = error;
+        }
       }
       if (stableSerialize(mergedSnapshot.data) !== stableSerialize(local.data)) {
         await collection.writeLocal(mergedSnapshot);
       }
+      if (refused) throw refused;
       finalCollection = merged;
     }
 
@@ -600,10 +639,9 @@ export class SyncService {
    * local storage, and clears local tombstones (every one is settled by now: applied, moot, or overridden
    * by a newer edit). A failure above throws before this point, so unsettled tombstones are retried.
    */
-  private async applyDeletions(
+  private async applyCloudDeletions(
     deletions: ReturnType<typeof reconcileDeletions>,
-    cloudWorkout: WorkoutDataSnapshot | null,
-    localWorkout: WorkoutDataSnapshot | null
+    cloudWorkout: WorkoutDataSnapshot | null
   ): Promise<void> {
     if (Object.keys(deletions.deleteInCloud).length > 0 && this.deps.cloudWorkoutRepository) {
       await this.deps.cloudWorkoutRepository.writeSnapshot({
@@ -613,7 +651,13 @@ export class SyncService {
         deletedDays: deletions.deleteInCloud,
       });
     }
+  }
 
+  /** The local half of finishing deletions: removes days deleted elsewhere and clears the tombstones that are settled. */
+  private async applyLocalDeletions(
+    deletions: ReturnType<typeof reconcileDeletions>,
+    localWorkout: WorkoutDataSnapshot | null
+  ): Promise<void> {
     const hadTombstones = Object.keys(localWorkout?.deletedDays ?? {}).length > 0;
     if (deletions.deleteLocally.length === 0 && !hadTombstones) {
       return;
@@ -631,6 +675,28 @@ export class SyncService {
     if (deletions.deleteLocally.length > 0) {
       this.run.applied = true;
     }
+  }
+
+  /** After a refused write of workout days: the base from what the cloud and this device really hold now. */
+  private async daysBaseAfterPartialWrite(previous: Record<string, string>): Promise<Record<string, string>> {
+    const [cloud, local] = await Promise.all([
+      this.deps.cloudWorkoutRepository?.readSnapshot() ?? null,
+      this.deps.localWorkoutRepository.readSnapshot(),
+    ]);
+    return baseAfterPartialWrite(previous, baseDaysFrom(cloud?.data ?? {}), baseDaysFrom(local?.data ?? {}));
+  }
+
+  /** After a refused write of a collection: the base from what the cloud and this device really hold now. */
+  private async collectionBaseAfterPartialWrite(
+    collection: CollectionSync,
+    previous: Record<string, string>
+  ): Promise<Record<string, string>> {
+    const [cloud, local] = await Promise.all([collection.readCloud(), collection.readLocal()]);
+    return baseAfterPartialWrite(
+      previous,
+      collectionHashes(cloud ? collection.toCollection(cloud.data) : null),
+      collectionHashes(local ? collection.toCollection(local.data) : null)
+    );
   }
 
   private async createRestorePoint(
@@ -676,12 +742,20 @@ export class SyncService {
     }
 
     const merged: WorkoutDataSnapshot = { version: local.version, updatedAt: new Date().toISOString(), data: merge.merged };
+    // See applyCollection: a refused new day must not keep days from other devices from reaching this one.
+    let refused: CloudLimitError | null = null;
     if (stableSerialize(merge.merged) !== stableSerialize(cloud.data)) {
-      await this.deps.cloudWorkoutRepository.writeSnapshot(merged);
+      try {
+        await this.deps.cloudWorkoutRepository.writeSnapshot(merged);
+      } catch (error) {
+        if (!(error instanceof CloudLimitError)) throw error;
+        refused = error;
+      }
     }
     if (stableSerialize(merge.merged) !== stableSerialize(local.data)) {
       await this.writeLocal(this.deps.localWorkoutRepository, this.run.expected.workout, merged);
     }
+    if (refused) throw refused;
     return merge.merged;
   }
 }

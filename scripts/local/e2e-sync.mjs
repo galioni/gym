@@ -3,7 +3,7 @@
  * End-to-end test of cross-browser sync against the running gym-app stack (`npm run gym:up` first).
  *
  * Environment: GYM_BROWSER=chromium|webkit|firefox (default chromium), GYM_DEVICE="iPhone 13" for a phone
- * profile, GYM_SCENARIOS=sync,delete,settings (default all three; deletion and the plans screen are
+ * profile, GYM_SCENARIOS=sync,delete,settings,limits (default all four; deletion and the plans screen are
  * desktop-oriented, so a phone profile runs `sync` only).
  *
  * Two Playwright contexts act as two separate browsers (no shared storage or session) for one account:
@@ -26,7 +26,7 @@ const PASSWORD = "Passw0rd!local";
 const PROJECT = process.env.GYM_PROJECT ?? "gym-app";
 const ENGINE = { chromium, webkit, firefox }[process.env.GYM_BROWSER ?? "chromium"];
 const DEVICE = process.env.GYM_DEVICE;
-const SCENARIOS = (process.env.GYM_SCENARIOS ?? "sync,delete,settings").split(",");
+const SCENARIOS = (process.env.GYM_SCENARIOS ?? "sync,delete,settings,limits").split(",");
 if (!ENGINE) throw new Error(`Unknown GYM_BROWSER: ${process.env.GYM_BROWSER}`);
 if (DEVICE && !devices[DEVICE]) throw new Error(`Unknown GYM_DEVICE: ${DEVICE}`);
 const CONTEXT_OPTIONS = DEVICE ? devices[DEVICE] : { viewport: { width: 1100, height: 900 } };
@@ -227,11 +227,60 @@ async function scenarioTemplatesAndSettings(browser) {
   await B.context().close();
 }
 
+async function scenarioFreeLimits(browser) {
+  console.log("\n== a Free account reaches its template limit without losing anything ==");
+  const email = `lim${Date.now() % 1000000}@gym.local`;
+  const cloudTemplates = () =>
+    psql(`select count(*) from templates t join auth.users u on u.id = t.user_id where u.email = '${email}' and t.deleted_at is null`);
+  const cloudText = (session) =>
+    psql(`select t.main->0->>'text' from templates t join auth.users u on u.id = t.user_id where u.email = '${email}' and t.session_type = '${session}'`);
+  const localTemplateCount = (page) =>
+    page.evaluate((key) => Object.keys(JSON.parse(localStorage.getItem(key) || "{}").templates ?? {}).length, TEMPLATES_KEY);
+
+  const A = await newPage(browser);
+  await signUpAndSkipOnboarding(A, email);
+  await A.evaluate((key) => {
+    const templates = {};
+    for (let i = 1; i <= 7; i += 1) templates[`t${i}`] = { label: `Template ${i}`, warmup: [], main: [{ text: `Move ${i}`, target: "3x8" }] };
+    localStorage.setItem(key, JSON.stringify({ version: 1, updatedAt: new Date().toISOString(), templates }));
+  }, TEMPLATES_KEY);
+  await syncNow(A);
+
+  check(await waitFor(() => cloudTemplates() === "5"), "Free: only 5 of the 7 templates reach Postgres (the Free cap), not none");
+  check(await waitFor(async () => (await A.getByText("Cloud storage limit reached").count()) > 0, 15000), "Free: the app explains the limit");
+  check((await localTemplateCount(A)) === 7, "Free: all 7 templates are still on this device");
+
+  // An edit to a template that is already in the cloud must not be held back by the 2 that are over the limit.
+  await editStoredTemplate(A, "t1", "t1 edited");
+  await syncNow(A);
+  check(await waitFor(() => cloudText("t1") === "t1 edited"), "Free: an edit to a synced template still reaches Postgres while 2 templates are over the limit");
+
+  // Deleting one makes room for exactly one more, in the same sync.
+  await A.evaluate((key) => {
+    const raw = JSON.parse(localStorage.getItem(key));
+    delete raw.templates.t5;
+    raw.updatedAt = new Date().toISOString();
+    localStorage.setItem(key, JSON.stringify(raw));
+  }, TEMPLATES_KEY);
+  await syncNow(A);
+  check(await waitFor(() => psql(`select count(*) from templates t join auth.users u on u.id = t.user_id where u.email = '${email}' and t.session_type = 't5'`) === "0"), "Free: a template deleted on the device is removed from Postgres");
+  check(await waitFor(() => cloudTemplates() === "5"), "Free: and the freed room is used by a template that was over the limit");
+
+  // Upgrading lifts the cap; the rest syncs on the next sync.
+  psql(`insert into public.subscriptions (user_id, plan, status) select id, 'pro', 'active' from auth.users where email = '${email}'`);
+  await syncNow(A);
+  check(await waitFor(() => cloudTemplates() === "6"), "after upgrading to Pro, the remaining template syncs (6 on the device, 6 in Postgres)");
+  // Leave no billing rows behind: the database tests assume a database without subscriptions.
+  psql(`delete from public.subscriptions where user_id in (select id from auth.users where email = '${email}')`);
+  await A.context().close();
+}
+
 const browser = await ENGINE.launch();
 try {
   if (SCENARIOS.includes("sync")) await scenarioSyncAndConflict(browser);
   if (SCENARIOS.includes("delete")) await scenarioDelete(browser);
   if (SCENARIOS.includes("settings")) await scenarioTemplatesAndSettings(browser);
+  if (SCENARIOS.includes("limits")) await scenarioFreeLimits(browser);
 } catch (error) {
   console.error("SCRIPT ERROR", String(error?.message ?? error).split("\n")[0]);
   failures += 1;

@@ -59,7 +59,7 @@ can stay in place.
 KV is still used for billing state, user settings, push subscriptions and rate limits.
 
 - [ ] **Plan tiers** (see the Free/Pro table under "Decisions"). Slice 1 **done** (2026-10-01): `generate-plan` is plan-aware (Free 1 per rolling day, Pro 10 per rolling
-  hour; numbers in `api/_lib/planLimits.ts`, refusal says what Free includes, wait shown in hours/days). Slice 2 **done** (2026-10-01, database side): `row_limit(table, is_pro)` and a security-definer `enforce_row_limit()` read the plan (`is_pro()`), so Free is 1,000 days / 5 templates / 20 plans and Pro is unchanged; a lapsed Pro account keeps everything and is only blocked from adding; restoring a soft-deleted day now counts against the cap (it used to bypass it through the update path). Client side of slice 2 (uploads that cannot deadlock at a small cap) follows. Remaining slices 3 to 5 as listed above. Original scope: plan-aware `row_limit()`, a sync allowance for free
+  hour; numbers in `api/_lib/planLimits.ts`, refusal says what Free includes, wait shown in hours/days). Slice 2 **done** (2026-10-01, database side): `row_limit(table, is_pro)` and a security-definer `enforce_row_limit()` read the plan (`is_pro()`), so Free is 1,000 days / 5 templates / 20 plans and Pro is unchanged; a lapsed Pro account keeps everything and is only blocked from adding; restoring a soft-deleted day now counts against the cap (it used to bypass it through the update path). Client side of slice 2 **done**: uploads go edits, then deletions, then new items (one by one up to the limit), so a small cap can no longer deadlock a sync (the old order inserted before it deleted, and one over-limit item made the whole batch fail, holding back every edit); a limit error now records what the cloud accepted as the agreed base (`baseAfterPartialWrite`) instead of discarding it, which had made the next edit look like a clash with an unknown ancestor; and changes from other devices are written locally even when the cloud refuses new items. Remaining slices 3 to 5 as listed above. Original scope: plan-aware `row_limit()`, a sync allowance for free
   accounts with clear status text ("next sync available on …"), the cloud-only 7-day window, a plan-aware AI rate limit, and
   upgrade prompts at each limit. Build after subscriptions are in Postgres
 - [x] Subscriptions (slice 15.1, 2026-10-01): billing state is in Postgres. `subscriptions` holds the plan and, through a unique
@@ -164,7 +164,7 @@ Decided 2026-10-01:
 - Sign-out does not clear local data. A different account signing in on the same browser is blocked until the user
   chooses to switch (which removes the other account's local data from that browser).
 - A browser that never re-syncs keeps its own copy; there is no server-initiated push.
-- A sync request that would cross an account's row limit is rejected whole (batches are 200 rows), so up to 199 rows below the limit may stay unsynced until some room is freed.
+- An account at its limit keeps syncing everything that fits (edits, deletions, new items up to the limit); only the new items beyond it wait on the device until room is freed or the plan is upgraded.
 - Sync relies on the browser's `localStorage` quota; very large histories on one device are untested.
 
 ## Completed Phases (for reference)

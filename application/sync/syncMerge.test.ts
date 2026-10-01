@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DayData } from "../../types";
 import { dayContentHash } from "./contentHash";
-import { agreedBase, baseDaysFrom, Collection, entityHash, mergeCollection, mergeWorkoutDays } from "./syncMerge";
+import { agreedBase, baseAfterPartialWrite, baseDaysFrom, Collection, collectionHashes, entityHash, mergeCollection, mergeWorkoutDays } from "./syncMerge";
 
 function day(date: string, notes = ""): DayData {
   return {
@@ -158,5 +158,41 @@ describe("agreedBase", () => {
 
   it("drops items that are no longer in the merged result", () => {
     expect(agreedBase(col([["a", "1"]]), col([["a", "1"]]), { a: entityHash("1"), deleted: entityHash("x") })).toEqual({ a: entityHash("1") });
+  });
+});
+
+describe("baseAfterPartialWrite", () => {
+  it("agrees on items both sides hold identically", () => {
+    expect(baseAfterPartialWrite({}, { a: "1", b: "2" }, { a: "1", b: "2", c: "3" })).toEqual({ a: "1", b: "2" });
+  });
+
+  it("does not record an item the cloud refused, so it is simply sent again", () => {
+    const next = baseAfterPartialWrite({ a: "1" }, { a: "1" }, { a: "1", c: "3" });
+    expect(Object.keys(next)).toEqual(["a"]);
+  });
+
+  it("keeps the previous entry when the two copies differ, so a later change is still an edit", () => {
+    expect(baseAfterPartialWrite({ a: "old" }, { a: "cloud-new" }, { a: "local-new" })).toEqual({ a: "old" });
+  });
+
+  it("records nothing for a differing item that was never agreed", () => {
+    expect(baseAfterPartialWrite({}, { a: "cloud" }, { a: "local" })).toEqual({});
+  });
+
+  it("keeps an item removed elsewhere recognisable: the cloud lacks it, this device still holds it", () => {
+    expect(baseAfterPartialWrite({ a: "1", gone: "2" }, { a: "1" }, { a: "1", gone: "2" })).toEqual({ a: "1", gone: "2" });
+  });
+
+  it("forgets an item both sides no longer hold", () => {
+    expect(baseAfterPartialWrite({ a: "1", gone: "2" }, { a: "1" }, { a: "1" })).toEqual({ a: "1" });
+  });
+});
+
+describe("collectionHashes", () => {
+  it("is empty for no collection and hashes every item otherwise", () => {
+    expect(collectionHashes(null)).toEqual({});
+    const hashes = collectionHashes({ keys: ["x", "y"], items: { x: { n: 1 }, y: { n: 2 } } });
+    expect(Object.keys(hashes)).toEqual(["x", "y"]);
+    expect(hashes.x).not.toBe(hashes.y);
   });
 });
