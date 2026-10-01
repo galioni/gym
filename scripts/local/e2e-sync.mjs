@@ -3,7 +3,7 @@
  * End-to-end test of cross-browser sync against the running gym-app stack (`npm run gym:up` first).
  *
  * Environment: GYM_BROWSER=chromium|webkit|firefox (default chromium), GYM_DEVICE="iPhone 13" for a phone
- * profile, GYM_SCENARIOS=sync,delete,settings,limits (default all four; deletion and the plans screen are
+ * profile, GYM_SCENARIOS=sync,delete,settings,limits,allowance (default all five; deletion and the plans screen are
  * desktop-oriented, so a phone profile runs `sync` only).
  *
  * Two Playwright contexts act as two separate browsers (no shared storage or session) for one account:
@@ -26,7 +26,7 @@ const PASSWORD = "Passw0rd!local";
 const PROJECT = process.env.GYM_PROJECT ?? "gym-app";
 const ENGINE = { chromium, webkit, firefox }[process.env.GYM_BROWSER ?? "chromium"];
 const DEVICE = process.env.GYM_DEVICE;
-const SCENARIOS = (process.env.GYM_SCENARIOS ?? "sync,delete,settings,limits").split(",");
+const SCENARIOS = (process.env.GYM_SCENARIOS ?? "sync,delete,settings,limits,allowance").split(",");
 if (!ENGINE) throw new Error(`Unknown GYM_BROWSER: ${process.env.GYM_BROWSER}`);
 if (DEVICE && !devices[DEVICE]) throw new Error(`Unknown GYM_DEVICE: ${DEVICE}`);
 const CONTEXT_OPTIONS = DEVICE ? devices[DEVICE] : { viewport: { width: 1100, height: 900 } };
@@ -275,12 +275,87 @@ async function scenarioFreeLimits(browser) {
   await A.context().close();
 }
 
+async function scenarioFreeAllowance(browser) {
+  console.log("\n== a Free account syncs once a month, by hand ==");
+  const email = `allow${Date.now() % 1000000}@gym.local`;
+  const userId = () => psql(`select id from auth.users where email = '${email}'`);
+  const cloudNote = () =>
+    psql(`select coalesce(string_agg(main_notes, '|'), '') from workout_days w join auth.users u on u.id = w.user_id where u.email = '${email}'`);
+  const setWindowAge = (minutes) =>
+    psql(`insert into public.sync_windows (user_id, opened_at) values ('${userId()}', now() - interval '${minutes} minutes') on conflict (user_id) do update set opened_at = excluded.opened_at`);
+  const openSettings = async (page) => {
+    await page.locator("header button[title='Settings']").click();
+    await page.getByRole("heading", { name: "Sync Settings", exact: true }).waitFor();
+  };
+  const syncNowButton = (page) => page.getByRole("button", { name: "Sync now" }).first();
+
+  // The allowance ships switched off; this scenario switches it on and always off again.
+  psql("update public.app_flags set enabled = true where name = 'sync_allowance'");
+  try {
+    const A = await newPage(browser);
+    await signUpAndSkipOnboarding(A, email);
+
+    // A new device syncs once on its own. With nothing to upload it spends nothing.
+    check(await waitFor(async () => (await A.locator("header button[aria-label^='Sync status: Synced']").count()) > 0, 20000), "Free: the first sync of a new device runs on its own");
+    check(psql(`select count(*) from sync_windows where user_id = '${userId()}'`) === "0", "Free: and, having nothing to upload, it did not spend the month");
+
+    // After that a Free account does not sync on its own.
+    await notesBox(A).fill("first month note");
+    await A.waitForTimeout(7000);
+    check(cloudNote() === "", "Free: later edits stay on the device and are not uploaded automatically");
+
+    // By hand, with a clear warning first.
+    await openSettings(A);
+    check((await A.getByText("Free plan: one sync every 30 days").count()) > 0, "Free: Settings explains the plan");
+    check(await syncNowButton(A).isEnabled(), "Free: Sync now is available");
+    await syncNowButton(A).click();
+    const dialog = A.getByRole("alertdialog");
+    await dialog.waitFor({ timeout: 5000 });
+    check((await dialog.getByText("Use this month's sync?").count()) > 0, "Free: Sync now first asks before using the month's sync");
+    check(cloudNote() === "", "Free: nothing is uploaded until the person confirms");
+    await dialog.getByRole("button", { name: "Not now" }).click();
+    await A.waitForTimeout(1500);
+    check(cloudNote() === "", "Free: cancelling uploads nothing");
+
+    await syncNowButton(A).click();
+    await dialog.waitFor({ timeout: 5000 });
+    await dialog.getByRole("button", { name: "Sync now" }).click();
+    check(await waitFor(() => cloudNote() === "first month note"), "Free: confirming uploads the edits");
+    check(psql(`select count(*) from sync_windows where user_id = '${userId()}'`) === "1", "Free: and that upload used the month");
+
+    // Window closed, month used: the screen says when, and the button waits.
+    setWindowAge(11);
+    await A.reload();
+    await notesBox(A).fill("second note, same month");
+    await openSettings(A);
+    check(await waitFor(async () => (await A.getByText(/has been used\. The next one is available on/).count()) > 0, 15000), "Free: Settings says the month's sync is used and when the next opens");
+    check(await syncNowButton(A).isDisabled(), "Free: Sync now waits until then");
+    await A.waitForTimeout(5000);
+    check(cloudNote() === "first month note", "Free: nothing is uploaded in the meantime, and nothing is lost on the device");
+
+    // Thirty days later it is available again.
+    setWindowAge(31 * 24 * 60);
+    await A.reload();
+    await openSettings(A);
+    check(await waitFor(async () => await syncNowButton(A).isEnabled(), 15000), "Free: after 30 days Sync now is available again");
+    await syncNowButton(A).click();
+    await dialog.waitFor({ timeout: 5000 });
+    await dialog.getByRole("button", { name: "Sync now" }).click();
+    check(await waitFor(() => cloudNote() === "second note, same month"), "Free: and uploads what accumulated");
+    await A.context().close();
+  } finally {
+    psql("update public.app_flags set enabled = false where name = 'sync_allowance'");
+    psql(`delete from public.sync_windows where user_id in (select id from auth.users where email = '${email}')`);
+  }
+}
+
 const browser = await ENGINE.launch();
 try {
   if (SCENARIOS.includes("sync")) await scenarioSyncAndConflict(browser);
   if (SCENARIOS.includes("delete")) await scenarioDelete(browser);
   if (SCENARIOS.includes("settings")) await scenarioTemplatesAndSettings(browser);
   if (SCENARIOS.includes("limits")) await scenarioFreeLimits(browser);
+  if (SCENARIOS.includes("allowance")) await scenarioFreeAllowance(browser);
 } catch (error) {
   console.error("SCRIPT ERROR", String(error?.message ?? error).split("\n")[0]);
   failures += 1;

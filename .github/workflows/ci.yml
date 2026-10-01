@@ -77,12 +77,12 @@ jobs:
           - name: Chromium desktop
             browser: chromium
             device: ""
-            scenarios: sync,delete,settings,limits
+            scenarios: sync,delete,settings,limits,allowance
             db-tests: true
           - name: WebKit desktop
             browser: webkit
             device: ""
-            scenarios: sync,delete,settings,limits
+            scenarios: sync,delete,settings,limits,allowance
             db-tests: false
           # Deleting a day is swipe-only on a phone, so the phone profile runs the sync scenario.
           - name: iPhone 13 (WebKit)

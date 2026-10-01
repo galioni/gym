@@ -2,6 +2,7 @@ import { PostgrestClient } from "@supabase/postgrest-js";
 import { AuthTokenProvider } from "../../interfaces/auth/AuthTokenProvider";
 import { getRequiredSupabaseClientEnv } from "../auth/supabase/supabaseEnv";
 import { CloudLimitError, describeLimit } from "../../application/sync/syncErrors";
+import { SyncAllowanceError, parseNextAvailable } from "../../application/sync/syncAllowance";
 
 export type UserTable = "workout_days" | "templates" | "plans" | "user_settings";
 
@@ -45,11 +46,28 @@ const PAGE_SIZE = 1000;
 const WRITE_BATCH = 200;
 // SQLSTATE the database raises when an account reaches a row limit (PostgREST returns it as HTTP 422).
 const LIMIT_REACHED_CODE = "PT422";
+// ... and when a Free account writes outside its monthly sync window (HTTP 423).
+const ALLOWANCE_USED_CODE = "PT423";
 
-function writeError(table: UserTable, action: string, error: { code?: string; message: string }): Error {
+function writeError(table: UserTable, action: string, error: { code?: string; message: string; details?: string }): Error {
+  if (error.code === ALLOWANCE_USED_CODE) return new SyncAllowanceError(parseNextAvailable(error.details));
   return error.code === LIMIT_REACHED_CODE
     ? new CloudLimitError(table, describeLimit(table))
     : new Error(`Database ${action} failed (${table}): ${error.message}`);
+}
+
+/** A PostgREST client that sends the signed-in user's own token, which is what row level security evaluates. */
+export function createUserPostgrestClient(tokenProvider: AuthTokenProvider): PostgrestClient {
+  const env = getRequiredSupabaseClientEnv();
+  return new PostgrestClient(`${env.url}/rest/v1`, {
+    headers: { apikey: env.anonKey },
+    fetch: async (input, init) => {
+      const token = await tokenProvider.getAccessToken();
+      const headers = new Headers(init?.headers);
+      if (token) headers.set("Authorization", `Bearer ${token}`);
+      return fetch(input, { ...init, headers });
+    },
+  });
 }
 
 export class PostgrestRowGateway implements RowGateway {
@@ -59,17 +77,7 @@ export class PostgrestRowGateway implements RowGateway {
     private readonly tokenProvider: AuthTokenProvider,
     private readonly identity: AuthIdentityProvider
   ) {
-    const env = getRequiredSupabaseClientEnv();
-    this.client = new PostgrestClient(`${env.url}/rest/v1`, {
-      headers: { apikey: env.anonKey },
-      // The user's own access token (refreshed by the auth client) is what row level security evaluates.
-      fetch: async (input, init) => {
-        const token = await this.tokenProvider.getAccessToken();
-        const headers = new Headers(init?.headers);
-        if (token) headers.set("Authorization", `Bearer ${token}`);
-        return fetch(input, { ...init, headers });
-      },
-    });
+    this.client = createUserPostgrestClient(this.tokenProvider);
   }
 
   public async requireUserId(): Promise<string> {

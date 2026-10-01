@@ -19,6 +19,7 @@ import {
 import { DayData } from "../../types";
 import { stableSerialize } from "./contentHash";
 import { CloudLimitError } from "./syncErrors";
+import { SyncAllowance, SyncAllowanceError } from "./syncAllowance";
 import { reconcileDeletions } from "./deletionReconciliation";
 import {
   agreedBase,
@@ -76,6 +77,8 @@ function isPlansSnapshot(value: unknown): value is PlansSnapshot {
 
 interface SyncServiceDeps {
   settingsRepository: SyncSettingsRepository;
+  /** Asked at the start of every sync; a Free account that has used its monthly sync is refused here. */
+  allowance?: Pick<SyncAllowance, "begin">;
   localWorkoutRepository: WorkoutDataRepository;
   localTemplateRepository: TemplateRepository;
   cloudWorkoutRepository: WorkoutDataRepository | null;
@@ -187,6 +190,11 @@ function tombstonesOf(snapshot: unknown): unknown {
 
 export class SyncService {
   private inFlight: Promise<SyncNowResult> | null = null;
+  /**
+   * This run only brings the cloud's data to this device; nothing is sent. Every cloud write is held back and handled like a
+   * refusal (what arrived is kept, what both sides agree on is recorded), so local data and pending deletions are untouched.
+   */
+  private uploadsHeld = false;
   private run: SyncRun = { expected: { workout: null, templates: null, plans: null, settings: null }, applied: false };
 
   public constructor(private readonly deps: SyncServiceDeps) {}
@@ -253,7 +261,7 @@ export class SyncService {
    */
   public async syncNow(
     resolution: ConflictResolutionMap = {},
-    options: { automatic?: boolean } = {}
+    options: { automatic?: boolean; downloadOnly?: boolean } = {}
   ): Promise<SyncNowResult> {
     if (this.inFlight) {
       if (Object.keys(resolution).length === 0) {
@@ -261,7 +269,7 @@ export class SyncService {
       }
       await this.inFlight.catch(() => undefined);
     }
-    const running = this.runSync(resolution, options.automatic === true);
+    const running = this.runSync(resolution, options.automatic === true, options.downloadOnly === true);
     this.inFlight = running;
     try {
       return await running;
@@ -296,8 +304,10 @@ export class SyncService {
 
   private async runSync(
     resolution: ConflictResolutionMap,
-    automatic: boolean
+    automatic: boolean,
+    downloadOnly = false
   ): Promise<SyncNowResult> {
+    this.uploadsHeld = downloadOnly;
     const settings = await this.getSettings();
 
     if (!this.deps.cloudWorkoutRepository || !this.deps.cloudTemplateRepository) {
@@ -311,6 +321,10 @@ export class SyncService {
     }
 
     try {
+      // Permission first, before any read: a sync is both directions, so a refusal means nothing is read or written.
+      this.run = { expected: { workout: null, templates: null, plans: null, settings: null }, applied: false };
+      await this.deps.allowance?.begin();
+
       const base: SyncBase = (await this.deps.settingsRepository.readSyncBase?.()) ?? EMPTY_SYNC_BASE;
       const localWorkout = await this.deps.localWorkoutRepository.readSnapshot();
       const localTemplates = await this.deps.localTemplateRepository.readSnapshot();
@@ -472,7 +486,8 @@ export class SyncService {
 
       // Record what both sides now verifiably agree on for the next three-way merge (all of it, or the part that was accepted).
       await this.deps.settingsRepository.writeSyncBase?.(nextBase);
-      if (limitError) throw limitError;
+      // A hold we asked for is the point of a download-only run, not something to report as a limit.
+      if (limitError && !this.uploadsHeld) throw limitError;
 
       const syncedAt = new Date().toISOString();
       await this.deps.settingsRepository.writeSettings({
@@ -488,6 +503,17 @@ export class SyncService {
         appliedToLocal: this.run.applied,
       };
     } catch (error) {
+      // Having used the sync for the period is not a failure: say when the next one opens, and do not record an error.
+      if (error instanceof SyncAllowanceError) {
+        return {
+          status: "error",
+          conflicts: [],
+          message: error.message,
+          reason: "allowance",
+          nextAvailableAt: error.nextAvailableAt,
+          ...(this.run.applied ? { appliedToLocal: true } : {}),
+        };
+      }
       const message =
         error instanceof Error ? error.message : "Unknown sync error";
       await this.deps.settingsRepository.writeSettings({
@@ -525,7 +551,10 @@ export class SyncService {
         readLocal: () => this.deps.localTemplateRepository.readSnapshot(),
         readCloud: () => cloudTemplates.readSnapshot(),
         writeLocal: (next) => this.writeLocal(this.deps.localTemplateRepository, expected.templates, next as TemplateSnapshot),
-        writeCloud: (next) => cloudTemplates.writeSnapshot(next as TemplateSnapshot),
+        writeCloud: (next) => {
+          this.assertUploadsAllowed();
+          return cloudTemplates.writeSnapshot(next as TemplateSnapshot);
+        },
         isValid: isTemplateSnapshot,
         toCollection: (data) => templatesToCollection(data as TemplateSnapshot["data"]),
         fromCollection: (collection) => collectionToTemplates(collection as Collection<TemplateSnapshot["data"][string]>),
@@ -546,7 +575,10 @@ export class SyncService {
         readLocal: () => localPlans.readSnapshot(),
         readCloud: () => cloudPlans.readSnapshot(),
         writeLocal: (next) => this.writeLocal(localPlans, expected.plans, next as PlansSnapshot),
-        writeCloud: (next) => cloudPlans.writeSnapshot(next as PlansSnapshot),
+        writeCloud: (next) => {
+          this.assertUploadsAllowed();
+          return cloudPlans.writeSnapshot(next as PlansSnapshot);
+        },
         isValid: isPlansSnapshot,
         toCollection: (data) => plansToCollection(data as PlansSnapshot["data"]),
         fromCollection: (collection) => collectionToPlans(collection as Collection<PlansSnapshot["data"][number]>),
@@ -567,7 +599,10 @@ export class SyncService {
         readLocal: () => localAccount.readSnapshot(),
         readCloud: () => cloudAccount.readSnapshot(),
         writeLocal: (next) => this.writeLocal(localAccount, expected.settings, next as SettingsSnapshot),
-        writeCloud: (next) => cloudAccount.writeSnapshot(next as SettingsSnapshot),
+        writeCloud: (next) => {
+          this.assertUploadsAllowed();
+          return cloudAccount.writeSnapshot(next as SettingsSnapshot);
+        },
         isValid: isSettingsSnapshot,
         toCollection: (data) => settingsToCollection(data as SettingsSnapshot["data"]),
         fromCollection: (collection) => collectionToSettings(collection),
@@ -643,6 +678,7 @@ export class SyncService {
     deletions: ReturnType<typeof reconcileDeletions>,
     cloudWorkout: WorkoutDataSnapshot | null
   ): Promise<void> {
+    if (this.uploadsHeld) return;
     if (Object.keys(deletions.deleteInCloud).length > 0 && this.deps.cloudWorkoutRepository) {
       await this.deps.cloudWorkoutRepository.writeSnapshot({
         version: cloudWorkout?.version ?? 1,
@@ -671,10 +707,16 @@ export class SyncService {
     for (const date of deletions.deleteLocally) {
       delete data[date];
     }
-    await this.deps.localWorkoutRepository.writeSnapshot({ ...current, data, deletedDays: {} });
+    // A deletion this device made is only settled once the cloud has it. While uploads are held it has not, so keep the tombstones.
+    await this.deps.localWorkoutRepository.writeSnapshot({ ...current, data, deletedDays: this.uploadsHeld ? (current.deletedDays ?? {}) : {} });
     if (deletions.deleteLocally.length > 0) {
       this.run.applied = true;
     }
+  }
+
+  /** Every write to the cloud goes through here first. */
+  private assertUploadsAllowed(): void {
+    if (this.uploadsHeld) throw new SyncAllowanceError(null, "Uploads are held back for this sync.");
   }
 
   /** After a refused write of workout days: the base from what the cloud and this device really hold now. */
@@ -727,6 +769,7 @@ export class SyncService {
     }
 
     if (local && !cloud) {
+      this.assertUploadsAllowed();
       await this.deps.cloudWorkoutRepository.writeSnapshot(local);
       return local.data;
     }
@@ -746,6 +789,7 @@ export class SyncService {
     let refused: CloudLimitError | null = null;
     if (stableSerialize(merge.merged) !== stableSerialize(cloud.data)) {
       try {
+        this.assertUploadsAllowed();
         await this.deps.cloudWorkoutRepository.writeSnapshot(merged);
       } catch (error) {
         if (!(error instanceof CloudLimitError)) throw error;
