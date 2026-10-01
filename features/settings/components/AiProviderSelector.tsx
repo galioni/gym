@@ -48,7 +48,7 @@ const PROVIDERS: ProviderConfig[] = [
 ];
 
 export const AiProviderSelector: React.FC = () => {
-  const { subscription } = useSubscription();
+  const { subscription, startCheckout } = useSubscription();
   const { aiProvider, enabledProviders, isLoading, setAiProvider } = useUserSettings();
 
   const isPro =
@@ -88,6 +88,14 @@ export const AiProviderSelector: React.FC = () => {
           );
         })}
       </div>
+      {!isPro && (
+        <p className="mt-2 text-xs text-labelTertiary">
+          Claude and ChatGPT are included with Pro.{" "}
+          <button type="button" className="font-medium text-primary underline underline-offset-2" onClick={() => void startCheckout().catch(() => undefined)}>
+            Upgrade to Pro
+          </button>
+        </p>
+      )}
     </div>
   );
 };

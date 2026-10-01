@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { buildMockSession, SUPABASE_SESSION_KEY } from "./helpers/mockSession";
+import { buildMockSession, mockUnlimitedSync, SUPABASE_SESSION_KEY } from "./helpers/mockSession";
 
 const ONBOARDING_KEY = "daily-workout-tracker:onboarded:v1";
 const WORKOUT_KEY = "daily-workout-tracker:v2";
@@ -37,6 +37,7 @@ test.describe("Cloud storage limit", () => {
   test.beforeEach(async ({ page }) => {
     // Any other Supabase call (auth refresh etc.) is unnecessary with the fake session.
     await page.route("**placeholder.supabase.co/**", (route) => route.abort());
+    await mockUnlimitedSync(page);
 
     // Empty cloud, and the database refuses new days.
     await page.route("**placeholder.supabase.co/rest/v1/workout_days*", async (route) => {

@@ -116,11 +116,18 @@ Upstash KV keys:
 
 ## Subscription Model
 
-- **Free**: local workout tracking, templates, AI plan generation
-- **Pro**: choice of AI model for plan generation (gated at API level — 402 for free users) and a higher AI limit
-- **AI plan generation limit** (counted per user in Postgres): Free 1 per rolling day on the default model; Pro 10 per rolling hour. More Free/Pro limits are planned (`docs/NEXT_PHASES_README.md`).
+| | Free (£0) | Pro (£1.99 / month) |
+|---|---|---|
+| Workout tracking, templates, plans, backup export / import | yes, on the device | yes |
+| Templates / plans in the cloud | 5 / 20 | 200 / 100 |
+| Workout days in the cloud | 1,000 | 5,000 |
+| Cloud sync | one sync every 30 days, started by you; the first sync on a new device runs on its own but only downloads | automatic, no limit |
+| AI plan generation | 1 per rolling day, Gemini | 10 per rolling hour, choice of Gemini / Claude / ChatGPT |
 
-Subscription state is stored in Postgres (table `subscriptions`, one row per user; the Stripe customer id on that row is how the webhook finds the user). Only the server writes it, with the service-role key; a user can read their own row. Today the only Pro benefit is choosing the AI model; the planned Free/Pro limits are specified in `docs/NEXT_PHASES_README.md`.
+- The facts shown to people live in `application/plans/planCatalog.ts` (landing page, Settings, upgrade prompts); the enforced numbers live in `api/_lib/planLimits.ts` (AI) and the `*_plan_row_limits` and `*_sync_allowance` migrations. A test keeps the TypeScript ones equal.
+- **If Pro ends, nothing is deleted.** Everything stays on the device and in the cloud and can still be edited; the account just cannot add beyond the Free limits until it upgrades or deletes something.
+- Upgrade prompts appear where a limit is met: the plan-generation message, the storage-limit notice, the used monthly sync, and the locked AI providers.
+- Subscription state is stored in Postgres (table `subscriptions`, one row per user; the Stripe customer id on that row is how the webhook finds the user). Only the server writes it, with the service-role key; a user can read their own row. What is charged is the Stripe Price behind `STRIPE_PRO_PRICE_ID`.
 
 ## Authentication
 

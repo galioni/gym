@@ -203,9 +203,16 @@ function App() {
   }, [showToast]);
   const handleStorageLimit = useCallback(
     (message: string) => {
-      showToast({ tone: "error", title: "Cloud storage limit reached", description: message, durationMs: 15000 });
+      const onFreePlan = !isLoadingSubscription && subscription.plan === "free";
+      showToast({
+        tone: "error",
+        title: "Cloud storage limit reached",
+        description: onFreePlan ? `${message} Pro raises the limits.` : message,
+        durationMs: 15000,
+        ...(onFreePlan ? { action: { label: "Upgrade to Pro", onClick: () => void startCheckout().catch(() => undefined) } } : {}),
+      });
     },
-    [showToast]
+    [showToast, isLoadingSubscription, subscription.plan, startCheckout]
   );
   const handleOwnerMismatch = useCallback(async () => {
     const switchAccount = await confirm({

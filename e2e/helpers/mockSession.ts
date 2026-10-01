@@ -48,3 +48,17 @@ export function buildMockSession({ id, email }: { id: string; email: string }) {
     },
   };
 }
+
+/**
+ * Every sync first asks the database whether it may go ahead (begin_sync), and the screen reads the plan's allowance
+ * (sync_allowance). Specs that mock the backend must answer both, as an account with no limit would hear them. Register this
+ * AFTER the catch-all route that aborts everything else, because the last matching route wins.
+ */
+export async function mockUnlimitedSync(page: import("@playwright/test").Page): Promise<void> {
+  await page.route("**placeholder.supabase.co/rest/v1/rpc/begin_sync*", (route) =>
+    route.fulfill({ json: [{ allowed: true, window_ends_at: null, next_available_at: null }] })
+  );
+  await page.route("**placeholder.supabase.co/rest/v1/rpc/sync_allowance*", (route) =>
+    route.fulfill({ json: [{ enforced: false, is_pro: false, window_ends_at: null, next_available_at: null }] })
+  );
+}

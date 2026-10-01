@@ -29,6 +29,7 @@ import {
   PLANS_STORAGE_KEY,
   ACTIVE_PLAN_STORAGE_KEY,
 } from "../../../../constants";
+import { WHEN_PRO_ENDS, freePlanSummary } from "../../../../application/plans/planCatalog";
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -222,11 +223,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                 Manage subscription
               </Button>
             </div>
+            <p className="text-xs text-labelTertiary">{WHEN_PRO_ENDS}</p>
           </div>
         ) : (
           <div className="space-y-3">
             <div className="text-sm text-labelSecondary">
-              You're on the <span className="font-semibold text-label">free plan</span>. Free includes 1 AI-generated plan per day. Pro allows 10 per hour and lets you choose the AI model.
+              You're on the <span className="font-semibold text-label">free plan</span>. {freePlanSummary()}
             </div>
             <Button variant="primary" size="sm" className="gap-2" onClick={() => void startCheckout().catch(() => showToast({ tone: "error", title: "Could not start checkout. Try again." }))}>
               Upgrade to Pro
