@@ -20,7 +20,8 @@ function getRequiredViteEnv(name: string): string {
  */
 function getRedirectUrl(): string {
   if (typeof window !== "undefined" && window.location?.origin && window.location.origin !== "null") {
-    return window.location.origin;
+    // Trailing slash: Supabase allow-list patterns such as "https://host/**" do not match a bare origin.
+    return `${window.location.origin}/`;
   }
   return getRequiredViteEnv("VITE_SUPABASE_REDIRECT_URL");
 }

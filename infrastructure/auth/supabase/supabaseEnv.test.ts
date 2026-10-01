@@ -15,7 +15,7 @@ describe("getRequiredSupabaseClientEnv redirectUrl", () => {
 
   it("returns to the origin the user is on, so a preview does not bounce to production", () => {
     vi.stubGlobal("window", { location: { origin: "https://preview-abc.vercel.app" } });
-    expect(getRequiredSupabaseClientEnv().redirectUrl).toBe("https://preview-abc.vercel.app");
+    expect(getRequiredSupabaseClientEnv().redirectUrl).toBe("https://preview-abc.vercel.app/");
   });
 
   it("falls back to the configured address when there is no browser origin", () => {
