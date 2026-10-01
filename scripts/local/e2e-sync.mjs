@@ -3,7 +3,7 @@
  * End-to-end test of cross-browser sync against the running gym-app stack (`npm run gym:up` first).
  *
  * Environment: GYM_BROWSER=chromium|webkit|firefox (default chromium), GYM_DEVICE="iPhone 13" for a phone
- * profile, GYM_SCENARIOS=sync,delete,settings,limits,allowance (default all five; deletion and the plans screen are
+ * profile, GYM_SCENARIOS=sync,delete,settings,limits,allowance,history (default all six; deletion and the plans screen are
  * desktop-oriented, so a phone profile runs `sync` only).
  *
  * Two Playwright contexts act as two separate browsers (no shared storage or session) for one account:
@@ -26,7 +26,7 @@ const PASSWORD = "Passw0rd!local";
 const PROJECT = process.env.GYM_PROJECT ?? "gym-app";
 const ENGINE = { chromium, webkit, firefox }[process.env.GYM_BROWSER ?? "chromium"];
 const DEVICE = process.env.GYM_DEVICE;
-const SCENARIOS = (process.env.GYM_SCENARIOS ?? "sync,delete,settings,limits,allowance").split(",");
+const SCENARIOS = (process.env.GYM_SCENARIOS ?? "sync,delete,settings,limits,allowance,history").split(",");
 if (!ENGINE) throw new Error(`Unknown GYM_BROWSER: ${process.env.GYM_BROWSER}`);
 if (DEVICE && !devices[DEVICE]) throw new Error(`Unknown GYM_DEVICE: ${DEVICE}`);
 const CONTEXT_OPTIONS = DEVICE ? devices[DEVICE] : { viewport: { width: 1100, height: 900 } };
@@ -349,6 +349,51 @@ async function scenarioFreeAllowance(browser) {
   }
 }
 
+async function scenarioFreeHistory(browser) {
+  console.log("\n== a Free account keeps only the last 7 days in the cloud ==");
+  const email = `hist${Date.now() % 1000000}@gym.local`;
+  const cloudDays = () =>
+    psql(`select coalesce(string_agg(main_notes, '|' order by day), '') from workout_days w join auth.users u on u.id = w.user_id where u.email = '${email}'`);
+  psql("update public.app_flags set enabled = true where name in ('sync_allowance', 'free_history_window')");
+  try {
+    const A = await newPage(browser);
+    await signUpAndSkipOnboarding(A, email);
+    check(await waitFor(async () => (await A.locator("header button[aria-label^='Sync status: Synced']").count()) > 0, 20000), "History: the first sync of a new device runs on its own");
+
+    // A day 40 days ago exists only on this device.
+    await A.evaluate(() => {
+      const d = new Date();
+      d.setDate(d.getDate() - 40);
+      const pad = (n) => String(n).padStart(2, "0");
+      const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const raw = JSON.parse(localStorage.getItem("daily-workout-tracker:v2") ?? "{}");
+      raw.version = raw.version ?? 1;
+      raw.updatedAt = new Date().toISOString();
+      raw.data = { ...(raw.data ?? {}), [key]: { sessionType: "push", mainNotes: "old day, device only" } };
+      localStorage.setItem("daily-workout-tracker:v2", JSON.stringify(raw));
+    });
+    await A.reload();
+    await notesBox(A).fill("today, goes to the cloud");
+
+    await A.locator("header button[title='Settings']").click();
+    await A.getByRole("heading", { name: "Sync Settings", exact: true }).waitFor();
+    check((await A.getByText(/last 7 days; older entries stay on this device/).count()) > 0, "History: Settings says the cloud keeps 7 days");
+    await A.getByRole("button", { name: "Sync now" }).first().click();
+    const dialog = A.getByRole("alertdialog");
+    await dialog.waitFor({ timeout: 5000 });
+    await dialog.getByRole("button", { name: "Sync now" }).click();
+
+    check(await waitFor(() => cloudDays() === "today, goes to the cloud"), "History: only today's day reached the cloud", cloudDays());
+    const local = await A.evaluate(() => localStorage.getItem("daily-workout-tracker:v2") ?? "");
+    check(local.includes("old day, device only"), "History: the old day is still on the device");
+    check(psql(`select count(*) from workout_days w join auth.users u on u.id = w.user_id where u.email = '${email}' and w.day < current_date - 10`) === "0", "History: nothing older than the window is in the cloud");
+    await A.context().close();
+  } finally {
+    psql("update public.app_flags set enabled = false where name in ('sync_allowance', 'free_history_window')");
+    psql(`delete from public.sync_windows where user_id in (select id from auth.users where email = '${email}')`);
+  }
+}
+
 const browser = await ENGINE.launch();
 try {
   if (SCENARIOS.includes("sync")) await scenarioSyncAndConflict(browser);
@@ -356,6 +401,7 @@ try {
   if (SCENARIOS.includes("settings")) await scenarioTemplatesAndSettings(browser);
   if (SCENARIOS.includes("limits")) await scenarioFreeLimits(browser);
   if (SCENARIOS.includes("allowance")) await scenarioFreeAllowance(browser);
+  if (SCENARIOS.includes("history")) await scenarioFreeHistory(browser);
 } catch (error) {
   console.error("SCRIPT ERROR", String(error?.message ?? error).split("\n")[0]);
   failures += 1;
