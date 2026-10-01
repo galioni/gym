@@ -17,7 +17,6 @@ vi.mock("./_lib/rateLimiter.js", async (importOriginal) => {
   };
 });
 vi.mock("./_lib/apiEnv.js", () => ({
-  getRequiredVercelKvEnv: vi.fn(() => ({ kvRestApiUrl: "https://kv.test", kvRestApiToken: "tok" })),
   getAiModel: vi.fn(() => ({ specificationVersion: "v1", provider: "google", modelId: "gemini-2.0-flash" })),
   getAiModelForProvider: vi.fn(() => ({ specificationVersion: "v1", provider: "google", modelId: "gemini-2.0-flash" })),
   getEnabledProviders: vi.fn(() => ["google"]),
