@@ -68,8 +68,11 @@ KV is still used for billing state, user settings, push subscriptions and rate l
 - [x] User settings (slice 15.2, 2026-10-01): the AI provider is `user_settings.ai_provider`; `api/user-settings` and `api/generate-plan` use it
   through the service role. No schema change. The Pro rule is enforced where the provider is *used* (`resolveAiProvider`), because the
   column is writable by its owner; `GET` reports the effective provider. The `user_settings:*` KV keys are now unused
-- [ ] Push subscriptions and reminder de-duplication: new table(s) plus a migration; the `/api/push-*` routes the client
-  calls are not present in `api/` yet, confirm whether the feature is live before porting
+- [x] Push notifications (slice 15.3, 2026-10-01): **removed, not migrated.** The feature was not live: its server routes were deleted on
+  2026-06-15 (commit `dc44861`), nothing scheduled it, and the Settings card was never rendered. The dead client hook and card,
+  `pushKv`, the VAPID helpers, the service worker push handlers and the `web-push` dependency are gone. To bring it back, build it on
+  Postgres (a `push_subscriptions` table, subscribe and public-key routes, a daily reminder job) rather than restoring the old code from git.
+  The `VAPID_*` and `CRON_SECRET` variables in Vercel are now unused and can be deleted there
 - [ ] Rate limiting: replace the KV counters (Postgres counter table or a hosted limiter)
 - [ ] `delete-account`: drop the legacy KV key deletion once those keys are gone
 - [ ] Remove `STORAGE_KV_*` / `KV_REST_API_*` env vars and the `kv`, `kv-rest` services from `docker/compose.yaml`

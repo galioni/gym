@@ -125,21 +125,3 @@ export function getStripeWebhookSecret(): string {
 export function getStripeProPriceId(): string {
   return getRequiredApiEnv("STRIPE_PRO_PRICE_ID");
 }
-
-export interface VapidKeys {
-  publicKey: string;
-  privateKey: string;
-  subject: string;
-}
-
-export function getVapidKeys(): VapidKeys | null {
-  const publicKey = readRequiredEnvValue("VAPID_PUBLIC_KEY");
-  const privateKey = readRequiredEnvValue("VAPID_PRIVATE_KEY");
-  const subject = readRequiredEnvValue("VAPID_SUBJECT");
-  if (!publicKey || !privateKey || !subject) return null;
-  return { publicKey, privateKey, subject };
-}
-
-export function getCronSecret(): string | null {
-  return readRequiredEnvValue("CRON_SECRET");
-}
