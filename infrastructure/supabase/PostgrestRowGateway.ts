@@ -20,6 +20,8 @@ export interface RowGateway {
   requireUserId(): Promise<string>;
   /** Every row of the signed-in user's table, in a stable order, across pages. */
   selectAll<T>(table: UserTable): Promise<T[]>;
+  /** The rows of the signed-in user's table whose server-owned updated_at is at or after `since` (an ISO timestamp), across pages. */
+  selectChangedSince<T>(table: UserTable, since: string): Promise<T[]>;
   upsertRows(table: UserTable, rows: object[]): Promise<void>;
   /** Soft-deletes workout days (sets deleted_at); a later upsert of the day restores it. */
   markDaysDeleted(days: Record<string, string>): Promise<void>;
@@ -89,9 +91,18 @@ export class PostgrestRowGateway implements RowGateway {
   }
 
   public async selectAll<T>(table: UserTable): Promise<T[]> {
+    return this.selectPages<T>(table, null);
+  }
+
+  public async selectChangedSince<T>(table: UserTable, since: string): Promise<T[]> {
+    return this.selectPages<T>(table, since);
+  }
+
+  private async selectPages<T>(table: UserTable, since: string | null): Promise<T[]> {
     const rows: T[] = [];
     for (let from = 0; ; from += PAGE_SIZE) {
       let query = this.client.from(table).select("*");
+      if (since !== null) query = query.gte("updated_at", since);
       for (const column of ORDER[table]) {
         query = query.order(column, { ascending: true });
       }

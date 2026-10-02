@@ -23,6 +23,19 @@ import {
   templatesToRows,
 } from "./postgresRows";
 
+/**
+ * Incremental reads of workout days. A signed-in device keeps the rows it has read and, on later syncs, asks only for rows
+ * changed since the newest server timestamp it holds, so a sync on a 5,000-day account no longer downloads 5,000 rows.
+ *
+ *   - OVERLAP: updated_at is the time a write's transaction STARTED. A transaction that started a moment before the cursor can
+ *     commit after we read, so each request goes back this far and re-reads a few rows rather than miss one.
+ *   - FULL_READ_EVERY: the server also removes rows (the daily purges of old deleted days and of Free-plan history). An
+ *     incremental read cannot see a removal, so everything is re-read this often, and whenever the signed-in user changes.
+ * The copy lives in memory only: opening the app always starts with one full read.
+ */
+export const INCREMENTAL_OVERLAP_MS = 2 * 60_000;
+export const FULL_READ_EVERY_MS = 60 * 60_000;
+
 const fingerprint = (value: unknown): string => hashString(stableSerialize(value));
 
 /**
@@ -83,11 +96,38 @@ async function writeRespectingLimits<R extends object>(plan: {
  */
 export class PostgresWorkoutDataRepository implements WorkoutDataRepository {
   private lastRead = new Map<string, string>();
+  private copy = new Map<string, WorkoutDayRow>();
+  private copyOwner: string | null = null;
+  private cursor: string | null = null;
+  private fullReadAt = 0;
 
-  public constructor(private readonly gateway: RowGateway) {}
+  public constructor(
+    private readonly gateway: RowGateway,
+    private readonly now: () => number = Date.now
+  ) {}
+
+  /** Every row of the account, from the kept copy brought up to date (or from a full read when that is due). */
+  private async loadRows(): Promise<WorkoutDayRow[]> {
+    const userId = await this.gateway.requireUserId();
+    const due = this.copyOwner !== userId || this.cursor === null || this.now() - this.fullReadAt >= FULL_READ_EVERY_MS;
+    if (due) {
+      const rows = await this.gateway.selectAll<WorkoutDayRow>("workout_days");
+      this.copy = new Map(rows.map((row) => [row.day, row]));
+      this.copyOwner = userId;
+      this.fullReadAt = this.now();
+    } else {
+      const since = new Date(Date.parse(this.cursor as string) - INCREMENTAL_OVERLAP_MS).toISOString();
+      const changed = await this.gateway.selectChangedSince<WorkoutDayRow>("workout_days", since);
+      for (const row of changed) this.copy.set(row.day, row);
+    }
+    const stamps = [...this.copy.values()].map((row) => row.updated_at).filter((value): value is string => typeof value === "string");
+    // From the server's own stamps, never this device's clock. Without any stamp there is no cursor, so the next read is full.
+    this.cursor = stamps.length > 0 ? stamps.reduce((a, b) => (a > b ? a : b)) : null;
+    return [...this.copy.values()].sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
+  }
 
   public async readSnapshot(): Promise<WorkoutDataSnapshot | null> {
-    const rows = await this.gateway.selectAll<WorkoutDayRow>("workout_days");
+    const rows = await this.loadRows();
     if (rows.length === 0) {
       this.lastRead = new Map();
       return null;
