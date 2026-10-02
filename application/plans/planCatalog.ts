@@ -36,7 +36,6 @@ export function freePlanFeatures(): string[] {
     `Up to ${f.templates} session templates and ${f.plans} plans`,
     `Cloud sync: one sync every ${f.syncEveryDays} days, started by you`,
     `${f.historyDays} days of history in the cloud (older entries stay on your device)`,
-    "Backup export / import",
     "Installable on iOS & Android",
   ];
 }

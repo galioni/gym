@@ -151,11 +151,11 @@ Decided 2026-10-01:
   variable in Vercel for production and preview, redeploy, and only then show the new price on the landing page.
 - [x] **Soft-deleted data retention: 90 days.** A scheduled job permanently erases deleted days after 90 days, and the
   exercise content of a deleted day is blanked straight away so only the deletion marker syncs. New work, see Phase 16.
-  A full data export was not decided; still open as a product question.
 - [x] **Row limits:** keep 5,000 days, 200 templates and 100 plans per account.
 - [x] **Source control:** done, work is merged to `main` through reviewed PRs.
-- [x] **Data export: not now.** Revisit together with the plan tiers: once free accounts keep only 7 days of cloud history, an export (JSON +
-  CSV, built in the browser from local data, no server) is the natural safety net.
+- [x] **Data export and import: removed (owner, 2026-10-02).** The Settings backup buttons and the whole feature are gone; data lives in the account
+  (Postgres) and moves between devices by sync. Consequence to remember: a person who never signs in has no file backup, and a Free account's cloud keeps
+  only the last 7 days (older days live on the device). The device-side restore points taken before a sync stay
 - [x] **Vercel variables cleaned up (owner, 2026-10-01):** `VAPID_*`, `CRON_SECRET` and the legacy `SYNC_API_KEY`, `VITE_SYNC_API_BASE_URL`,
   `VITE_SYNC_API_KEY` (the last one was readable in the public bundle) are unused and are deleted in the dashboard
 
