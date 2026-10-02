@@ -35,8 +35,20 @@ export type AiProvider = "google" | "anthropic" | "openai";
 const AI_PROVIDER_DEFAULTS: Record<AiProvider, string> = {
   openai: "gpt-4o-mini",
   anthropic: "claude-haiku-4-5-20251001",
-  google: "gemini-2.0-flash",
+  // gemini-2.0-flash was shut down by Google on 2026-06-01; gemini-3.6-flash is the replacement Google names for it.
+  google: "gemini-3.6-flash",
 };
+
+const AI_MODEL_OVERRIDE_ENV: Record<AiProvider, string> = {
+  openai: "AI_MODEL_OPENAI",
+  anthropic: "AI_MODEL_ANTHROPIC",
+  google: "AI_MODEL_GOOGLE",
+};
+
+/** The model id used for a provider: its AI_MODEL_<PROVIDER> variable when set (so a retired model is a setting, not a deploy of new code), else the default. */
+export function getAiModelId(provider: AiProvider): string {
+  return readRequiredEnvValue(AI_MODEL_OVERRIDE_ENV[provider])?.trim() || AI_PROVIDER_DEFAULTS[provider];
+}
 
 const AI_PROVIDER_KEY_ENV: Record<AiProvider, string> = {
   openai: "OPENAI_API_KEY",
@@ -58,7 +70,7 @@ export function getEnabledProviders(): AiProvider[] {
 }
 
 export function getAiModelForProvider(provider: AiProvider): LanguageModel {
-  const model = AI_PROVIDER_DEFAULTS[provider];
+  const model = getAiModelId(provider);
   const keyEnv = AI_PROVIDER_KEY_ENV[provider];
   if (!readRequiredEnvValue(keyEnv)) throw new Error(`Missing required env var: ${keyEnv}`);
   switch (provider) {
