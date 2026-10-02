@@ -775,6 +775,61 @@ select gym_test.become_admin();
 delete from auth.users where id in ('ffffffff-ffff-ffff-ffff-ffffffffffff', '99999999-9999-9999-9999-999999999999', '88888888-8888-8888-8888-888888888888');
 
 -- ===========================================================================
+-- Realtime sync signal (20261001170000_realtime_sync_signal.sql): one "changed" message per user per statement
+-- ===========================================================================
+select gym_test.become_admin();
+insert into auth.users (id, email) values ('77777777-7777-7777-7777-777777777777', 'j@test.local'), ('66666666-6666-6666-6666-666666666666', 'k@test.local');
+
+-- Realtime is not installed in the local stack: stand in for it, recording what would have been sent.
+create schema if not exists realtime;
+grant usage on schema realtime to public;
+create table gym_test.sent (topic text, event text, payload jsonb);
+create or replace function realtime.send(payload jsonb, event text, topic text, private boolean default true) returns void
+language sql security definer as $$ insert into gym_test.sent values (topic, event, payload) $$;
+
+select gym_test.expect_count($$select 1 where public.realtime_sync_enabled() = false$$, 1, 'the realtime signal ships switched off');
+insert into public.workout_days (user_id, day, session_type) values ('77777777-7777-7777-7777-777777777777', current_date, 'gym');
+select gym_test.expect_count($$select 1 from gym_test.sent$$, 0, 'switched off: nothing is sent');
+
+update public.app_flags set enabled = true where name = 'realtime_sync';
+
+-- One statement, three rows, one user: one message, on that user's own channel, carrying no row data.
+insert into public.workout_days (user_id, day, session_type) select '77777777-7777-7777-7777-777777777777', current_date - n, 'gym' from generate_series(1, 3) n;
+select gym_test.expect_count($$select 1 from gym_test.sent where topic = 'sync:77777777-7777-7777-7777-777777777777' and event = 'changed' and payload = '{"table": "workout_days"}'::jsonb$$, 1,
+  'a three-row insert sends one message to the owner''s channel');
+select gym_test.expect_count($$select 1 from gym_test.sent$$, 1, 'and nothing else');
+
+-- One statement touching two users: one message each.
+delete from gym_test.sent;
+insert into public.templates (user_id, session_type) values ('77777777-7777-7777-7777-777777777777', 'tpl-a'), ('66666666-6666-6666-6666-666666666666', 'tpl-b');
+select gym_test.expect_count($$select 1 from gym_test.sent where topic in ('sync:77777777-7777-7777-7777-777777777777', 'sync:66666666-6666-6666-6666-666666666666')$$, 2, 'a statement across two users signals each of them once');
+
+-- Updates and deletes signal too, and a user's own writes (through the API role) do as well.
+delete from gym_test.sent;
+select gym_test.become('77777777-7777-7777-7777-777777777777');
+update public.workout_days set main_notes = 'x' where day = current_date;
+delete from public.templates where session_type = 'tpl-a';
+select gym_test.become_admin();
+select gym_test.expect_count($$select 1 from gym_test.sent where topic = 'sync:77777777-7777-7777-7777-777777777777'$$, 2, 'an update and a delete by the user each signal once');
+select gym_test.expect_count($$select 1 from gym_test.sent where topic like '%66666666%'$$, 0, 'and the other user hears nothing about it');
+
+-- A statement that changes no rows sends nothing.
+delete from gym_test.sent;
+update public.workout_days set main_notes = 'y' where day = current_date + 1000;
+select gym_test.expect_count($$select 1 from gym_test.sent$$, 0, 'no rows changed, no message');
+
+-- Realtime failing must never fail the write.
+create or replace function realtime.send(payload jsonb, event text, topic text, private boolean default true) returns void
+language plpgsql as $$ begin raise exception 'realtime is down'; end $$;
+select gym_test.become('77777777-7777-7777-7777-777777777777');
+select gym_test.expect_affected($$insert into public.workout_days (user_id, day, session_type) values ('77777777-7777-7777-7777-777777777777', current_date - 30, 'gym')$$, 1, 'a failing send does not fail the write');
+select gym_test.expect_error($$select public.signal_sync_change()$$, '42501', 'a signed-in user cannot call the signal function');
+select gym_test.become_admin();
+
+update public.app_flags set enabled = false where name = 'realtime_sync';
+delete from auth.users where id in ('77777777-7777-7777-7777-777777777777', '66666666-6666-6666-6666-666666666666');
+
+-- ===========================================================================
 -- Account deletion cascades to all user data
 -- ===========================================================================
 select gym_test.become_admin();

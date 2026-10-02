@@ -10,6 +10,8 @@ import { SupabaseTokenProvider } from "../../auth/supabase/SupabaseTokenProvider
 import { PostgrestRowGateway, createUserPostgrestClient } from "../../supabase/PostgrestRowGateway";
 import { PostgrestSyncAllowance } from "../../supabase/PostgrestSyncAllowance";
 import { SyncAllowance } from "../../../application/sync/syncAllowance";
+import { SupabaseSyncSignal } from "../../realtime/SupabaseSyncSignal";
+import { SyncSignal } from "../../../interfaces/sync/SyncSignal";
 import { LocalStorageAccountSettingsRepository } from "../LocalStorageAccountSettingsRepository";
 import {
   PostgresAccountSettingsRepository,
@@ -25,6 +27,8 @@ interface WorkoutServices {
   planService: PlanService;
   /** The Free plan's monthly sync: asked before every sync, and read by the screen. */
   syncAllowance: SyncAllowance;
+  /** Tells this device when another one changed the account, so it can sync at once. */
+  syncSignal: SyncSignal;
 }
 
 /**
@@ -47,6 +51,7 @@ export function createWorkoutServices(): WorkoutServices {
     templateService: new TemplateService(localTemplateRepository),
     planService: new PlanService(plansRepository),
     syncAllowance,
+    syncSignal: new SupabaseSyncSignal(tokenProvider),
     syncService: new SyncService({
       settingsRepository: syncSettingsRepository,
       allowance: syncAllowance,

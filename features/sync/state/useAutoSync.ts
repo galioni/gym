@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef } from "react";
 import { PLANS_STORAGE_KEY, STORAGE_KEY, TEMPLATE_STORAGE_KEY } from "../../../constants";
 import { ConflictResolution, SyncConflict, SyncEntity, SyncNowResult } from "../../../application/sync/syncTypes";
+import { SyncSignal } from "../../../interfaces/sync/SyncSignal";
 import { checkSyncOwner } from "./syncOwner";
 
 const DEBOUNCE_MS = 3000;
 const FOCUS_MIN_INTERVAL_MS = 15_000;
 const POLL_MS = 5 * 60_000;
+/** Several statements in a row (a sync writes days, then templates, then plans) send several signals: act once. */
+const SIGNAL_DEBOUNCE_MS = 1500;
 
 interface UseAutoSyncOptions {
   /** Local data has finished loading into memory (never sync before this). */
@@ -17,6 +20,8 @@ interface UseAutoSyncOptions {
   ) => Promise<SyncNowResult>;
   /** Automatic syncs only bring the cloud's data to this device and send nothing (the Free plan uploads by hand, once a month). */
   downloadOnly?: boolean;
+  /** The server's "your data changed elsewhere" hint. Optional: without it the poll and the other triggers still run. */
+  signal?: SyncSignal;
   /** Changes identity whenever local data changes; schedules a debounced sync. */
   changeSignal: unknown;
   /** A sync (or another tab) changed local storage: reload in-memory state from it. */
@@ -39,6 +44,7 @@ export function useAutoSync({
   userId,
   syncNow,
   downloadOnly = false,
+  signal,
   changeSignal,
   onLocalDataChanged,
   onConflicts,
@@ -121,6 +127,21 @@ export function useAutoSync({
     const timer = window.setTimeout(() => void run(), DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
   }, [changeSignal, run]);
+
+  // Another device changed the account: sync soon. Only where this device syncs on its own (a Free account does not, so it
+  // does not listen either).
+  useEffect(() => {
+    if (!signal || !ready || !userId || downloadOnly) return;
+    let timer: number | undefined;
+    const stop = signal.subscribe(userId, () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => void run(), SIGNAL_DEBOUNCE_MS);
+    });
+    return () => {
+      window.clearTimeout(timer);
+      stop();
+    };
+  }, [signal, ready, userId, downloadOnly, run]);
 
   // Connection back, tab focused again, and a slow poll for changes made on other devices.
   useEffect(() => {

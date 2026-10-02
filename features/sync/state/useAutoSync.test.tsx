@@ -225,6 +225,69 @@ describe("useAutoSync", () => {
     });
   });
 
+  describe("when another device changes the account", () => {
+    /** A signal whose notifications the test fires by hand. */
+    function fakeSignal() {
+      let listener: (() => void) | null = null;
+      const stop = vi.fn(() => {
+        listener = null;
+      });
+      const subscribe = vi.fn((_userId: string, onChange: () => void) => {
+        listener = onChange;
+        return stop;
+      });
+      return { signal: { subscribe }, subscribe, stop, fire: () => listener?.() };
+    }
+
+    it("syncs soon after a signal, once for a burst of them", async () => {
+      const { signal, subscribe, fire } = fakeSignal();
+      const { syncNow } = setup({ signal });
+      await flush();
+      expect(subscribe).toHaveBeenCalledWith("user-1", expect.any(Function));
+      syncNow.mockClear();
+
+      act(() => { fire(); fire(); fire(); });
+      await advance(1400);
+      expect(syncNow).not.toHaveBeenCalled();
+      await advance(200);
+      expect(syncNow).toHaveBeenCalledTimes(1);
+      expect(syncNow).toHaveBeenCalledWith({}, { automatic: true, downloadOnly: false });
+    });
+
+    it("does not listen before data is loaded or without a signed-in user", async () => {
+      const { signal, subscribe } = fakeSignal();
+      setup({ signal, ready: false });
+      setup({ signal, userId: null });
+      await flush();
+      expect(subscribe).not.toHaveBeenCalled();
+    });
+
+    it("does not listen on an account that only downloads (Free)", async () => {
+      const { signal, subscribe } = fakeSignal();
+      setup({ signal, downloadOnly: true });
+      await flush();
+      expect(subscribe).not.toHaveBeenCalled();
+    });
+
+    it("stops listening when unmounted, and a signal that was waiting is dropped", async () => {
+      const { signal, stop, fire } = fakeSignal();
+      const { syncNow, hook } = setup({ signal });
+      await flush();
+      syncNow.mockClear();
+      act(() => { fire(); });
+      hook.unmount();
+      await advance(5000);
+      expect(stop).toHaveBeenCalled();
+      expect(syncNow).not.toHaveBeenCalled();
+    });
+
+    it("works the same without a signal (the poll and other triggers are the fallback)", async () => {
+      const { syncNow } = setup();
+      await flush();
+      expect(syncNow).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("telling the user", () => {
     it("reloads in-memory state only when a sync changed local data", async () => {
       const { syncNow, handlers } = setup();
