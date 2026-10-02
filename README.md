@@ -145,7 +145,7 @@ localStorage keys:
 - `SUPABASE_JWT_SECRET` — found in Supabase → Project Settings → API → JWT Secret; used to verify tokens in every API handler
 - `SUPABASE_SERVICE_ROLE_KEY` — required for account deletion (`/api/delete-account`)
 - `GOOGLE_GENERATIVE_AI_API_KEY` — the Free plan's AI provider (required)
-- Optional, Pro-only providers: `AI_EXTRA_PROVIDERS` (for example `anthropic,openai`) together with `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY`. List a provider only when its key is set
+- Optional, Pro-only providers: `AI_EXTRA_PROVIDERS` (for example `anthropic,openai`) together with `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY`. A listed provider is offered only when its key is set
 - Optional: `AI_MODEL_GOOGLE`, `AI_MODEL_ANTHROPIC`, `AI_MODEL_OPENAI` — replace a provider's default model (for example when Google retires one)
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET` — from Stripe dashboard after registering the webhook endpoint

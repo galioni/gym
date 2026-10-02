@@ -60,12 +60,15 @@ const AI_PROVIDER_KEY_ENV: Record<AiProvider, string> = {
  * Returns providers available for plan generation. Google is always included
  * (free-tier baseline). AI_EXTRA_PROVIDERS adds optional pro-only providers.
  * Example: AI_EXTRA_PROVIDERS=anthropic,openai
+ *
+ * An extra provider is offered only when its API key is set: listing one without a key would show Pro people a choice
+ * that fails when they use it. (AI_EXTRA_PROVIDERS is a sensitive Vercel variable, so its value cannot be re-read to check.)
  */
 export function getEnabledProviders(): AiProvider[] {
   const extras = (process.env.AI_EXTRA_PROVIDERS ?? "")
     .split(",")
     .map((s) => s.trim())
-    .filter((s): s is AiProvider => s === "anthropic" || s === "openai");
+    .filter((s): s is AiProvider => (s === "anthropic" || s === "openai") && readRequiredEnvValue(AI_PROVIDER_KEY_ENV[s]) !== null);
   return ["google", ...extras];
 }
 
