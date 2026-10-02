@@ -88,7 +88,7 @@ KV is still used for billing state, user settings, push subscriptions and rate l
 
 ## Phase 16 — Sync performance and freshness  _(size: M; only when data volume or latency justifies it)_
 
-- [ ] Incremental pull (`updated_at > cursor` with a small overlap window) instead of reading every row each sync
+- [x] Incremental pull of workout days (2026-10-02): the cloud repository keeps the rows it has read (in memory) and later reads ask only for rows with `updated_at >= newest held - 2 minutes` (the overlap covers a transaction that started before the cursor but committed after our read; the cursor comes from server stamps, never the device clock). The server's daily purges delete rows, which an incremental read cannot see, so everything is re-read every hour and when the signed-in user changes; opening the app always starts with a full read. The sync service still receives a full snapshot, so the merge and the "absent is not deleted" rule are untouched. Templates, plans and settings stay full reads (a few hundred rows at most). Pro has up to 5,000 days, so this is the table that mattered. Tests: `IncrementalRead.test.ts` (equal to a full read after edits/deletes/restores, late commits, purges, user change, failures)
 - [ ] Faster cross-device updates: Supabase Realtime or a lighter poll (today: on focus, on reconnect, every 5 minutes)
 - [x] **Retention (decided: 90 days). Done and live (2026-10-01).** A trigger blanks a deleted day's content; the client
   stores the content hash in `deleted_hash` so cross-device deletes still work; `purge_deleted_days()` runs daily via

@@ -28,7 +28,21 @@ export class FakeGateway implements RowGateway {
   public async requireUserId() { return "user-1"; }
 
   public async selectAll<T>(table: UserTable): Promise<T[]> {
-    return [...this.tables[table].values()].map((row) => ({ ...row })) as T[];
+    this.readCalls.full += 1;
+    const rows = [...this.tables[table].values()].map((row) => ({ ...row }));
+    this.rowsRead += rows.length;
+    return rows as T[];
+  }
+
+  /** Rows fetched by selectAll / selectChangedSince, so tests can see what a sync costs. */
+  public rowsRead = 0;
+  public readCalls = { full: 0, changed: 0 };
+
+  public async selectChangedSince<T>(table: UserTable, since: string): Promise<T[]> {
+    this.readCalls.changed += 1;
+    const rows = [...this.tables[table].values()].filter((row) => String(row.updated_at ?? "") >= since).map((row) => ({ ...row }));
+    this.rowsRead += rows.length;
+    return rows as T[];
   }
 
   /** Per-table cap on live rows, like the database trigger (an unset table is unlimited). */
@@ -58,6 +72,7 @@ export class FakeGateway implements RowGateway {
       const row = this.tables.workout_days.get(day);
       if (row && row.deleted_at === null) {
         Object.assign(row, {
+          updated_at: new Date(Date.now() + ++this.clock).toISOString(),
           deleted_at: new Date().toISOString(),
           deleted_hash: hash,
           warmup: [],
