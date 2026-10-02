@@ -262,6 +262,7 @@ function App() {
     userId,
     syncNow,
     downloadOnly: allowanceLimited,
+    signal: services.syncSignal,
     changeSignal,
     onLocalDataChanged: reloadFromStorage,
     onConflicts: handleSyncConflicts,

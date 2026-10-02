@@ -1,6 +1,6 @@
 -- Rollback for the app schema migrations:
 --   20261001090000_core_tables, 20261001090100_row_level_security, 20261001100000_row_limits,
---   20261001110000_deleted_day_retention, 20261001120000_billing_state, 20261001130000_rate_limit, 20261001140000_plan_row_limits, 20261001150000_sync_allowance, 20261001160000_free_history_window
+--   20261001110000_deleted_day_retention, 20261001120000_billing_state, 20261001130000_rate_limit, 20261001140000_plan_row_limits, 20261001150000_sync_allowance, 20261001160000_free_history_window, 20261001170000_realtime_sync_signal
 --
 -- DESTRUCTIVE: this deletes every row in the app tables (workout days, templates, plans, settings,
 -- subscriptions). Browsers keep their own local copies, so users do not lose their data, but the cloud
@@ -36,6 +36,15 @@ drop function if exists public.purge_stripe_events(interval);
 drop function if exists public.purge_deleted_days(interval);
 drop function if exists public.blank_deleted_day();
 drop function if exists public.enforce_row_limit();
+do $$
+begin
+  if to_regclass('realtime.messages') is not null then
+    drop policy if exists "users hear their own sync signal" on realtime.messages;
+  end if;
+end
+$$;
+drop function if exists public.signal_sync_change();
+drop function if exists public.realtime_sync_enabled();
 drop function if exists public.purge_free_history(integer);
 drop function if exists public.enforce_free_history_window();
 drop function if exists public.free_history_window_enforced();
@@ -56,7 +65,7 @@ do $$
 begin
   if to_regclass('supabase_migrations.schema_migrations') is not null then
     delete from supabase_migrations.schema_migrations
-      where version in ('20261001090000', '20261001090100', '20261001100000', '20261001110000', '20261001120000', '20261001130000', '20261001140000', '20261001150000', '20261001160000');
+      where version in ('20261001090000', '20261001090100', '20261001100000', '20261001110000', '20261001120000', '20261001130000', '20261001140000', '20261001150000', '20261001160000', '20261001170000');
   end if;
 end
 $$;
