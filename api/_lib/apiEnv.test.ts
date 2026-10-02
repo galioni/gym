@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getAiModelForProvider, getAiModelId, getRequiredApiEnv } from "./apiEnv";
+import { getAiModelForProvider, getAiModelId, getEnabledProviders, getRequiredApiEnv } from "./apiEnv";
 
 describe("apiEnv", () => {
   afterEach(() => {
@@ -37,5 +37,38 @@ describe("AI model ids", () => {
     expect((getAiModelForProvider("google") as { modelId: string }).modelId).toBe("gemini-3.6-flash");
     vi.stubEnv("AI_MODEL_GOOGLE", "gemini-other");
     expect((getAiModelForProvider("google") as { modelId: string }).modelId).toBe("gemini-other");
+  });
+});
+
+describe("enabled AI providers", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("is always Google, whatever else is listed", () => {
+    vi.stubEnv("AI_EXTRA_PROVIDERS", "");
+    expect(getEnabledProviders()).toEqual(["google"]);
+  });
+
+  it("offers a listed extra provider only when its API key is set", () => {
+    vi.stubEnv("AI_EXTRA_PROVIDERS", "anthropic,openai");
+    vi.stubEnv("ANTHROPIC_API_KEY", "key");
+    vi.stubEnv("OPENAI_API_KEY", "");
+    expect(getEnabledProviders()).toEqual(["google", "anthropic"]);
+
+    vi.stubEnv("OPENAI_API_KEY", "key");
+    expect(getEnabledProviders()).toEqual(["google", "anthropic", "openai"]);
+  });
+
+  it("does not offer a provider that has a key but is not listed", () => {
+    vi.stubEnv("AI_EXTRA_PROVIDERS", "");
+    vi.stubEnv("ANTHROPIC_API_KEY", "key");
+    expect(getEnabledProviders()).toEqual(["google"]);
+  });
+
+  it("ignores unknown names and stray spaces", () => {
+    vi.stubEnv("AI_EXTRA_PROVIDERS", " anthropic , mistral ");
+    vi.stubEnv("ANTHROPIC_API_KEY", "key");
+    expect(getEnabledProviders()).toEqual(["google", "anthropic"]);
   });
 });
