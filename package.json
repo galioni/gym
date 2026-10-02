@@ -39,7 +39,7 @@
     "@supabase/postgrest-js": "^2.117.2",
     "@supabase/realtime-js": "^2.112.4",
     "@supabase/supabase-js": "^2.112.4",
-    "@vercel/analytics": "^1.4.1",
+    "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "ai": "^6.0.271",
     "clsx": "^2.1.1",
