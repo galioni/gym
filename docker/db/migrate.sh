@@ -7,6 +7,18 @@ set -eu
 
 export PGHOST=db PGUSER=postgres PGDATABASE=postgres   # PGPASSWORD comes from the environment
 
+# The first migration references auth.users, which the auth service (GoTrue) creates when it first starts, at the same time as
+# this container. Wait for it, so a slow auth start cannot fail a from-scratch run.
+waited=0
+until [ -n "$(psql -tA -c "select to_regclass('auth.users')")" ]; do
+  waited=$((waited + 1))
+  if [ "$waited" -gt 60 ]; then
+    echo "auth.users did not appear within 60s: is the auth service running?" >&2
+    exit 1
+  fi
+  sleep 1
+done
+
 psql -v ON_ERROR_STOP=1 -q <<'SQL'
 create schema if not exists supabase_migrations;
 create table if not exists supabase_migrations.schema_migrations (
