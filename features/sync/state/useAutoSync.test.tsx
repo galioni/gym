@@ -225,6 +225,60 @@ describe("useAutoSync", () => {
     });
   });
 
+  describe("a trigger that arrives while a sync is running", () => {
+    /** A sync that stays running until the test lets it finish. */
+    function slowSync() {
+      const releases: Array<() => void> = [];
+      const syncNow = vi.fn<(resolution?: unknown, options?: { automatic?: boolean; downloadOnly?: boolean }) => Promise<SyncNowResult>>(
+        () => new Promise<SyncNowResult>((resolve) => releases.push(() => resolve(SUCCESS)))
+      );
+      return { syncNow, finishOne: () => releases.shift()?.() };
+    }
+
+    it("is not lost: one more sync runs once the current one has finished", async () => {
+      const { syncNow, finishOne } = slowSync();
+      setup({ syncNow });
+      await flush();
+      expect(syncNow).toHaveBeenCalledTimes(1);
+
+      // An edit was made after this sync read local data; the connection event (or the debounce) fires meanwhile.
+      act(() => { window.dispatchEvent(new Event("online")); });
+      await flush();
+      expect(syncNow).toHaveBeenCalledTimes(1);
+
+      act(() => finishOne());
+      await advance(1000);
+      expect(syncNow).toHaveBeenCalledTimes(2);
+
+      act(() => finishOne());
+      await advance(5000);
+      expect(syncNow).toHaveBeenCalledTimes(2); // and no more: nothing else arrived
+    });
+
+    it("many triggers during one sync cause a single extra sync", async () => {
+      const { syncNow, finishOne } = slowSync();
+      setup({ syncNow });
+      await flush();
+      act(() => { window.dispatchEvent(new Event("online")); window.dispatchEvent(new Event("online")); window.dispatchEvent(new Event("online")); });
+      act(() => finishOne());
+      await advance(1000);
+      act(() => finishOne());
+      await advance(5000);
+      expect(syncNow).toHaveBeenCalledTimes(2);
+    });
+
+    it("runs nothing extra if the hook is unmounted first", async () => {
+      const { syncNow, finishOne } = slowSync();
+      const { hook } = setup({ syncNow });
+      await flush();
+      act(() => { window.dispatchEvent(new Event("online")); });
+      hook.unmount();
+      act(() => finishOne());
+      await advance(5000);
+      expect(syncNow).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("when another device changes the account", () => {
     /** A signal whose notifications the test fires by hand. */
     function fakeSignal() {

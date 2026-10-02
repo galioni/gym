@@ -9,6 +9,8 @@ const FOCUS_MIN_INTERVAL_MS = 15_000;
 const POLL_MS = 5 * 60_000;
 /** Several statements in a row (a sync writes days, then templates, then plans) send several signals: act once. */
 const SIGNAL_DEBOUNCE_MS = 1500;
+/** A trigger that arrived during a sync is answered this long after it ends. */
+const RERUN_DELAY_MS = 500;
 
 interface UseAutoSyncOptions {
   /** Local data has finished loading into memory (never sync before this). */
@@ -52,6 +54,11 @@ export function useAutoSync({
   onOwnerMismatch,
 }: UseAutoSyncOptions): void {
   const runningRef = useRef(false);
+  /** A trigger arrived while a sync was running: that sync may have read local data before the change, so run once more. */
+  const rerunRef = useRef(false);
+  const rerunTimerRef = useRef<number | undefined>(undefined);
+  const mountedRef = useRef(true);
+  const runRef = useRef<() => Promise<void>>(async () => undefined);
   const lastRunRef = useRef(0);
   const ownerCheckedFor = useRef<string | null>(null);
   const ownerBlockedRef = useRef(false);
@@ -65,8 +72,14 @@ export function useAutoSync({
   });
 
   const run = useCallback(async () => {
-    if (!ready || !userId || runningRef.current || ownerBlockedRef.current) return;
+    if (!ready || !userId || ownerBlockedRef.current) return;
     if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+    if (runningRef.current) {
+      // Dropping this trigger would leave the change unsynced until the next poll (up to 5 minutes): the running sync may
+      // already have read local data. Remember it and run again when this one ends.
+      rerunRef.current = true;
+      return;
+    }
 
     if (ownerCheckedFor.current !== userId) {
       ownerCheckedFor.current = userId;
@@ -109,8 +122,25 @@ export function useAutoSync({
       console.error("[auto-sync] sync failed", error);
     } finally {
       runningRef.current = false;
+      if (rerunRef.current && mountedRef.current) {
+        rerunRef.current = false;
+        window.clearTimeout(rerunTimerRef.current);
+        rerunTimerRef.current = window.setTimeout(() => void runRef.current(), RERUN_DELAY_MS);
+      }
     }
   }, [ready, userId, downloadOnly]);
+
+  // The rerun above must call the latest run, and must not outlive the component.
+  useEffect(() => {
+    runRef.current = run;
+  }, [run]);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      window.clearTimeout(rerunTimerRef.current);
+    };
+  }, []);
 
   // After sign-in / once local data is loaded.
   useEffect(() => {
