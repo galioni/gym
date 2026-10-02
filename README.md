@@ -8,7 +8,7 @@ Local-first workout tracker with AI-generated training plans, cloud sync, and St
 - **Vercel account** — for running the API locally and deploying
 - **Supabase project** — auth (Google OAuth + email/password must be enabled in the Supabase dashboard)
 - **Stripe account** — for subscription billing
-- **OpenAI API key** — for AI plan generation
+- **Google Gemini API key** — AI plan generation for every plan (Free is Gemini only); Anthropic and OpenAI keys are optional extras for Pro
 
 ## Run
 
@@ -64,7 +64,7 @@ Application logic depends on repository interfaces; storage details stay in infr
 
 ## Features
 
-- **AI onboarding** — wizard on first login generates a personalised training plan via OpenAI; questions cover goal, experience, days/week, equipment, session duration, and optional body-focus areas (multi-select: chest, back, shoulders, arms, core, legs, glutes, full body, cardio)
+- **AI onboarding** — wizard on first login generates a personalised training plan with AI (Gemini by default; Pro can choose Claude or ChatGPT); questions cover goal, experience, days/week, equipment, session duration, and optional body-focus areas (multi-select: chest, back, shoulders, arms, core, legs, glutes, full body, cardio)
 - **Regenerate plan** — Settings → AI Plan → Regenerate reruns the wizard at any time
 - **Custom session types** — add, rename, and delete session types from the template editor
 - **Plans** — group sessions into named plans; activate a plan to filter the header session dropdown; sessions are shared across plans
@@ -81,9 +81,9 @@ Application logic depends on repository interfaces; storage details stay in infr
 ## User Flow
 
 1. **Not signed in** → Landing page (`features/landing/`) with email/password form + Google OAuth
-2. **First login** → Onboarding wizard: goal, experience, days/week, equipment, duration, optional body focus → OpenAI generates a personalised training plan → saved as templates
+2. **First login** → Onboarding wizard: goal, experience, days/week, equipment, duration, optional body focus → AI generates a personalised training plan → saved as templates
 3. **Dashboard** → Daily workout tracking (warm-up + main session, timers, notes, progress)
-4. **Settings** → Templates, plans, sync, plan/billing, reminders, appearance, data export/import
+4. **Settings** → Templates, plans, sync, plan/billing, reminders, appearance, delete account (there is no export/import: data moves by sync)
 
 ## Storage
 
@@ -101,7 +101,7 @@ localStorage keys:
 
 | Route | Method | Auth | Description |
 |-------|--------|------|-------------|
-| `/api/generate-plan` | POST | Required | Calls OpenAI `gpt-4o-mini` to generate training templates. Rate-limited: 5/min per IP (in memory), 10/hr per user (counted in Postgres, `rate_events`). |
+| `/api/generate-plan` | POST | Required | Generates training templates with the user's AI provider (Gemini by default; the model id can be overridden with `AI_MODEL_GOOGLE` / `AI_MODEL_ANTHROPIC` / `AI_MODEL_OPENAI`). Rate-limited per plan, counted in Postgres (`rate_events`): Free 1 per rolling day, Pro 10 per rolling hour; plus a short per-IP burst limit in memory. |
 | `/api/subscription` | GET | Required | Returns the current plan and subscription status (table `subscriptions` in Postgres). |
 | `/api/create-checkout-session` | POST | Required | Creates Stripe Checkout session, returns redirect URL. |
 | `/api/billing-portal` | POST | Required | Creates Stripe Customer Portal session, returns redirect URL. |
@@ -144,7 +144,9 @@ localStorage keys:
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_JWT_SECRET` — found in Supabase → Project Settings → API → JWT Secret; used to verify tokens in every API handler
 - `SUPABASE_SERVICE_ROLE_KEY` — required for account deletion (`/api/delete-account`)
-- `OPENAI_API_KEY`
+- `GOOGLE_GENERATIVE_AI_API_KEY` — the Free plan's AI provider (required)
+- Optional, Pro-only providers: `AI_EXTRA_PROVIDERS` (for example `anthropic,openai`) together with `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY`. List a provider only when its key is set
+- Optional: `AI_MODEL_GOOGLE`, `AI_MODEL_ANTHROPIC`, `AI_MODEL_OPENAI` — replace a provider's default model (for example when Google retires one)
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET` — from Stripe dashboard after registering the webhook endpoint
 - `STRIPE_PRO_PRICE_ID` — price ID of the Pro subscription product in Stripe
@@ -241,7 +243,7 @@ vercel env add SUPABASE_URL production
 vercel env add SUPABASE_ANON_KEY production
 vercel env add SUPABASE_JWT_SECRET production
 vercel env add SUPABASE_SERVICE_ROLE_KEY production
-vercel env add OPENAI_API_KEY production
+vercel env add GOOGLE_GENERATIVE_AI_API_KEY production
 vercel env add STRIPE_SECRET_KEY production
 vercel env add STRIPE_WEBHOOK_SECRET production
 vercel env add STRIPE_PRO_PRICE_ID production
