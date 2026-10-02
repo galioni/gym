@@ -75,13 +75,14 @@ export class SyncSettingsMemory implements SyncSettingsRepository {
   public async writeRestorePoints() {}
 }
 
-export function newDevice(gateway: FakeGateway, options: { allowance?: Pick<SyncAllowance, "begin"> } = {}) {
+export function newDevice(gateway: FakeGateway, options: { allowance?: Pick<SyncAllowance, "begin">; ownership?: { check(): Promise<"ok" | "otherAccount"> } } = {}) {
   const templates = new LocalTemplates();
   const days = new LocalDays();
   const settings = new SyncSettingsMemory();
   const service = new SyncService({
     settingsRepository: settings,
     allowance: options.allowance,
+    ownership: options.ownership,
     localWorkoutRepository: days,
     localTemplateRepository: templates,
     // A fresh repository per sync, like opening the app: nothing carried over except what the sync recorded.
@@ -93,6 +94,8 @@ export function newDevice(gateway: FakeGateway, options: { allowance?: Pick<Sync
     days,
     settings,
     sync: () => service.syncNow({}, { automatic: true }),
+    /** What the Sync now button does. */
+    syncByHand: () => service.syncNow({}, { automatic: false }),
     /** The automatic sync of a Free account: brings the cloud's data here and sends nothing. */
     syncDownloadOnly: () => service.syncNow({}, { automatic: true, downloadOnly: true }),
   };
