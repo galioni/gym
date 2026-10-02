@@ -80,6 +80,11 @@ interface SyncServiceDeps {
   settingsRepository: SyncSettingsRepository;
   /** Asked at the start of every sync; a Free account that has used its monthly sync is refused here. */
   allowance?: Pick<SyncAllowance, "begin">;
+  /**
+   * Asked before every sync, automatic or manual. Local data is not stored per account, so a browser that held another
+   * account's data would otherwise upload it to whoever signed in next. "otherAccount" refuses the sync before anything is read.
+   */
+  ownership?: { check(): Promise<"ok" | "otherAccount"> };
   localWorkoutRepository: WorkoutDataRepository;
   localTemplateRepository: TemplateRepository;
   cloudWorkoutRepository: WorkoutDataRepository | null;
@@ -266,6 +271,14 @@ export class SyncService {
     resolution: ConflictResolutionMap = {},
     options: { automatic?: boolean; downloadOnly?: boolean } = {}
   ): Promise<SyncNowResult> {
+    if (this.deps.ownership && (await this.deps.ownership.check()) === "otherAccount") {
+      return {
+        status: "error",
+        conflicts: [],
+        reason: "otherAccount",
+        message: "This browser holds another account's data, so nothing was synced. Choose \"Switch to this account\" or sign out.",
+      };
+    }
     if (this.inFlight) {
       if (Object.keys(resolution).length === 0) {
         return this.inFlight;

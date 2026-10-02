@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { PLANS_STORAGE_KEY, STORAGE_KEY, TEMPLATE_STORAGE_KEY } from "../../../constants";
 import { ConflictResolution, SyncConflict, SyncEntity, SyncNowResult } from "../../../application/sync/syncTypes";
 import { SyncSignal } from "../../../interfaces/sync/SyncSignal";
-import { checkSyncOwner } from "./syncOwner";
+import { checkSyncOwner } from "../../../infrastructure/sync/syncOwner";
 
 const DEBOUNCE_MS = 3000;
 const FOCUS_MIN_INTERVAL_MS = 15_000;

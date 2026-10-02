@@ -11,7 +11,7 @@ import {
   SYNC_RESTORE_POINTS_STORAGE_KEY,
   SYNC_SETTINGS_STORAGE_KEY,
   TEMPLATE_STORAGE_KEY,
-} from "../../../constants";
+} from "../../constants";
 
 /**
  * Local data is not namespaced per account, and sync would upload it to whoever is signed in. This records

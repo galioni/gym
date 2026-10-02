@@ -11,7 +11,8 @@ import { useSyncSettings } from "./features/sync/state/useSyncSettings";
 import { useAutoSync, useCrossTabReload } from "./features/sync/state/useAutoSync";
 import { useSyncAllowance } from "./features/sync/state/useSyncAllowance";
 import { isAllowanceLimited } from "./application/sync/syncAllowance";
-import { switchSyncOwner } from "./features/sync/state/syncOwner";
+import { switchSyncOwner } from "./infrastructure/sync/syncOwner";
+import { useSyncOwnerPrompt } from "./features/sync/state/useSyncOwnerPrompt";
 import { useOnlineStatus } from "./features/sync/hooks/useOnlineStatus";
 import { deriveSyncStatus } from "./application/sync/syncStatus";
 import { useWorkoutKeyboardShortcuts } from "./features/app-shell/hooks/useWorkoutKeyboardShortcuts";
@@ -214,7 +215,11 @@ function App() {
     },
     [showToast, isLoadingSubscription, subscription.plan, startCheckout]
   );
+  // Two places can notice the mismatch (at sign-in, and the automatic sync); only one question may be open.
+  const ownerPromptOpenRef = useRef(false);
   const handleOwnerMismatch = useCallback(async () => {
+    if (ownerPromptOpenRef.current) return;
+    ownerPromptOpenRef.current = true;
     const switchAccount = await confirm({
       title: "Another account's data is on this device",
       description:
@@ -223,6 +228,7 @@ function App() {
       cancelLabel: "Sign out",
       tone: "danger",
     });
+    ownerPromptOpenRef.current = false;
     if (switchAccount && userId) {
       switchSyncOwner(userId);
       window.location.reload();
@@ -230,6 +236,7 @@ function App() {
       await signOut();
     }
   }, [confirm, signOut, userId]);
+  useSyncOwnerPrompt(userId, () => void handleOwnerMismatch());
 
   // The Free plan syncs once every 30 days, by hand. Read again after every sync so the screen shows the next date.
   const { status: allowanceStatus, loaded: allowanceLoaded } = useSyncAllowance(

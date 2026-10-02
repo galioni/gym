@@ -10,6 +10,7 @@ import { SupabaseTokenProvider } from "../../auth/supabase/SupabaseTokenProvider
 import { PostgrestRowGateway, createUserPostgrestClient } from "../../supabase/PostgrestRowGateway";
 import { PostgrestSyncAllowance } from "../../supabase/PostgrestSyncAllowance";
 import { SyncAllowance } from "../../../application/sync/syncAllowance";
+import { checkSyncOwner } from "../../sync/syncOwner";
 import { SupabaseSyncSignal } from "../../realtime/SupabaseSyncSignal";
 import { SyncSignal } from "../../../interfaces/sync/SyncSignal";
 import { LocalStorageAccountSettingsRepository } from "../LocalStorageAccountSettingsRepository";
@@ -55,6 +56,12 @@ export function createWorkoutServices(): WorkoutServices {
     syncService: new SyncService({
       settingsRepository: syncSettingsRepository,
       allowance: syncAllowance,
+      ownership: {
+        check: async () => {
+          const userId = await tokenProvider.getUserId();
+          return userId && checkSyncOwner(userId) === "mismatch" ? "otherAccount" : "ok";
+        },
+      },
       localWorkoutRepository,
       localTemplateRepository,
       cloudWorkoutRepository: new PostgresWorkoutDataRepository(gateway),

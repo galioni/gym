@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { STORAGE_KEY, SYNC_OWNER_STORAGE_KEY, TEMPLATE_STORAGE_KEY } from "../../../constants";
+import { STORAGE_KEY, SYNC_OWNER_STORAGE_KEY, TEMPLATE_STORAGE_KEY } from "../../constants";
 import { checkSyncOwner, switchSyncOwner } from "./syncOwner";
 
 function stubStorage() {
