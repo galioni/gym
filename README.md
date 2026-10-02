@@ -176,6 +176,8 @@ npm run gym:ps | gym:logs [service] | gym:restart <service>
 npm run gym:migrate           # apply new files from supabase/migrations (also runs automatically on gym:up)
 npm run gym:psql              # psql into the local database (extra args go to psql, e.g. -c "select count(*) from workout_days")
 npm run gym:seed -- you@example.com   # 4 weeks of demo workout days for an account you signed up with locally
+npm run gym:backup [file]      # save the local accounts and their data to backups/gym-<time>.sql (data only; sessions are not saved)
+npm run gym:restore -- <file> --yes   # replace the local accounts and data with a backup (stack up; one transaction; sign in again)
 npm run gym:test-db           # RLS/constraint tests + end-to-end API smoke test against the running stack
 npm run gym:test-sync         # two real browsers, one account: automatic sync, new-browser pull, clash handling, deletes
                               #   GYM_BROWSER=webkit|firefox  GYM_DEVICE="iPhone 13"  GYM_SCENARIOS=sync,delete

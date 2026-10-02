@@ -13,11 +13,13 @@
  *   node scripts/local/gym.mjs test-sync          two-browser end-to-end sync test (stack must be up)
  *   node scripts/local/gym.mjs psql [args]        open psql in the running database (as the admin role); extra args go to psql
  *   node scripts/local/gym.mjs seed <email>       add 4 weeks of demo workout days to an existing local account
+ *   node scripts/local/gym.mjs backup [file]      save the local accounts and their data to a SQL file (default backups/gym-<time>.sql)
+ *   node scripts/local/gym.mjs restore <file> --yes   replace the local accounts and data with a backup (the stack must be up)
  *   node scripts/local/gym.mjs ps | logs [service] | restart <service>
  */
 import { createHmac, randomBytes } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -96,7 +98,7 @@ function init(force) {
   return 0;
 }
 
-function compose(args, profiles = [], input) {
+function compose(args, profiles = [], input, stdio) {
   const full = [
     "compose",
     "--env-file", ENV_FILE,
@@ -105,7 +107,12 @@ function compose(args, profiles = [], input) {
     ...profiles.flatMap((p) => ["--profile", p]),
     ...args,
   ];
-  const options = input === undefined ? { stdio: "inherit", cwd: ROOT } : { stdio: ["pipe", "inherit", "inherit"], cwd: ROOT, input };
+  const options =
+    stdio !== undefined
+      ? { stdio, cwd: ROOT }
+      : input === undefined
+        ? { stdio: "inherit", cwd: ROOT }
+        : { stdio: ["pipe", "inherit", "inherit"], cwd: ROOT, input };
   return spawnSync("docker", full, options).status ?? 1;
 }
 
@@ -181,6 +188,48 @@ switch (command) {
     code = compose(["exec", "-T", "db", "psql", "-U", "supabase_admin", "-d", "postgres", "-v", `email=${email}`], [], sql);
     break;
   }
+  case "backup": {
+    if (!requireEnv()) { code = 1; break; }
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/..*$/, "").replace("T", "-");
+    const file = path.resolve(ROOT, rest[0] ?? path.join("backups", `gym-${stamp}.sql`));
+    mkdirSync(path.dirname(file), { recursive: true });
+    const fd = openSync(file, "w");
+    // Accounts (auth.users, auth.identities) and everything in public except app_flags (rollout switches that migrations
+    // create). Data only: the schema always comes from the migrations. Triggers are disabled while loading so restored rows
+    // keep their updated_at and are not counted against limits again. Sessions are not saved: sign in again after a restore.
+    code = compose(
+      ["exec", "-T", "db", "pg_dump", "-U", "supabase_admin", "-d", "postgres", "--data-only", "--disable-triggers",
+        "-t", "auth.users", "-t", "auth.identities", "-t", "public.*", "-T", "public.app_flags"],
+      [], undefined, ["ignore", fd, "inherit"]
+    );
+    closeSync(fd);
+    console.log(code === 0 ? `Saved ${file}` : "Backup failed.");
+    break;
+  }
+  case "restore": {
+    if (!requireEnv()) { code = 1; break; }
+    const file = rest.find((a) => !a.startsWith("--"));
+    if (!file || !existsSync(path.resolve(ROOT, file))) {
+      console.error("Usage: npm run gym:restore -- <backup file> --yes");
+      code = 1;
+      break;
+    }
+    if (!rest.includes("--yes")) {
+      console.error("This REPLACES every local account and all their data with the backup. Add --yes to go ahead.");
+      code = 1;
+      break;
+    }
+    // One transaction: either the whole backup is loaded or nothing changes. Deleting the accounts cascades to their data.
+    const dump = readFileSync(path.resolve(ROOT, file), "utf8");
+    const sql = `begin;
+delete from auth.users;
+${dump}
+commit;
+`;
+    code = compose(["exec", "-T", "db", "psql", "-U", "supabase_admin", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-q", "-o", "/dev/null"], [], sql);
+    console.log(code === 0 ? "Restored. Sign in again (sessions are not part of a backup)." : "Restore failed; nothing was changed.");
+    break;
+  }
   case "ps":
     if (!requireEnv()) { code = 1; break; }
     code = compose(["ps", "--all"], PROFILES);
@@ -194,7 +243,7 @@ switch (command) {
     code = compose(["restart", ...rest], PROFILES);
     break;
   default:
-    console.log("Usage: npm run gym:<init|up|down|reset|psql|seed|ps|logs|restart> [-- args]");
+    console.log("Usage: npm run gym:<init|up|down|reset|psql|seed|backup|restore|ps|logs|restart> [-- args]");
     console.log(`Profiles for up: ${PROFILES.join(", ")}  (e.g. npm run gym:up -- mail studio)`);
 }
 

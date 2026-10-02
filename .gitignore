@@ -9,6 +9,9 @@ build/
 # Test coverage
 coverage/
 
+# Local database backups (contain local test accounts)
+backups/
+
 # Environment variables
 .env
 .env.local

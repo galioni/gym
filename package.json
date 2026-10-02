@@ -22,6 +22,8 @@
     "gym:test-sync": "node scripts/local/gym.mjs test-sync",
     "gym:psql": "node scripts/local/gym.mjs psql",
     "gym:seed": "node scripts/local/gym.mjs seed",
+    "gym:backup": "node scripts/local/gym.mjs backup",
+    "gym:restore": "node scripts/local/gym.mjs restore",
     "gym:ps": "node scripts/local/gym.mjs ps",
     "gym:logs": "node scripts/local/gym.mjs logs",
     "gym:restart": "node scripts/local/gym.mjs restart"
