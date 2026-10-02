@@ -53,7 +53,6 @@ Open the app at `http://localhost:5180`.
   - `onboarding/`: AI plan generation wizard (shown on first login)
   - `plans/`: Plans state and editor (group sessions into named plans)
   - `qa/`: Smoke panel (accessible at `/?qa=1` in dev)
-  - `session-controls/`: Backup import/export logic
   - `settings/`: Settings page (templates, sync, plan/billing, reminders, appearance, data)
   - `sync/`: Cloud sync state and UI
   - `templates/`: Template editor
@@ -75,7 +74,6 @@ Application logic depends on repository interfaces; storage details stay in infr
 - **Cloud sync** — automatic; syncs workout data, templates, plans and preferences across devices through Postgres (free today; planned limits are in `docs/NEXT_PHASES_README.md`)
 - **Conflict resolution** — manual keep-local / keep-cloud picker when sync detects diverged data
 - **Restore points** — pre-sync snapshots with rollback support
-- **Backup** — export and import full JSON backup (workout data + templates)
 - **Landing page** — marketing page shown to unauthenticated visitors; supports Google OAuth and email/password sign-in, sign-up (with email confirmation flow), and password reset (with in-app set-password screen)
 - **Subscription** — Stripe-backed Pro plan; free users get local-only access
 - **Account deletion** — permanently deletes the auth account (and with it all Postgres data) and the Stripe customer record
@@ -114,7 +112,7 @@ localStorage keys:
 
 | | Free (£0) | Pro (£1.99 / month) |
 |---|---|---|
-| Workout tracking, templates, plans, backup export / import | yes, on the device | yes |
+| Workout tracking, templates, plans | yes, on the device | yes |
 | Templates / plans in the cloud | 5 / 20 | 200 / 100 |
 | Workout days in the cloud | 1,000 | 5,000 |
 | Cloud sync | one sync every 30 days, started by you; the first sync on a new device runs on its own but only downloads | automatic, no limit |
@@ -281,12 +279,6 @@ Dependabot is configured (`.github/dependabot.yml`) to open weekly PRs for npm a
 Pre-commit hooks (Husky + lint-staged) run ESLint on staged `.ts` / `.tsx` files before every commit.
 
 `.npmrc` sets `legacy-peer-deps=true` to resolve a peer dependency conflict between `eslint@10` and `eslint-plugin-react-hooks@7` — required for Vercel installs and consistent with the `--legacy-peer-deps` flag used in CI.
-
-## Backup Format
-
-Export/import supports:
-- Full backup envelope (workout data + templates + sync metadata)
-- Legacy workout-only JSON (backward compatibility)
 
 ## QA
 

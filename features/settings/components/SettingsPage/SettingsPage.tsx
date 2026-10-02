@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowLeft, Download, Sparkles, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, Sparkles, Trash2 } from "lucide-react";
 import { TemplateEditor } from "../../../templates/components/TemplateEditor/TemplateEditor";
 import { SyncSettingsPanel } from "../../../sync/components/SyncSettingsPanel/SyncSettingsPanel";
 import { PlansEditor } from "../../../plans/components/PlansEditor/PlansEditor";
@@ -15,7 +15,6 @@ import {
   RenameSessionTypeResult,
 } from "../../../../application/workout/sessionTypes/sessionTypeRules";
 import { ExerciseLibraryEntry } from "../../../../application/workout/exerciseLibrary";
-import { useBackupIO } from "../../../session-controls/hooks/useBackupIO";
 import { AiProviderSelector } from "../AiProviderSelector";
 import { ThemeSelector } from "../ThemeSelector";
 import { useAuthSession } from "../../../auth/hooks/useAuthSession";
@@ -107,7 +106,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
   onSetActivePlan,
   exerciseLibrary,
 }) => {
-  const { fileInputRef, exportBackup, openImportPicker, handleImportFileChange } = useBackupIO();
   const { signOut, session } = useAuthSession();
   const { confirm, showToast } = useFeedback();
   const { subscription, isLoading: isSubscriptionLoading, fetchError: subscriptionFetchError, startCheckout, openBillingPortal } = useSubscription();
@@ -292,18 +290,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       {/* Data */}
       <Card title="Data">
         <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button variant="secondary" size="sm" className="gap-2 flex-1 justify-center" onClick={exportBackup}>
-              <Download size={14} />
-              Export Backup
-            </Button>
-            <Button variant="secondary" size="sm" className="gap-2 flex-1 justify-center" onClick={openImportPicker}>
-              <Upload size={14} />
-              Import Backup
-            </Button>
-          </div>
-
-          <div className="pt-2 border-t border-border">
+          <div>
             <Button
               variant="danger"
               size="sm"
@@ -320,13 +307,6 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
         </div>
       </Card>
 
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleImportFileChange}
-        accept=".json"
-        className="hidden"
-      />
     </main>
   );
 };
