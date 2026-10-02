@@ -18,7 +18,7 @@ Use this quick mapping:
 - Mostly `401`/`403`: auth/session problems.
 - Mostly `429`: abusive traffic or limiter too strict.
 - Mostly `413`: sync payload growth regression.
-- Mostly `5xx`: upstream config/dependency failure (KV/Supabase/env).
+- Mostly `5xx`: upstream config/dependency failure (Supabase/Stripe/AI provider/env).
 
 ## 3) Immediate containment
 
