@@ -104,8 +104,8 @@ KV is no longer used by any feature. The code and local stack no longer referenc
 - [x] `supabase/config.toml` exists so the Supabase CLI can `link` and `db push` the same migrations
 - [x] Schema types: `database.types.ts` is checked against the hand-written row types in `postgresRows.ts` during `tsc` (drift fails the build). Regenerate it after a migration
 - [x] `gym:seed -- <email>` and `gym:psql` added and run against a live stack (2026-10-01).
-- [ ] Backup/restore of the local Postgres volume
-- [ ] API container hot reload on Windows bind mounts: polling enabled (`CHOKIDAR_USEPOLLING`), not yet confirmed by editing a file; `npm run gym:restart api` remains the workaround
+- [x] `gym:backup` / `gym:restore` for the local Postgres (2026-10-02): `pg_dump` data-only of `auth.users`, `auth.identities` and `public.*` except `app_flags`, restored in one transaction after deleting the accounts; no new image. Tested: wipe, restore, same rows and `updated_at`, password login works. It only concerns your machine's Docker database; production is Supabase's and has its own backups
+- [x] API container hot reload on Windows bind mounts: works with `CHOKIDAR_USEPOLLING` (verified 2026-10-02: an edit and its revert each restarted the API within ~10 s). Note `tsx watch` only watches files the API has already loaded, so a file for a route nobody has called yet does not trigger a restart; `npm run gym:restart api` covers that
 - [x] `npm audit`: 0 vulnerabilities (2026-10-01). Keep `@supabase/postgrest-js` and `tsx` current
 
 ---
