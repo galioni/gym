@@ -4,7 +4,7 @@ Local-first workout tracker with AI-generated training plans, cloud sync, and St
 
 ## Prerequisites
 
-- **Node.js 20+** (CI runs on Node 20; `node -v` to verify)
+- **Node.js 24** (Vercel, the Docker stack and CI all run Node 24; Vitest 5 needs 22.12 or newer; `node -v` to verify)
 - **Vercel account** — for running the API locally and deploying
 - **Supabase project** — auth (Google OAuth + email/password must be enabled in the Supabase dashboard)
 - **Stripe account** — for subscription billing
