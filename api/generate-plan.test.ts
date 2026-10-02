@@ -17,8 +17,8 @@ vi.mock("./_lib/rateLimiter.js", async (importOriginal) => {
   };
 });
 vi.mock("./_lib/apiEnv.js", () => ({
-  getAiModel: vi.fn(() => ({ specificationVersion: "v1", provider: "google", modelId: "gemini-2.0-flash" })),
-  getAiModelForProvider: vi.fn(() => ({ specificationVersion: "v1", provider: "google", modelId: "gemini-2.0-flash" })),
+  getAiModel: vi.fn(() => ({ specificationVersion: "v1", provider: "google", modelId: "gemini-3.6-flash" })),
+  getAiModelForProvider: vi.fn(() => ({ specificationVersion: "v1", provider: "google", modelId: "gemini-3.6-flash" })),
   getEnabledProviders: vi.fn(() => ["google"]),
 }));
 vi.mock("./_lib/subscriptionGuard.js", () => ({
