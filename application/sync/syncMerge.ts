@@ -176,6 +176,34 @@ export function agreedBase<T>(
   return next;
 }
 
+/**
+ * The base to store after a sync of workout days, like agreedBase for the keyed collections: the hash of every merged day
+ * that this device now verifiably holds identically (`localAfter`, re-read after the writes). If the user edited while the
+ * sync ran, the local write of the merge is skipped; a day another device changed then keeps its previous base entry, so
+ * the next sync still sees this device's copy as unchanged and pulls the other device's change instead of uploading the
+ * stale copy over it. With no earlier entry to keep, a day this device holds but that differs from the merge is the user's
+ * own mid-sync edit of what the cloud now holds, so the merged hash is its base: the edit is then uploaded, not a conflict.
+ * A day this device lacks gets no entry (a skipped pull must not later look like a local deletion).
+ */
+export function agreedDaysBase(
+  merged: Record<string, DayData>,
+  localAfter: Record<string, DayData> | null,
+  previous: Record<string, string>
+): Record<string, string> {
+  const next: Record<string, string> = {};
+  for (const [date, day] of Object.entries(merged)) {
+    const mergedHash = dayContentHash(day);
+    if (localAfter && Object.hasOwn(localAfter, date) && dayContentHash(localAfter[date]) === mergedHash) {
+      next[date] = mergedHash;
+    } else if (Object.hasOwn(previous, date)) {
+      next[date] = previous[date];
+    } else if (localAfter && Object.hasOwn(localAfter, date)) {
+      next[date] = mergedHash;
+    }
+  }
+  return next;
+}
+
 /** Hashes of every day in the agreed (post-sync) state. */
 export function baseDaysFrom(finalDays: Record<string, DayData>): Record<string, string> {
   return Object.fromEntries(Object.entries(finalDays).map(([date, day]) => [date, dayContentHash(day)]));

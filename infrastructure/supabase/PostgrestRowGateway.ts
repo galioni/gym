@@ -1,7 +1,7 @@
 import { PostgrestClient } from "@supabase/postgrest-js";
 import { AuthTokenProvider } from "../../interfaces/auth/AuthTokenProvider";
 import { getRequiredSupabaseClientEnv } from "../auth/supabase/supabaseEnv";
-import { CloudLimitError, describeLimit } from "../../application/sync/syncErrors";
+import { CloudLimitError, describeHistoryWindow, describeLimit } from "../../application/sync/syncErrors";
 import { SyncAllowanceError, parseNextAvailable } from "../../application/sync/syncAllowance";
 
 export type UserTable = "workout_days" | "templates" | "plans" | "user_settings";
@@ -50,9 +50,12 @@ const WRITE_BATCH = 200;
 const LIMIT_REACHED_CODE = "PT422";
 // ... and when a Free account writes outside its monthly sync window (HTTP 423).
 const ALLOWANCE_USED_CODE = "PT423";
+// ... and when a Free account writes a workout day older than the window the cloud keeps (HTTP 424).
+const HISTORY_WINDOW_CODE = "PT424";
 
 function writeError(table: UserTable, action: string, error: { code?: string; message: string; details?: string }): Error {
   if (error.code === ALLOWANCE_USED_CODE) return new SyncAllowanceError(parseNextAvailable(error.details));
+  if (error.code === HISTORY_WINDOW_CODE) return new Error(describeHistoryWindow());
   return error.code === LIMIT_REACHED_CODE
     ? new CloudLimitError(table, describeLimit(table))
     : new Error(`Database ${action} failed (${table}): ${error.message}`);

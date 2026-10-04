@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DayData } from "../../types";
 import { dayContentHash } from "./contentHash";
-import { agreedBase, baseAfterPartialWrite, baseDaysFrom, Collection, collectionHashes, entityHash, mergeCollection, mergeWorkoutDays } from "./syncMerge";
+import { agreedBase, agreedDaysBase, baseAfterPartialWrite, baseDaysFrom, Collection, collectionHashes, entityHash, mergeCollection, mergeWorkoutDays } from "./syncMerge";
 
 function day(date: string, notes = ""): DayData {
   return {
@@ -62,6 +62,35 @@ describe("mergeWorkoutDays", () => {
 describe("baseDaysFrom", () => {
   it("hashes each day", () => {
     expect(baseDaysFrom({ [D1]: day(D1) })).toEqual({ [D1]: dayContentHash(day(D1)) });
+  });
+});
+
+describe("agreedDaysBase", () => {
+  const D3 = "2026-10-03";
+  const D4 = "2026-10-04";
+
+  it("records the hash of every merged day this device holds identically", () => {
+    expect(agreedDaysBase({ [D1]: day(D1, "m") }, { [D1]: day(D1, "m") }, {})).toEqual({ [D1]: dayContentHash(day(D1, "m")) });
+  });
+
+  it("keeps the earlier entry for a day whose pull was skipped, so the stale local copy is not later read as an edit", () => {
+    const previous = { [D1]: dayContentHash(day(D1, "v1")) };
+    const base = agreedDaysBase({ [D1]: day(D1, "v2 from another device") }, { [D1]: day(D1, "v1") }, previous);
+    expect(base).toEqual(previous);
+  });
+
+  it("takes the merged hash for a day the user edited mid-sync when there is no earlier entry, so the edit is uploaded rather than reported as a clash", () => {
+    const base = agreedDaysBase({ [D1]: day(D1, "cloud") }, { [D1]: day(D1, "typed during sync") }, {});
+    expect(base).toEqual({ [D1]: dayContentHash(day(D1, "cloud")) });
+  });
+
+  it("gives a day this device lacks no entry (a skipped pull must not look like a local deletion), but keeps an earlier one", () => {
+    expect(agreedDaysBase({ [D3]: day(D3) }, { [D1]: day(D1) }, {})).toEqual({});
+    expect(agreedDaysBase({ [D3]: day(D3) }, null, { [D3]: "earlier" })).toEqual({ [D3]: "earlier" });
+  });
+
+  it("drops entries for days that are no longer merged", () => {
+    expect(agreedDaysBase({ [D4]: day(D4) }, { [D4]: day(D4) }, { [D1]: "gone" })).toEqual({ [D4]: dayContentHash(day(D4)) });
   });
 });
 
