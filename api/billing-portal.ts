@@ -29,6 +29,12 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
 
     const subscription = await getSubscription(auth.userId);
 
+    if (subscription.source === "apple" || subscription.source === "google") {
+      const store = subscription.source === "apple" ? "the App Store" : "Google Play";
+      res.status(409).json({ error: `Your subscription is billed through ${store}. Manage it in ${store === "the App Store" ? "your Apple ID subscription settings" : "the Play Store subscription settings"}.` });
+      return;
+    }
+
     if (!subscription.stripeCustomerId) {
       res.status(400).json({ error: "No active subscription found." });
       return;

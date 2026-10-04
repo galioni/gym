@@ -1,11 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "./supabaseAdmin.js";
 
+/** Who bills the subscription, and so where the person manages it. */
+export type BillingSource = "stripe" | "apple" | "google";
+
 export interface SubscriptionInfo {
   plan: "free" | "pro";
   status: string;
   stripeCustomerId: string | null;
   currentPeriodEnd: string | null;
+  /** Null for someone who has never subscribed. */
+  source?: BillingSource | null;
 }
 
 const FREE: SubscriptionInfo = {
@@ -13,6 +18,7 @@ const FREE: SubscriptionInfo = {
   status: "inactive",
   stripeCustomerId: null,
   currentPeriodEnd: null,
+  source: null,
 };
 
 interface SubscriptionRow {
@@ -20,6 +26,13 @@ interface SubscriptionRow {
   status: string;
   stripe_customer_id: string | null;
   current_period_end: string | null;
+  billing_source: string | null;
+}
+
+function toSource(value: string | null, stripeCustomerId: string | null): BillingSource | null {
+  if (value === "stripe" || value === "apple" || value === "google") return value;
+  // Rows written before the column existed (or by older code) carry a Stripe customer and no source.
+  return stripeCustomerId ? "stripe" : null;
 }
 
 /** Full Pro access: active or trialing subscription. */
@@ -36,6 +49,7 @@ function fromRow(row: SubscriptionRow): SubscriptionInfo {
     status: row.status,
     stripeCustomerId: row.stripe_customer_id,
     currentPeriodEnd: row.current_period_end,
+    source: toSource(row.billing_source, row.stripe_customer_id),
   };
 }
 
@@ -50,7 +64,7 @@ export async function getSubscription(
   try {
     const { data, error } = await db
       .from("subscriptions")
-      .select("plan, status, stripe_customer_id, current_period_end")
+      .select("plan, status, stripe_customer_id, current_period_end, billing_source")
       .eq("user_id", userId)
       .maybeSingle<SubscriptionRow>();
     if (error) throw new Error(error.message);
@@ -73,10 +87,56 @@ export async function setSubscription(
       status: info.status,
       stripe_customer_id: info.stripeCustomerId,
       current_period_end: info.currentPeriodEnd,
+      // Only written when the caller knows it: an upsert that omits a column leaves it as it was.
+      ...(info.source ? { billing_source: info.source } : {}),
     },
     { onConflict: "user_id" }
   );
   if (error) throw new Error(`Could not save subscription: ${error.message}`);
+}
+
+/**
+ * Saves a store (App Store / Google Play) subscription for a user. The Stripe customer id on the row is left untouched, so
+ * someone who once paid on the web and now pays through a store keeps the link to their Stripe customer record.
+ */
+export async function setStoreSubscription(
+  userId: string,
+  platform: "apple" | "google",
+  transactionId: string,
+  info: { plan: "free" | "pro"; status: string; currentPeriodEnd: string | null },
+  db: SupabaseClient = getSupabaseAdmin()
+): Promise<void> {
+  const { error } = await db.from("subscriptions").upsert(
+    {
+      user_id: userId,
+      plan: info.plan,
+      status: info.status,
+      current_period_end: info.currentPeriodEnd,
+      billing_source: platform,
+      store_transaction_id: transactionId,
+    },
+    { onConflict: "user_id" }
+  );
+  if (error) throw new Error(`Could not save store subscription: ${error.message}`);
+}
+
+/**
+ * Finds the user a store purchase is attached to. Throws if the database cannot be read, so a store notification is
+ * retried instead of being dropped as "unknown purchase".
+ */
+export async function getStoreSubscriptionUser(
+  platform: "apple" | "google",
+  transactionId: string,
+  db: SupabaseClient = getSupabaseAdmin()
+): Promise<string | null> {
+  const { data, error } = await db
+    .from("subscriptions")
+    .select("user_id")
+    .eq("billing_source", platform)
+    .eq("store_transaction_id", transactionId)
+    .maybeSingle<{ user_id: string }>();
+  if (error) throw new Error(`Could not look up store purchase: ${error.message}`);
+  return data?.user_id ?? null;
 }
 
 /**

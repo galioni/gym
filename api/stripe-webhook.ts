@@ -133,6 +133,7 @@ export default async function handler(req: IncomingMessage, res: ApiResponse): P
         status: "active",
         stripeCustomerId: customerId,
         currentPeriodEnd: null,
+        source: "stripe",
       };
 
       if (subscriptionId) {
@@ -146,6 +147,7 @@ export default async function handler(req: IncomingMessage, res: ApiResponse): P
             currentPeriodEnd: sub.current_period_end
               ? new Date(sub.current_period_end * 1000).toISOString()
               : null,
+            source: "stripe",
           };
         } catch (err) {
           console.warn(
@@ -187,6 +189,7 @@ export default async function handler(req: IncomingMessage, res: ApiResponse): P
         currentPeriodEnd: periodEnd
           ? new Date(periodEnd * 1000).toISOString()
           : null,
+        source: "stripe",
       });
     }
 

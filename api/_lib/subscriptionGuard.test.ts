@@ -7,6 +7,8 @@ import {
   isStripeEventProcessed,
   markStripeEventProcessed,
   setSubscription,
+  setStoreSubscription,
+  getStoreSubscriptionUser,
 } from "./subscriptionGuard";
 
 type Row = Record<string, unknown>;
@@ -21,11 +23,18 @@ class FakeDb {
     const rows = this.tables[table];
     const fail = () => (this.failWith ? { data: null, error: { message: this.failWith } } : null);
     return {
-      select: () => ({
-        eq: (column: string, value: unknown) => ({
-          maybeSingle: async () => fail() ?? { data: rows.find((r) => r[column] === value) ?? null, error: null },
-        }),
-      }),
+      select: () => {
+        const filters: Array<[string, unknown]> = [];
+        const query = {
+          eq: (column: string, value: unknown) => {
+            filters.push([column, value]);
+            return query;
+          },
+          maybeSingle: async () =>
+            fail() ?? { data: rows.find((r) => filters.every(([c, v]) => r[c] === v)) ?? null, error: null },
+        };
+        return query;
+      },
       upsert: async (row: Row, options: Row) => {
         this.lastUpsert = { row, options };
         const failed = fail();
@@ -60,6 +69,7 @@ describe("subscription store (Postgres)", () => {
       status: "inactive",
       stripeCustomerId: null,
       currentPeriodEnd: null,
+      source: null,
     });
   });
 
@@ -76,7 +86,48 @@ describe("subscription store (Postgres)", () => {
       status: "active",
       stripeCustomerId: "cus_1",
       currentPeriodEnd: "2030-01-01T00:00:00.000Z",
+      source: "stripe", // a row from before the column existed: a Stripe customer means Stripe
     });
+  });
+
+  it("reports a store subscription as billed by that store", async () => {
+    db.tables.subscriptions.push({
+      user_id: "u1",
+      plan: "pro",
+      status: "active",
+      stripe_customer_id: null,
+      current_period_end: "2030-01-01T00:00:00.000Z",
+      billing_source: "google",
+    });
+    expect((await getSubscription("u1", asClient(db))).source).toBe("google");
+  });
+
+  it("saves a store subscription without touching the Stripe customer", async () => {
+    db.tables.subscriptions.push({ user_id: "u1", plan: "free", status: "canceled", stripe_customer_id: "cus_1", billing_source: "stripe" });
+    await setStoreSubscription("u1", "apple", "orig-1", { plan: "pro", status: "active", currentPeriodEnd: "2030-01-01T00:00:00.000Z" }, asClient(db));
+    expect(db.tables.subscriptions).toHaveLength(1);
+    expect(db.tables.subscriptions[0]).toMatchObject({
+      plan: "pro",
+      status: "active",
+      stripe_customer_id: "cus_1",
+      billing_source: "apple",
+      store_transaction_id: "orig-1",
+    });
+  });
+
+  it("finds the user a store purchase belongs to, by platform and id", async () => {
+    db.tables.subscriptions.push({ user_id: "u1", billing_source: "apple", store_transaction_id: "orig-1" });
+    expect(await getStoreSubscriptionUser("apple", "orig-1", asClient(db))).toBe("u1");
+    expect(await getStoreSubscriptionUser("google", "orig-1", asClient(db))).toBeNull();
+    db.failWith = "timeout";
+    await expect(getStoreSubscriptionUser("apple", "orig-1", asClient(db))).rejects.toThrow(/timeout/);
+  });
+
+  it("only writes billing_source when it is known, so other saves leave it alone", async () => {
+    await setSubscription("u1", { plan: "pro", status: "active", stripeCustomerId: "cus_1", currentPeriodEnd: null }, asClient(db));
+    expect(db.lastUpsert?.row).not.toHaveProperty("billing_source");
+    await setSubscription("u1", { plan: "pro", status: "active", stripeCustomerId: "cus_1", currentPeriodEnd: null, source: "stripe" }, asClient(db));
+    expect(db.lastUpsert?.row).toMatchObject({ billing_source: "stripe" });
   });
 
   it("fails open to free when the database cannot be read", async () => {

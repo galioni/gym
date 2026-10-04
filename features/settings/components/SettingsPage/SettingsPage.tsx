@@ -217,9 +217,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
                   </div>
                 )}
               </div>
-              <Button variant="secondary" size="sm" onClick={() => void openBillingPortal().catch(() => showToast({ tone: "error", title: "Could not open billing portal. Try again." }))}>
-                Manage subscription
-              </Button>
+              {subscription.source === "apple" || subscription.source === "google" ? (
+                <div className="text-xs text-labelSecondary text-right max-w-[11rem]">
+                  Billed through {subscription.source === "apple" ? "the App Store" : "Google Play"}. Manage it in your {subscription.source === "apple" ? "Apple ID" : "Play Store"} subscription settings.
+                </div>
+              ) : (
+                <Button variant="secondary" size="sm" onClick={() => void openBillingPortal().catch(() => showToast({ tone: "error", title: "Could not open billing portal. Try again." }))}>
+                  Manage subscription
+                </Button>
+              )}
             </div>
             <p className="text-xs text-labelTertiary">{WHEN_PRO_ENDS}</p>
           </div>
@@ -306,6 +312,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
           </div>
         </div>
       </Card>
+
+      <p className="text-center text-xs text-labelTertiary">
+        <a href="/terms" target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">Terms of Use</a>
+        {" · "}
+        <a href="/privacy" target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline">Privacy Policy</a>
+      </p>
 
     </main>
   );
