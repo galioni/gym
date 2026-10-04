@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
+    "check:legal": "node scripts/ops/check-legal.mjs",
     "prepare": "husky",
     "gym:init": "node scripts/local/gym.mjs init",
     "gym:up": "node scripts/local/gym.mjs up",

@@ -16,9 +16,9 @@ cleanupOutdatedCaches();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 precacheAndRoute((self as any).__WB_MANIFEST);
 
-// Serve index.html for all navigation requests that aren't API calls
+// Serve index.html for all navigation requests that aren't API calls or the static legal pages (public/terms.html, privacy.html)
 const navigationHandler = createHandlerBoundToURL('/index.html');
-registerRoute(new NavigationRoute(navigationHandler, { denylist: [/^\/api\//] }));
+registerRoute(new NavigationRoute(navigationHandler, { denylist: [/^\/api\//, /^\/(terms|privacy)(\.html)?$/] }));
 
 // Google Fonts
 registerRoute(
