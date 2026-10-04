@@ -1,10 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { requireAuth } from "./_lib/authContext.js";
-import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight } from "./_lib/http.js";
+import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight, parseJsonBody } from "./_lib/http.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
 import { getRequiredApiEnv } from "./_lib/apiEnv.js";
 import { getSubscription } from "./_lib/subscriptionGuard.js";
 import { deleteStripeCustomer } from "./_lib/stripeClient.js";
+import { revokeAppleSignInForUser } from "./_lib/appleSignIn.js";
 
 export default async function handler(req: ApiRequest, res: ApiResponse): Promise<void> {
   const observation = attachApiRequestObservability(req, res, "/api/delete-account");
@@ -48,6 +49,24 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
       getRequiredApiEnv("SUPABASE_SERVICE_ROLE_KEY"),
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
+
+    // Apple requires an app that offers Sign in with Apple to revoke the person's Apple token when they delete their account.
+    // The app sends a fresh authorization code when it can (the person confirmed with Apple's sheet); otherwise the token stored at
+    // sign-in is used. Best effort and before the user goes. (Does nothing unless Sign in with Apple is set up here.)
+    const body = parseJsonBody<Record<string, unknown>>(req, {});
+    const code = typeof body.appleAuthorizationCode === "string" && body.appleAuthorizationCode.length <= 2048 ? body.appleAuthorizationCode : null;
+    let appleUserId: string | null = null;
+    if (code) {
+      try {
+        const { data } = await supabaseAdmin.auth.admin.getUserById(auth.userId);
+        const sub = data?.user?.identities?.find((identity) => identity.provider === "apple")?.identity_data?.sub;
+        appleUserId = typeof sub === "string" ? sub : null;
+      } catch {
+        // Without it the code is still used (it was issued to this signed-in person's device), just without the cross-check.
+      }
+    }
+    await revokeAppleSignInForUser(auth.userId, supabaseAdmin, { authorizationCode: code, appleUserId });
+
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(auth.userId);
     if (deleteError) {
       throw new Error(`Supabase user deletion failed: ${deleteError.message}`);
