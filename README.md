@@ -2,6 +2,8 @@
 
 Local-first workout tracker with AI-generated training plans, cloud sync, and Stripe subscriptions. Built with React + TypeScript (Vite), Vercel serverless API, Supabase (Postgres + auth).
 
+A Flutter phone app that shares the same backend, data and sync rules lives in [`mobile/`](mobile/README.md).
+
 ## Prerequisites
 
 - **Node.js 24** (Vercel, the Docker stack and CI all run Node 24; Vitest 5 needs 22.12 or newer; `node -v` to verify)
@@ -104,9 +106,12 @@ localStorage keys:
 | `/api/generate-plan` | POST | Required | Generates training templates with the user's AI provider (Gemini by default; the model id can be overridden with `AI_MODEL_GOOGLE` / `AI_MODEL_ANTHROPIC` / `AI_MODEL_OPENAI`). Rate-limited per plan, counted in Postgres (`rate_events`): Free 1 per rolling day, Pro 10 per rolling hour; plus a short per-IP burst limit in memory. |
 | `/api/subscription` | GET | Required | Returns the current plan and subscription status (table `subscriptions` in Postgres). |
 | `/api/create-checkout-session` | POST | Required | Creates Stripe Checkout session, returns redirect URL. |
-| `/api/billing-portal` | POST | Required | Creates Stripe Customer Portal session, returns redirect URL. |
+| `/api/billing-portal` | POST | Required | Creates Stripe Customer Portal session, returns redirect URL. A store-billed subscription gets 409 with where to manage it. `/api/create-checkout-session` likewise refuses someone already subscribed through a store. |
 | `/api/stripe-webhook` | POST | Stripe signature | Handles `checkout.session.completed`, `customer.subscription.updated/deleted`. Updates the `subscriptions` table; processed event ids are kept in `stripe_events` so retries are not applied twice. |
-| `/api/delete-account` | DELETE | Required | Deletes the Stripe customer and the Supabase auth account (which removes all of the user's Postgres data). |
+| `/api/store-purchase` | POST | Required | After a purchase or restore in the App Store / Google Play, the app sends the transaction id or purchase token. The server asks the store what it is, checks it belongs to the caller (Apple `appAccountToken` / Google `obfuscatedAccountId`), refuses double billing with Stripe, records it in `subscriptions` (`billing_source` = `apple` or `google`) and returns the subscription. 503 until store billing is configured. See `docs/MOBILE_STORE_BILLING.md`. |
+| `/api/store-notifications` | POST | Shared secret in the URL | App Store Server Notifications V2 and Google real-time developer notifications. Only a nudge: the purchase is re-read from the store and that state is applied, so a forged message changes nothing. |
+| `/api/apple-token` | POST | Required | After a person signs in with Apple in the iPhone app, the app sends the one-time authorization code. The server trades it for a refresh token and keeps it (server-only table `apple_auth_tokens`) solely so it can revoke it when the account is deleted. 503 until configured. See `docs/SIGN_IN_WITH_APPLE.md`. |
+| `/api/delete-account` | DELETE | Required | Deletes the Stripe customer and the Supabase auth account (which removes all of the user's Postgres data). If the account signed in with Apple it first revokes Apple's access, using a fresh `appleAuthorizationCode` from the body when the app sends one (otherwise the token stored at sign-in). |
 
 ## Subscription Model
 
@@ -123,10 +128,15 @@ localStorage keys:
 - **If Pro ends, nothing is deleted.** Everything stays on the device and in the cloud and can still be edited; the account just cannot add beyond the Free limits until it upgrades or deletes something.
 - Upgrade prompts appear where a limit is met: the plan-generation message, the storage-limit notice, the used monthly sync, and the locked AI providers.
 - Subscription state is stored in Postgres (table `subscriptions`, one row per user; the Stripe customer id on that row is how the webhook finds the user). Only the server writes it, with the service-role key; a user can read their own row. What is charged is the Stripe Price behind `STRIPE_PRO_PRICE_ID`.
+- **Two ways to pay.** Stripe on the web, and the App Store / Google Play in the mobile app. `subscriptions.billing_source` says which one bills the account (`stripe`, `apple`, `google`), and decides where it is managed. Only one can be active at a time. Store billing is built but off until configured: [`docs/MOBILE_STORE_BILLING.md`](docs/MOBILE_STORE_BILLING.md).
+
+## Mobile app
+
+[`mobile/`](mobile/README.md) is a Flutter client (Android and iOS) for the same accounts. It keeps its data in SQLite on the phone and syncs to the same Postgres tables with the same three-way merge, so a person can use the web and the phone on one account. To make sure the two never disagree about hashing, merging, sanitising or wording, the web generates golden fixtures that the Dart tests replay: [`contract/`](contract/README.md). A change to sync, hashing or sanitising has to land in the web code, the Dart code and the fixtures together. Buying Pro in the app goes through the stores: [`docs/MOBILE_STORE_BILLING.md`](docs/MOBILE_STORE_BILLING.md).
 
 ## Authentication
 
-- Client auth: Supabase — Google OAuth + email/password (`signInWithPassword`, `signUp`, `resetPasswordForEmail`)
+- Client auth: Supabase — Google OAuth + email/password (`signInWithPassword`, `signUp`, `resetPasswordForEmail`); the iPhone app also offers Sign in with Apple (native, via `signInWithIdToken`)
 - API auth: local JWT verification via `jose` (HS256, `audience: "authenticated"`, issuer from `SUPABASE_URL`)
 - Stripe webhook: HMAC-SHA256 signature verification (no Supabase JWT)
 
@@ -150,6 +160,8 @@ localStorage keys:
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET` — from Stripe dashboard after registering the webhook endpoint
 - `STRIPE_PRO_PRICE_ID` — price ID of the Pro subscription product in Stripe
+- Optional, store billing (off until set; a store is enabled when `STORE_PRO_PRODUCT_IDS` and that store's own variables are all present): `STORE_PRO_PRODUCT_IDS`, `STORE_WEBHOOK_SECRET`, `APPLE_IAP_KEY_ID`, `APPLE_IAP_ISSUER_ID`, `APPLE_IAP_PRIVATE_KEY`, `APPLE_BUNDLE_ID`, `GOOGLE_PLAY_PACKAGE_NAME`, `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`. What each is and where to find it: [`docs/MOBILE_STORE_BILLING.md`](docs/MOBILE_STORE_BILLING.md)
+- Optional, Sign in with Apple (revocation on account deletion; off until set): `APPLE_SIGNIN_TEAM_ID`, `APPLE_SIGNIN_KEY_ID`, `APPLE_SIGNIN_PRIVATE_KEY` and `APPLE_BUNDLE_ID` (shared with store billing): [`docs/SIGN_IN_WITH_APPLE.md`](docs/SIGN_IN_WITH_APPLE.md)
 - Optional: `CORS_ALLOWED_ORIGINS` — comma-separated list of additional allowed origins
 - Auto-set by Vercel (no action needed): `VERCEL_URL`, `VERCEL_PROJECT_PRODUCTION_URL` — used for CORS origin allowlist
 
@@ -172,7 +184,7 @@ and runs `npm ci` inside the container, so it needs a network once.
 npm run gym:init              # once: writes .env.local with generated, local-only secrets
                               #       (your previous .env.local is kept as .env.local.remote)
 npm run gym:up                # start the core stack
-npm run gym:up -- mail stripe studio   # ...plus any optional profiles
+npm run gym:up -- mail stripe studio realtime   # ...plus any optional profiles (realtime: the "changed" hint between devices)
 npm run gym:down              # stop (data kept)    |  npm run gym:reset   # stop and delete all data
 npm run gym:ps | gym:logs [service] | gym:restart <service>
 npm run gym:migrate           # apply new files from supabase/migrations (also runs automatically on gym:up)
@@ -212,7 +224,7 @@ Workouts, templates, plans and a few account preferences (the active plan and pl
 
 `.github/workflows/ci.yml` has two jobs. `ci` lints (zero warnings allowed), type-checks, runs the unit tests, builds, and runs the mocked Playwright specs. `stack` starts this Compose stack from an **empty database** (so every migration is applied from scratch, then re-run to prove idempotence), then runs `gym:test-db` and `gym:test-sync` on Chromium, WebKit and an iPhone profile. Text colours are guarded by `design/tokens.contrast.test.ts` (WCAG AA for both themes).
 
-Ports (localhost only): app 5180, API 3010, gateway 54321, Postgres 54322, Mailpit 8026, Studio 54323.
+Ports (localhost only): app 5180, API 3010, gateway 54321, Postgres 54322, Mailpit 8026, Studio 54323. If another Supabase stack already holds 54321/54322 (for example the Supabase CLI's), move this one with `GYM_GATEWAY_PORT` and `GYM_DB_PORT` (for example `GYM_GATEWAY_PORT=64321 GYM_DB_PORT=64322 npm run gym:up`).
 
 Notes:
 - Sign-ups auto-confirm by default. To test confirmation emails set `GYM_AUTOCONFIRM=false` in `.env.local`, recreate `auth`, and start the `mail` profile.
@@ -266,6 +278,7 @@ In the Supabase dashboard → Authentication → Providers:
 
 - **Email** — enable email/password sign-in and set the redirect URL to your production domain
 - **Google** — enable OAuth and add your Google OAuth client ID and secret
+- **Apple** (for the iPhone app's Sign in with Apple) — enable it and add the iOS bundle id under Client IDs; see `docs/SIGN_IN_WITH_APPLE.md`
 
 ## CI / CD
 
@@ -277,6 +290,8 @@ GitHub Actions runs on every push and pull request to `main`:
 4. `vite build` — production build (with stub `VITE_*` env vars)
 
 Config: `.github/workflows/ci.yml`
+
+The Flutter app has its own workflow, `.github/workflows/mobile.yml`: `flutter analyze` and `flutter test` on pull requests that touch `mobile/` or `contract/`, and an unsigned iOS build on a macOS runner that runs only when started by hand (Actions → Mobile → Run workflow → ios).
 
 Dependabot is configured (`.github/dependabot.yml`) to open weekly PRs for npm and GitHub Actions dependency updates (minor + patch, batched).
 
@@ -369,14 +384,10 @@ public/icon-512.png
 
 ### iOS / App Store (optional, future)
 
-If you want the app on the App Store, use Capacitor:
+The phone app is the Flutter project in [`mobile/`](mobile/README.md) (Capacitor was considered and not used). In-app purchase goes directly through the stores, not RevenueCat: [`docs/MOBILE_STORE_BILLING.md`](docs/MOBILE_STORE_BILLING.md).
 
-- Requires Apple Developer account ($99/yr) and a Mac with Xcode
-- `npm install @capacitor/core @capacitor/cli @capacitor/ios`
-- `npx cap init` → `npx cap add ios`
-- `npm run build` → `npx cap sync` → open in Xcode → archive → submit
-- Use **RevenueCat** to handle Apple in-app purchases and sync entitlements to the backend
-- App Store assets needed: name, subtitle, description, screenshots (6.5" and 5.5"), privacy policy URL, terms of service URL, support URL
+- Requires an Apple Developer account ($99/yr) and a Mac with Xcode to build, sign and submit (the iOS app has never been built; CI has a manual macOS job)
+- App Store assets needed: name, subtitle, description, screenshots (6.5" and 5.5"), **privacy policy URL, terms of service URL** (written: `public/privacy.html` and `public/terms.html`, served at `/privacy` and `/terms`; fill in the operator placeholders, `npm run check:legal`, and see [`docs/STORE_LISTING.md`](docs/STORE_LISTING.md) for the store forms), support URL
 
 ---
 
