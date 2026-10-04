@@ -119,7 +119,9 @@ async function scenarioDelete(browser) {
   await notesBox(A).fill("a day I will delete");
   // History only lists days with real content (a weight counts).
   await A.getByPlaceholder("e.g. 79.5").fill("80");
-  check(await waitFor(() => q("main_notes") === "a day I will delete"), "setup: the day is in Postgres");
+  // Wait for the weight too: B lists the day in History only once it has content, and a day pulled before the weight arrived
+  // has none (B would then have nothing to delete, which is the test racing itself, not a sync fault).
+  check(await waitFor(() => q("main_notes || '|' || weight") === "a day I will delete|80"), "setup: the day is in Postgres");
 
   await signIn(B, email);
   check(await waitFor(async () => (await notesBox(B).count()) > 0 && (await notesBox(B).inputValue()) === "a day I will delete"), "setup: B has pulled the day");

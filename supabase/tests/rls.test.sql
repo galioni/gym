@@ -406,11 +406,15 @@ insert into public.workout_days (user_id, day, session_type, main_notes) values
 update public.workout_days set updated_at = now() - interval '400 days' where day = '2027-03-12';
 select gym_test.expect_count($$select 1 from public.workout_days where day between '2027-03-10' and '2027-03-12'$$, 4, 'purge fixtures are in place');
 
+-- The purge covers every user in the database. On a volume that already holds data (a dev stack in use) it also removes real
+-- tombstones past the period, so those are counted first and expected on top of the fixtures' own.
 do $$
-declare removed bigint;
+declare removed bigint; others bigint;
 begin
+  select count(*) into others from public.workout_days
+   where deleted_at is not null and deleted_at < now() - interval '90 days' and coalesce(deleted_hash, '') not in ('old', 'recent', 'old-b');
   removed := public.purge_deleted_days();
-  if removed <> 2 then raise exception 'FAIL purge should report the 2 tombstones it removed, got %', removed; end if;
+  if removed - others <> 2 then raise exception 'FAIL purge should report the 2 fixture tombstones it removed (and % others), got %', others, removed; end if;
   raise notice 'ok   - purge reports how many tombstones it removed';
 end $$;
 select gym_test.expect_count($$select 1 from public.workout_days where day between '2027-03-10' and '2027-03-12'$$, 2,
@@ -418,10 +422,12 @@ select gym_test.expect_count($$select 1 from public.workout_days where day betwe
 select gym_test.expect_count($$select 1 from public.workout_days where deleted_hash = 'recent'$$, 1, 'a tombstone younger than 90 days is kept');
 select gym_test.expect_count($$select 1 from public.workout_days where main_notes like 'a live day%'$$, 1, 'live days are never purged');
 do $$
-declare removed bigint;
+declare removed bigint; others bigint;
 begin
+  select count(*) into others from public.workout_days
+   where deleted_at is not null and deleted_at < now() - interval '1 day' and coalesce(deleted_hash, '') <> 'recent';
   removed := public.purge_deleted_days(interval '1 day');
-  if removed <> 1 then raise exception 'FAIL a 1-day retention should remove the 89-day-old tombstone, got %', removed; end if;
+  if removed - others <> 1 then raise exception 'FAIL a 1-day retention should remove the 89-day-old fixture tombstone (and % others), got %', others, removed; end if;
   raise notice 'ok   - the retention period is a parameter';
 end $$;
 select gym_test.expect_count($$select 1 from public.workout_days where deleted_hash = 'recent'$$, 0, 'a shorter period purges more');
@@ -447,19 +453,36 @@ select gym_test.expect_error($$select * from public.stripe_events$$, '42501', 'a
 select gym_test.become_service();
 insert into public.stripe_events (event_id) values ('evt_new');
 select gym_test.expect_error($$insert into public.stripe_events (event_id) values ('evt_new')$$, '23505', 'a repeated event id is detected');
-select gym_test.expect_count($$select 1 from public.stripe_events$$, 1, 'the server can record and read webhook events');
+select gym_test.expect_count($$select 1 from public.stripe_events where event_id = 'evt_new'$$, 1, 'the server can record and read webhook events');
 select gym_test.expect_error($$select public.purge_stripe_events()$$, '42501', 'the service role cannot run the event purge through the API');
 
 select gym_test.become_admin();
 insert into public.stripe_events (event_id, received_at) values ('evt_old', now() - interval '40 days'), ('evt_recent', now() - interval '29 days');
 do $$
-declare removed bigint;
+declare removed bigint; others bigint;
 begin
+  select count(*) into others from public.stripe_events where received_at < now() - interval '30 days' and event_id <> 'evt_old';
   removed := public.purge_stripe_events();
-  if removed <> 1 then raise exception 'FAIL the event purge should remove only the 40-day-old id, removed %', removed; end if;
+  if removed - others <> 1 then raise exception 'FAIL the event purge should remove only the 40-day-old fixture id (and % others), removed %', others, removed; end if;
   raise notice 'ok   - the event purge removes ids older than 30 days';
 end $$;
 select gym_test.expect_count($$select 1 from public.stripe_events where event_id in ('evt_new', 'evt_recent')$$, 2, 'newer event ids are kept');
+
+-- ===========================================================================
+-- Sign in with Apple: the refresh token kept only to revoke it when the account is deleted. Server only.
+-- ===========================================================================
+select gym_test.become('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
+select gym_test.expect_error($$select * from public.apple_auth_tokens$$, '42501', 'a signed-in user cannot read the Apple token store');
+select gym_test.expect_error($$insert into public.apple_auth_tokens (user_id, refresh_token) values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'r-user')$$, '42501', 'a signed-in user cannot write it, not even their own');
+select gym_test.become_anon();
+select gym_test.expect_error($$select * from public.apple_auth_tokens$$, '42501', 'anon cannot read the Apple token store');
+
+select gym_test.become_service();
+insert into public.apple_auth_tokens (user_id, refresh_token) values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'r-1');
+select gym_test.expect_count($$select 1 from public.apple_auth_tokens where user_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'$$, 1, 'the server can store and read a refresh token');
+select gym_test.expect_error($$insert into public.apple_auth_tokens (user_id, refresh_token) values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'r-2')$$, '23505', 'one token per user (a later sign-in replaces it)');
+select gym_test.expect_error($$insert into public.apple_auth_tokens (user_id, refresh_token) values ('cccccccc-cccc-cccc-cccc-cccccccccccc', '')$$, '23514', 'an empty token is refused');
+select gym_test.expect_error($$insert into public.apple_auth_tokens (user_id, refresh_token) values ('00000000-0000-0000-0000-00000000dead', 'r')$$, '23503', 'a token needs an existing account');
 
 -- ===========================================================================
 -- Rate limiting: sliding log, atomic, server only
@@ -780,12 +803,15 @@ delete from auth.users where id in ('ffffffff-ffff-ffff-ffff-ffffffffffff', '999
 select gym_test.become_admin();
 insert into auth.users (id, email) values ('77777777-7777-7777-7777-777777777777', 'j@test.local'), ('66666666-6666-6666-6666-666666666666', 'k@test.local');
 
--- Realtime is not installed in the local stack: stand in for it, recording what would have been sent.
+-- Stand in for Realtime, recording what would have been sent (this transaction is rolled back, so the real function, if the
+-- local stack runs the `realtime` profile, is back afterwards). The stand-in must belong to this role: `create or replace`
+-- keeps the real function's owner, whose definer rights cannot write to gym_test.sent, and the trigger would swallow that error.
 create schema if not exists realtime;
 grant usage on schema realtime to public;
 create table gym_test.sent (topic text, event text, payload jsonb);
 create or replace function realtime.send(payload jsonb, event text, topic text, private boolean default true) returns void
 language sql security definer as $$ insert into gym_test.sent values (topic, event, payload) $$;
+alter function realtime.send(jsonb, text, text, boolean) owner to current_user;
 
 select gym_test.expect_count($$select 1 where public.realtime_sync_enabled() = false$$, 1, 'the realtime signal ships switched off');
 insert into public.workout_days (user_id, day, session_type) values ('77777777-7777-7777-7777-777777777777', current_date, 'gym');
