@@ -1,0 +1,72 @@
+name: Mobile
+
+# The Flutter app in mobile/. Runs only when the app or the contract fixtures it replays change, so web-only pull requests
+# do not wait for it. The iOS build needs a Mac runner (slow and billed at a higher rate), so it runs on demand only.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/**"
+      - "contract/**"
+      - ".github/workflows/mobile.yml"
+  workflow_dispatch:
+    inputs:
+      ios:
+        description: "Also build the iOS app (macOS runner, no code signing)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: 3.44.4
+
+jobs:
+  test:
+    name: Analyze · Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  ios:
+    name: iOS build (unsigned)
+    if: github.event_name == 'workflow_dispatch' && inputs.ios
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # Placeholder values: this proves the app compiles and links for iOS, nothing more. Real builds are signed and
+      # uploaded from a release pipeline that holds the Apple certificates.
+      - name: Build
+        run: >
+          flutter build ios --release --no-codesign
+          --dart-define=SUPABASE_URL=https://placeholder.supabase.co
+          --dart-define=SUPABASE_ANON_KEY=placeholder
+          --dart-define=API_BASE_URL=https://placeholder.example.com
+          --dart-define=STORE_PRO_PRODUCT_ID=placeholder_pro
