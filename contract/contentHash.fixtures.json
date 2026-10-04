@@ -1,0 +1,113 @@
+{
+  "hashString": [
+    {
+      "input": "",
+      "hash": "wvjl67o803"
+    },
+    {
+      "input": "a",
+      "hash": "262p94epp1d"
+    },
+    {
+      "input": "abc",
+      "hash": "1dtlchkfkb1"
+    },
+    {
+      "input": "Hello, world",
+      "hash": "1hqdxga8pqk"
+    },
+    {
+      "input": "café",
+      "hash": "1440vtls1if"
+    },
+    {
+      "input": "🏋️",
+      "hash": "1jstp9o35eu"
+    },
+    {
+      "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "hash": "21ded0ooxff"
+    }
+  ],
+  "days": [
+    {
+      "name": "empty",
+      "day": {
+        "date": "2026-10-01",
+        "sessionType": "push",
+        "warmup": [],
+        "main": [],
+        "warmupNotes": "",
+        "mainNotes": "",
+        "warmupTimerMs": 0,
+        "mainTimerMs": 0,
+        "weight": "",
+        "checkNotes": ""
+      },
+      "serialized": "{\"checkNotes\":\"\",\"date\":\"2026-10-01\",\"main\":[],\"mainNotes\":\"\",\"mainTimerMs\":0,\"sessionType\":\"push\",\"warmup\":[],\"warmupNotes\":\"\",\"warmupTimerMs\":0,\"weight\":\"\"}",
+      "hash": "jafke0j72x"
+    },
+    {
+      "name": "full",
+      "day": {
+        "date": "2026-10-02",
+        "sessionType": "legs",
+        "warmup": [
+          {
+            "id": "w1",
+            "text": "Leg swings",
+            "done": false,
+            "target": "2x10",
+            "equipment": "none",
+            "description": "Controlled",
+            "videoUrl": "https://example.com/v"
+          }
+        ],
+        "main": [
+          {
+            "id": "m1",
+            "text": "Squat",
+            "done": true,
+            "target": "5x5"
+          },
+          {
+            "id": "m2",
+            "text": "Lunge",
+            "done": false
+          }
+        ],
+        "warmupNotes": "easy",
+        "mainNotes": "PR 100kg",
+        "warmupTimerMs": 300000,
+        "mainTimerMs": 3600000,
+        "weight": "79,5",
+        "checkNotes": "slept well"
+      },
+      "serialized": "{\"checkNotes\":\"slept well\",\"date\":\"2026-10-02\",\"main\":[{\"done\":true,\"id\":\"m1\",\"target\":\"5x5\",\"text\":\"Squat\"},{\"done\":false,\"id\":\"m2\",\"text\":\"Lunge\"}],\"mainNotes\":\"PR 100kg\",\"mainTimerMs\":3600000,\"sessionType\":\"legs\",\"warmup\":[{\"description\":\"Controlled\",\"done\":false,\"equipment\":\"none\",\"id\":\"w1\",\"target\":\"2x10\",\"text\":\"Leg swings\",\"videoUrl\":\"https://example.com/v\"}],\"warmupNotes\":\"easy\",\"warmupTimerMs\":300000,\"weight\":\"79,5\"}",
+      "hash": "220bpc8ljz3"
+    },
+    {
+      "name": "unicode",
+      "day": {
+        "date": "2026-10-03",
+        "sessionType": "pull",
+        "warmup": [],
+        "main": [
+          {
+            "id": "m1",
+            "text": "Péña — 🏋️ \"quoted\" \\ back\nline\ttab\u0001ctl",
+            "done": false
+          }
+        ],
+        "warmupNotes": "café",
+        "mainNotes": "日本語",
+        "warmupTimerMs": 1,
+        "mainTimerMs": 2,
+        "weight": "80",
+        "checkNotes": ""
+      },
+      "serialized": "{\"checkNotes\":\"\",\"date\":\"2026-10-03\",\"main\":[{\"done\":false,\"id\":\"m1\",\"text\":\"Péña — 🏋️ \\\"quoted\\\" \\\\ back\\nline\\ttab\\u0001ctl\"}],\"mainNotes\":\"日本語\",\"mainTimerMs\":2,\"sessionType\":\"pull\",\"warmup\":[],\"warmupNotes\":\"café\",\"warmupTimerMs\":1,\"weight\":\"80\"}",
+      "hash": "15c7dfl1oyu"
+    }
+  ]
+}

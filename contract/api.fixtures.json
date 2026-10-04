@@ -1,0 +1,92 @@
+{
+ "retryWait": [
+  {
+   "seconds": 0,
+   "text": "1 minute"
+  },
+  {
+   "seconds": 1,
+   "text": "1 minute"
+  },
+  {
+   "seconds": 59,
+   "text": "1 minute"
+  },
+  {
+   "seconds": 60,
+   "text": "1 minute"
+  },
+  {
+   "seconds": 61,
+   "text": "2 minutes"
+  },
+  {
+   "seconds": 119,
+   "text": "2 minutes"
+  },
+  {
+   "seconds": 120,
+   "text": "2 minutes"
+  },
+  {
+   "seconds": 3599,
+   "text": "60 minutes"
+  },
+  {
+   "seconds": 3600,
+   "text": "1 hour"
+  },
+  {
+   "seconds": 3601,
+   "text": "2 hours"
+  },
+  {
+   "seconds": 7199,
+   "text": "2 hours"
+  },
+  {
+   "seconds": 7200,
+   "text": "2 hours"
+  },
+  {
+   "seconds": 7201,
+   "text": "3 hours"
+  },
+  {
+   "seconds": 86399,
+   "text": "24 hours"
+  },
+  {
+   "seconds": 86400,
+   "text": "24 hours"
+  },
+  {
+   "seconds": 172799,
+   "text": "48 hours"
+  },
+  {
+   "seconds": 172800,
+   "text": "48 hours"
+  },
+  {
+   "seconds": 172801,
+   "text": "3 days"
+  },
+  {
+   "seconds": 176400,
+   "text": "3 days"
+  },
+  {
+   "seconds": 259200,
+   "text": "3 days"
+  },
+  {
+   "seconds": 259201,
+   "text": "4 days"
+  },
+  {
+   "seconds": 604800,
+   "text": "7 days"
+  }
+ ]
+}
