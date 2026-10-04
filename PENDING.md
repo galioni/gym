@@ -1,15 +1,16 @@
 # Pending
 
-State as of **2026-10-04**. Nothing from the mobile / billing / Sign in with Apple work is committed: it is all in the working
-tree on `main`. This file lists what is left; the longer history and reasoning are in `docs/NEXT_PHASES_README.md` (Phase 18). When
-an item is done, delete it here rather than ticking it, so the file cannot go stale.
+State as of **2026-10-04**. The mobile / billing / Sign in with Apple work is committed and pushed to the branch
+`mobile-flutter-client` (8 commits on top of `main`, not merged). This file lists what is left; the longer history and reasoning are
+in `docs/NEXT_PHASES_README.md` (Phase 18). When an item is done, delete it here rather than ticking it, so the file cannot go stale.
 
 ## 1. Needs you (nothing here can be done from code)
 
 ### Commit and merge
-- [ ] **Decide how to commit and open the PR(s).** Changed areas: web (`api/`, `features/`, `application/`, `components/`, `src/sw.ts`,
-  `public/`, `vercel.json`, `package.json`), `contract/`, `mobile/`, `supabase/` (migrations, tests), `docker/` and `scripts/local/`,
-  `.github/workflows/mobile.yml`, `docs/`, the READMEs.
+- [ ] **Open the pull request** for `mobile-flutter-client`
+  (https://github.com/galioni/gym/pull/new/mobile-flutter-client) and decide whether to merge it as one PR or split it. The commits are
+  already separated by area: web race fixes, contract tests, store billing, Sign in with Apple (server), legal pages, local stack,
+  the Flutter app, docs. The Flutter app alone is ~190 files, so a reviewer may prefer the order above.
 - [ ] **Two migrations apply to production when the PR merges** (the Supabase GitHub integration does it): `20261003120000_store_billing`
   and `20261004100000_apple_signin_tokens`. Both are additive and old code keeps working.
 - [ ] CI must be green first. Not run locally: the Playwright E2E suite (it covers the Timer change, the legal pages and the landing
