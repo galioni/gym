@@ -11,7 +11,8 @@ import { fromLocalDateKey, getProgress, toLocalDateKey } from "../utils";
  *   UPDATE_CONTRACT=1 npx vitest run contract
  */
 const FIXTURE = resolve(process.cwd(), "contract/history.fixtures.json");
-const TODAY = new Date(2026, 9, 3, 12, 0, 0); // Saturday 3 Oct 2026, local time
+// Saturday 3 Oct 2026, 12:00 UTC: a fixed instant, so the golden fixture is the same in every timezone (the date is 3 Oct from UTC-12 to UTC+11).
+const TODAY = new Date(Date.UTC(2026, 9, 3, 12, 0, 0));
 
 const read = (path: string) => readFileSync(resolve(process.cwd(), path), "utf8");
 
