@@ -19,6 +19,15 @@ const TABLE_LABELS: Record<string, string> = {
   plans: "plans",
 };
 
+/**
+ * What to say when the database refuses a workout day older than a Free account's window (SQLSTATE PT424, see
+ * supabase/migrations/*_free_history_window.sql). The app already holds such days back, using the device's date, so this almost
+ * always means the device's date or time is days out. Same wording in mobile/lib/sync/sync_errors.dart.
+ */
+export function describeHistoryWindow(): string {
+  return "The cloud refused a day older than the last 7 days that the Free plan keeps. This usually means this device's date or time is wrong, so please check it. Your data is safe on this device.";
+}
+
 /** Plain-language message for a limit error raised on `table`. */
 export function describeLimit(table: string): string {
   const what = TABLE_LABELS[table] ?? "items";

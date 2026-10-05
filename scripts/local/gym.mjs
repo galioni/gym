@@ -3,9 +3,11 @@
  * gym-app local stack launcher (cross-platform wrapper around `docker compose -p gym-app`).
  *
  * GYM_PROJECT=<name> runs an isolated copy of the stack (own containers and volumes), e.g. for CI.
+ * GYM_GATEWAY_PORT / GYM_DB_PORT / GYM_STUDIO_PORT move the host ports (defaults 54321 / 54322 / 54323) when something else,
+ * such as another Supabase project, already uses them. Export them for every command, including test-db and test-sync.
  *
  *   node scripts/local/gym.mjs init [--force]     generate .env.local with local-only secrets
- *   node scripts/local/gym.mjs up [profiles...]   start (profiles: mail, stripe, studio)
+ *   node scripts/local/gym.mjs up [profiles...]   start (profiles: mail, stripe, studio, realtime)
  *   node scripts/local/gym.mjs down               stop, keep data
  *   node scripts/local/gym.mjs reset              stop and DELETE all data (Postgres, node_modules volume)
  *   node scripts/local/gym.mjs migrate            apply new files from supabase/migrations
@@ -30,7 +32,12 @@ const COMPOSE_FILE = path.join(ROOT, "docker", "compose.yaml");
 // Overridable so a throwaway stack (CI, rehearsals) never shares containers or volumes with your dev stack.
 const PROJECT = process.env.GYM_PROJECT ?? "gym-app";
 const MARKER = "# gym-app local stack";
-const PROFILES = ["mail", "stripe", "studio"];
+const PROFILES = ["mail", "stripe", "studio", "realtime"];
+const PORTS = {
+  gateway: process.env.GYM_GATEWAY_PORT || "54321",
+  db: process.env.GYM_DB_PORT || "54322",
+  studio: process.env.GYM_STUDIO_PORT || "54323",
+};
 
 const base64url = (input) => Buffer.from(input).toString("base64url");
 
@@ -116,6 +123,12 @@ function compose(args, profiles = [], input, stdio) {
   return spawnSync("docker", full, options).status ?? 1;
 }
 
+/** Runs a SQL file from docker/db in the running database, as the admin role. */
+function runDbSql(file) {
+  const sql = readFileSync(path.join(ROOT, "docker", "db", file), "utf8");
+  return compose(["exec", "-T", "db", "psql", "-U", "supabase_admin", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-q"], PROFILES, sql);
+}
+
 function requireEnv() {
   if (isGenerated()) return true;
   console.error("No gym-app .env.local yet. Run: npm run gym:init");
@@ -137,12 +150,25 @@ switch (command) {
       code = 1;
       break;
     }
-    code = compose(["up", "-d"], rest);
+    const realtime = rest.includes("realtime");
+    if (realtime) {
+      // Realtime keeps its bookkeeping in a schema the plain Postgres image lacks: create it before the service first starts.
+      code = compose(["up", "-d", "--wait", "db"], rest);
+      if (code === 0) code = runDbSql("realtime-prep.sql");
+    }
+    if (code === 0) code = compose(["up", "-d"], rest);
+    if (code === 0 && realtime) {
+      // Once Realtime has made its schema, make sure users may listen to their own channel (an existing volume was migrated
+      // before there was a schema for the migration's policy to go on).
+      code = compose(["up", "-d", "--wait", "realtime"], rest);
+      if (code === 0) code = runDbSql("realtime-policy.sql");
+    }
     if (code === 0) {
       console.log("\n  App        http://localhost:5180      API   http://localhost:3010");
-      console.log("  Gateway    http://localhost:54321     DB    postgresql://postgres@localhost:54322/postgres");
+      console.log(`  Gateway    http://localhost:${PORTS.gateway}     DB    postgresql://postgres@localhost:${PORTS.db}/postgres`);
       if (rest.includes("mail")) console.log("  Mail UI    http://localhost:8026");
-      if (rest.includes("studio")) console.log("  Studio     http://localhost:54323");
+      if (rest.includes("studio")) console.log(`  Studio     http://localhost:${PORTS.studio}`);
+      if (realtime) console.log(`  Realtime   http://localhost:${PORTS.gateway}/realtime/v1  (hint is off until: update public.app_flags set enabled = true where name = 'realtime_sync')`);
       console.log("  Stop with: npm run gym:down\n");
     }
     break;

@@ -1,0 +1,1840 @@
+{
+ "today": 1791028800000,
+ "targets": [
+  {
+   "target": "3x8",
+   "sets": 3
+  },
+  {
+   "target": "3 x 8",
+   "sets": 3
+  },
+  {
+   "target": "4×10",
+   "sets": 4
+  },
+  {
+   "target": "4 × 10",
+   "sets": 4
+  },
+  {
+   "target": "5x5-8",
+   "sets": 5
+  },
+  {
+   "target": "3 sets of 10",
+   "sets": 3
+  },
+  {
+   "target": "3 SETS OF 10",
+   "sets": 3
+  },
+  {
+   "target": "3set of 10",
+   "sets": 3
+  },
+  {
+   "target": "10",
+   "sets": 0
+  },
+  {
+   "target": "",
+   "sets": 0
+  },
+  {
+   "target": null,
+   "sets": 0
+  },
+  {
+   "target": "x8",
+   "sets": 0
+  },
+  {
+   "target": "3x",
+   "sets": 0
+  },
+  {
+   "target": "12 x 3 x 2",
+   "sets": 12
+  },
+  {
+   "target": "  4x6  ",
+   "sets": 4
+  },
+  {
+   "target": "AMRAP",
+   "sets": 0
+  },
+  {
+   "target": "3-4 sets of 8",
+   "sets": 4
+  }
+ ],
+ "weights": [
+  {
+   "raw": "79.5",
+   "value": 79.5
+  },
+  {
+   "raw": "79,5",
+   "value": 79.5
+  },
+  {
+   "raw": "80",
+   "value": 80
+  },
+  {
+   "raw": " 80 kg ",
+   "value": 80
+  },
+  {
+   "raw": "kg",
+   "value": null
+  },
+  {
+   "raw": "",
+   "value": null
+  },
+  {
+   "raw": "   ",
+   "value": null
+  },
+  {
+   "raw": "0",
+   "value": null
+  },
+  {
+   "raw": "-5",
+   "value": 5
+  },
+  {
+   "raw": "1000",
+   "value": null
+  },
+  {
+   "raw": "999.9",
+   "value": 999.9
+  },
+  {
+   "raw": "1,000",
+   "value": 1
+  },
+  {
+   "raw": "7.9.5",
+   "value": 7.9
+  },
+  {
+   "raw": "abc",
+   "value": null
+  },
+  {
+   "raw": "12e1",
+   "value": 121
+  },
+  {
+   "raw": ".5",
+   "value": 0.5
+  },
+  {
+   "raw": "5.",
+   "value": 5
+  }
+ ],
+ "weekStarts": [
+  {
+   "key": "2026-10-03",
+   "weekStart": "2026-09-28",
+   "label": "This week"
+  },
+  {
+   "key": "2026-10-04",
+   "weekStart": "2026-09-28",
+   "label": "This week"
+  },
+  {
+   "key": "2026-10-05",
+   "weekStart": "2026-10-05",
+   "label": "5 Oct 2026"
+  },
+  {
+   "key": "2026-10-02",
+   "weekStart": "2026-09-28",
+   "label": "This week"
+  },
+  {
+   "key": "2026-09-28",
+   "weekStart": "2026-09-28",
+   "label": "This week"
+  },
+  {
+   "key": "2026-09-27",
+   "weekStart": "2026-09-21",
+   "label": "Last week"
+  },
+  {
+   "key": "2026-09-21",
+   "weekStart": "2026-09-21",
+   "label": "Last week"
+  },
+  {
+   "key": "2026-09-14",
+   "weekStart": "2026-09-14",
+   "label": "14 Sept 2026"
+  },
+  {
+   "key": "2026-01-01",
+   "weekStart": "2025-12-29",
+   "label": "29 Dec 2025"
+  },
+  {
+   "key": "2025-12-29",
+   "weekStart": "2025-12-29",
+   "label": "29 Dec 2025"
+  },
+  {
+   "key": "2024-02-29",
+   "weekStart": "2024-02-26",
+   "label": "26 Feb 2024"
+  }
+ ],
+ "rowDates": [
+  {
+   "key": "2026-09-28",
+   "row": "Mon 28 Sept",
+   "chart": "28 Sept"
+  },
+  {
+   "key": "2026-10-07",
+   "row": "Wed 7 Oct",
+   "chart": "7 Oct"
+  },
+  {
+   "key": "2026-10-16",
+   "row": "Fri 16 Oct",
+   "chart": "16 Oct"
+  },
+  {
+   "key": "2026-10-25",
+   "row": "Sun 25 Oct",
+   "chart": "25 Oct"
+  },
+  {
+   "key": "2026-11-03",
+   "row": "Tue 3 Nov",
+   "chart": "3 Nov"
+  },
+  {
+   "key": "2026-11-12",
+   "row": "Thu 12 Nov",
+   "chart": "12 Nov"
+  },
+  {
+   "key": "2026-11-21",
+   "row": "Sat 21 Nov",
+   "chart": "21 Nov"
+  },
+  {
+   "key": "2026-11-30",
+   "row": "Mon 30 Nov",
+   "chart": "30 Nov"
+  },
+  {
+   "key": "2026-12-09",
+   "row": "Wed 9 Dec",
+   "chart": "9 Dec"
+  },
+  {
+   "key": "2026-12-18",
+   "row": "Fri 18 Dec",
+   "chart": "18 Dec"
+  },
+  {
+   "key": "2026-12-27",
+   "row": "Sun 27 Dec",
+   "chart": "27 Dec"
+  },
+  {
+   "key": "2027-01-05",
+   "row": "Tue 5 Jan",
+   "chart": "5 Jan"
+  },
+  {
+   "key": "2027-01-14",
+   "row": "Thu 14 Jan",
+   "chart": "14 Jan"
+  },
+  {
+   "key": "2027-01-23",
+   "row": "Sat 23 Jan",
+   "chart": "23 Jan"
+  },
+  {
+   "key": "2027-02-01",
+   "row": "Mon 1 Feb",
+   "chart": "1 Feb"
+  },
+  {
+   "key": "2027-02-10",
+   "row": "Wed 10 Feb",
+   "chart": "10 Feb"
+  },
+  {
+   "key": "2027-02-19",
+   "row": "Fri 19 Feb",
+   "chart": "19 Feb"
+  },
+  {
+   "key": "2027-02-28",
+   "row": "Sun 28 Feb",
+   "chart": "28 Feb"
+  },
+  {
+   "key": "2027-03-09",
+   "row": "Tue 9 Mar",
+   "chart": "9 Mar"
+  },
+  {
+   "key": "2027-03-18",
+   "row": "Thu 18 Mar",
+   "chart": "18 Mar"
+  },
+  {
+   "key": "2027-03-27",
+   "row": "Sat 27 Mar",
+   "chart": "27 Mar"
+  },
+  {
+   "key": "2027-04-05",
+   "row": "Mon 5 Apr",
+   "chart": "5 Apr"
+  },
+  {
+   "key": "2027-04-14",
+   "row": "Wed 14 Apr",
+   "chart": "14 Apr"
+  },
+  {
+   "key": "2027-04-23",
+   "row": "Fri 23 Apr",
+   "chart": "23 Apr"
+  }
+ ],
+ "labels": [
+  {
+   "weekStart": "2026-09-28",
+   "label": "This week"
+  },
+  {
+   "weekStart": "2026-09-21",
+   "label": "Last week"
+  },
+  {
+   "weekStart": "2026-09-14",
+   "label": "14 Sept 2026"
+  },
+  {
+   "weekStart": "2026-01-05",
+   "label": "5 Jan 2026"
+  },
+  {
+   "weekStart": "2025-12-29",
+   "label": "29 Dec 2025"
+  }
+ ],
+ "colors": [
+  {
+   "pct": 0,
+   "color": "bg-amber-500"
+  },
+  {
+   "pct": 1,
+   "color": "bg-amber-500"
+  },
+  {
+   "pct": 49,
+   "color": "bg-amber-500"
+  },
+  {
+   "pct": 50,
+   "color": "bg-primary"
+  },
+  {
+   "pct": 51,
+   "color": "bg-primary"
+  },
+  {
+   "pct": 99,
+   "color": "bg-primary"
+  },
+  {
+   "pct": 100,
+   "color": "bg-emerald-500"
+  }
+ ],
+ "histories": [
+  {
+   "name": "empty",
+   "days": {},
+   "worthy": [],
+   "streak": 0,
+   "thisWeek": 0,
+   "volume": 0,
+   "total": 0
+  },
+  {
+   "name": "streakThroughToday",
+   "days": {
+    "2026-10-03": {
+     "date": "2026-10-03",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-10-03",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-10-02": {
+     "date": "2026-10-02",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-10-02",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-10-01": {
+     "date": "2026-10-01",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-10-01",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-29": {
+     "date": "2026-09-29",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-29",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    }
+   },
+   "worthy": [
+    {
+     "date": "2026-10-03",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-10-02",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-10-01",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-29",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    }
+   ],
+   "streak": 3,
+   "thisWeek": 4,
+   "volume": 0,
+   "total": 4
+  },
+  {
+   "name": "streakEndsYesterday",
+   "days": {
+    "2026-10-02": {
+     "date": "2026-10-02",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-10-02",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-10-01": {
+     "date": "2026-10-01",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-10-01",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-30": {
+     "date": "2026-09-30",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-30",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    }
+   },
+   "worthy": [
+    {
+     "date": "2026-10-02",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-10-01",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-30",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    }
+   ],
+   "streak": 3,
+   "thisWeek": 3,
+   "volume": 0,
+   "total": 3
+  },
+  {
+   "name": "todayStartedNotDone",
+   "days": {
+    "2026-10-03": {
+     "date": "2026-10-03",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "a",
+       "text": "Lift",
+       "done": false
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-10-02": {
+     "date": "2026-10-02",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-10-02",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    }
+   },
+   "worthy": [
+    {
+     "date": "2026-10-03",
+     "completed": false,
+     "worthy": false,
+     "progress": 0
+    },
+    {
+     "date": "2026-10-02",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    }
+   ],
+   "streak": 1,
+   "thisWeek": 1,
+   "volume": 0,
+   "total": 1
+  },
+  {
+   "name": "gapYesterday",
+   "days": {
+    "2026-10-03": {
+     "date": "2026-10-03",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-10-03",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-10-01": {
+     "date": "2026-10-01",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-10-01",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    }
+   },
+   "worthy": [
+    {
+     "date": "2026-10-03",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-10-01",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    }
+   ],
+   "streak": 1,
+   "thisWeek": 2,
+   "volume": 0,
+   "total": 2
+  },
+  {
+   "name": "longStreakAcrossMonthAndYear",
+   "days": {
+    "2026-10-03": {
+     "date": "2026-10-03",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-10-03",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-10-02": {
+     "date": "2026-10-02",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-10-02",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-10-01": {
+     "date": "2026-10-01",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-10-01",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-30": {
+     "date": "2026-09-30",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-30",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-29": {
+     "date": "2026-09-29",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-29",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-28": {
+     "date": "2026-09-28",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-28",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-27": {
+     "date": "2026-09-27",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-27",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-26": {
+     "date": "2026-09-26",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-26",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-25": {
+     "date": "2026-09-25",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-25",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-24": {
+     "date": "2026-09-24",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-24",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-23": {
+     "date": "2026-09-23",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-23",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-22": {
+     "date": "2026-09-22",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-22",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-21": {
+     "date": "2026-09-21",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-21",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-20": {
+     "date": "2026-09-20",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-20",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-19": {
+     "date": "2026-09-19",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-19",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-18": {
+     "date": "2026-09-18",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-18",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-17": {
+     "date": "2026-09-17",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-17",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-16": {
+     "date": "2026-09-16",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-16",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-15": {
+     "date": "2026-09-15",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-15",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-14": {
+     "date": "2026-09-14",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-14",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-13": {
+     "date": "2026-09-13",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-13",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-12": {
+     "date": "2026-09-12",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-12",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-11": {
+     "date": "2026-09-11",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-11",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-10": {
+     "date": "2026-09-10",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-10",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-09": {
+     "date": "2026-09-09",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-09",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-08": {
+     "date": "2026-09-08",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-08",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-07": {
+     "date": "2026-09-07",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-07",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-06": {
+     "date": "2026-09-06",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-06",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-05": {
+     "date": "2026-09-05",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-05",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-04": {
+     "date": "2026-09-04",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-04",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-03": {
+     "date": "2026-09-03",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-03",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-02": {
+     "date": "2026-09-02",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-02",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-01": {
+     "date": "2026-09-01",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-09-01",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-08-31": {
+     "date": "2026-08-31",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-08-31",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-08-30": {
+     "date": "2026-08-30",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-08-30",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-08-29": {
+     "date": "2026-08-29",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-08-29",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-08-28": {
+     "date": "2026-08-28",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-08-28",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-08-27": {
+     "date": "2026-08-27",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-08-27",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-08-26": {
+     "date": "2026-08-26",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-08-26",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-08-25": {
+     "date": "2026-08-25",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-08-25",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    }
+   },
+   "worthy": [
+    {
+     "date": "2026-10-03",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-10-02",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-10-01",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-30",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-29",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-28",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-27",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-26",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-25",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-24",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-23",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-22",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-21",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-20",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-19",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-18",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-17",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-16",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-15",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-14",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-13",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-12",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-11",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-10",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-09",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-08",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-07",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-06",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-05",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-04",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-03",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-02",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-01",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-08-31",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-08-30",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-08-29",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-08-28",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-08-27",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-08-26",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-08-25",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    }
+   ],
+   "streak": 40,
+   "thisWeek": 6,
+   "volume": 0,
+   "total": 40
+  },
+  {
+   "name": "mixed",
+   "days": {
+    "2026-10-05": {
+     "date": "2026-10-05",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-10-05",
+       "text": "Lift",
+       "done": true
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-10-03": {
+     "date": "2026-10-03",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2026-10-03",
+       "text": "Lift",
+       "done": true,
+       "target": "3x8"
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-30": {
+     "date": "2026-09-30",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [],
+     "warmupNotes": "",
+     "mainNotes": "only notes",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-29": {
+     "date": "2026-09-29",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": " 80 ",
+     "checkNotes": ""
+    },
+    "2026-09-28": {
+     "date": "2026-09-28",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [],
+     "warmupNotes": "  ",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-09-20": {
+     "date": "2026-09-20",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "x",
+       "text": "Lift",
+       "done": true,
+       "target": "4x10"
+      },
+      {
+       "id": "y",
+       "text": "Curl",
+       "done": true,
+       "target": "3 sets of 12"
+      },
+      {
+       "id": "z",
+       "text": "Row",
+       "done": false,
+       "target": "5x5"
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2025-12-31": {
+     "date": "2025-12-31",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "i-2025-12-31",
+       "text": "Lift",
+       "done": true,
+       "target": "2x6"
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    }
+   },
+   "worthy": [
+    {
+     "date": "2026-10-05",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-10-03",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    },
+    {
+     "date": "2026-09-30",
+     "completed": false,
+     "worthy": true,
+     "progress": 0
+    },
+    {
+     "date": "2026-09-29",
+     "completed": false,
+     "worthy": true,
+     "progress": 0
+    },
+    {
+     "date": "2026-09-28",
+     "completed": false,
+     "worthy": false,
+     "progress": 0
+    },
+    {
+     "date": "2026-09-20",
+     "completed": true,
+     "worthy": true,
+     "progress": 67
+    },
+    {
+     "date": "2025-12-31",
+     "completed": true,
+     "worthy": true,
+     "progress": 100
+    }
+   ],
+   "streak": 1,
+   "thisWeek": 1,
+   "volume": 12,
+   "total": 4
+  }
+ ]
+}

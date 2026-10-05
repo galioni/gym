@@ -1,0 +1,1939 @@
+{
+ "hashes": {
+  "days": [
+   {
+    "name": "null raw falls back to the default session",
+    "date": "2026-10-01",
+    "raw": null,
+    "serialized": "{\"checkNotes\":\"\",\"date\":\"2026-10-01\",\"main\":[{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Strength (30 min): squat pattern\"},{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Strength hinge pattern\"},{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Strength push (press)\"},{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Strength pull (row)\"},{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Core: plank / deadbug\"},{\"done\":false,\"id\":\"i\",\"target\":\"Focus: consistency\",\"text\":\"Tennis session (60 min)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Downshift\",\"text\":\"Cool-down: walk + light stretch (5 min)\"}],\"mainNotes\":\"\",\"mainTimerMs\":0,\"sessionType\":\"tennis\",\"warmup\":[{\"done\":false,\"id\":\"i\",\"target\":\"Raise heart rate\",\"text\":\"2-3 min brisk walk / light jog\"},{\"done\":false,\"id\":\"i\",\"target\":\"Loosen up\",\"text\":\"Joint prep: ankles, hips, T-spine (30-60s)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Open hips\",\"text\":\"Dynamic legs: leg swings + lunges (2 x 6 each)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Shoulders ready\",\"text\":\"Shoulder prep: arm circles + band pull-aparts (2 x 10)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Tennis comfort\",\"text\":\"Wrist/forearm prep (30-60s)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Groove form\",\"text\":\"Easy shadow swings (1-2 min)\"}],\"warmupNotes\":\"\",\"warmupTimerMs\":0,\"weight\":\"\"}",
+    "hash": "spihaklp06"
+   },
+   {
+    "name": "string raw",
+    "date": "2026-10-01",
+    "raw": "junk",
+    "serialized": "{\"checkNotes\":\"\",\"date\":\"2026-10-01\",\"main\":[{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Strength (30 min): squat pattern\"},{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Strength hinge pattern\"},{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Strength push (press)\"},{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Strength pull (row)\"},{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Core: plank / deadbug\"},{\"done\":false,\"id\":\"i\",\"target\":\"Focus: consistency\",\"text\":\"Tennis session (60 min)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Downshift\",\"text\":\"Cool-down: walk + light stretch (5 min)\"}],\"mainNotes\":\"\",\"mainTimerMs\":0,\"sessionType\":\"tennis\",\"warmup\":[{\"done\":false,\"id\":\"i\",\"target\":\"Raise heart rate\",\"text\":\"2-3 min brisk walk / light jog\"},{\"done\":false,\"id\":\"i\",\"target\":\"Loosen up\",\"text\":\"Joint prep: ankles, hips, T-spine (30-60s)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Open hips\",\"text\":\"Dynamic legs: leg swings + lunges (2 x 6 each)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Shoulders ready\",\"text\":\"Shoulder prep: arm circles + band pull-aparts (2 x 10)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Tennis comfort\",\"text\":\"Wrist/forearm prep (30-60s)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Groove form\",\"text\":\"Easy shadow swings (1-2 min)\"}],\"warmupNotes\":\"\",\"warmupTimerMs\":0,\"weight\":\"\"}",
+    "hash": "spihaklp06"
+   },
+   {
+    "name": "empty object",
+    "date": "2026-10-01",
+    "raw": {},
+    "serialized": "{\"checkNotes\":\"\",\"date\":\"2026-10-01\",\"main\":[{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Strength (30 min): squat pattern\"},{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Strength hinge pattern\"},{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Strength push (press)\"},{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Strength pull (row)\"},{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Core: plank / deadbug\"},{\"done\":false,\"id\":\"i\",\"target\":\"Focus: consistency\",\"text\":\"Tennis session (60 min)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Downshift\",\"text\":\"Cool-down: walk + light stretch (5 min)\"}],\"mainNotes\":\"\",\"mainTimerMs\":0,\"sessionType\":\"tennis\",\"warmup\":[{\"done\":false,\"id\":\"i\",\"target\":\"Raise heart rate\",\"text\":\"2-3 min brisk walk / light jog\"},{\"done\":false,\"id\":\"i\",\"target\":\"Loosen up\",\"text\":\"Joint prep: ankles, hips, T-spine (30-60s)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Open hips\",\"text\":\"Dynamic legs: leg swings + lunges (2 x 6 each)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Shoulders ready\",\"text\":\"Shoulder prep: arm circles + band pull-aparts (2 x 10)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Tennis comfort\",\"text\":\"Wrist/forearm prep (30-60s)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Groove form\",\"text\":\"Easy shadow swings (1-2 min)\"}],\"warmupNotes\":\"\",\"warmupTimerMs\":0,\"weight\":\"\"}",
+    "hash": "spihaklp06"
+   },
+   {
+    "name": "blank session type",
+    "date": "2026-10-01",
+    "raw": {
+     "sessionType": "   "
+    },
+    "serialized": "{\"checkNotes\":\"\",\"date\":\"2026-10-01\",\"main\":[{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Strength (30 min): squat pattern\"},{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Strength hinge pattern\"},{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Strength push (press)\"},{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Strength pull (row)\"},{\"done\":false,\"id\":\"i\",\"target\":\"2-3 sets\",\"text\":\"Core: plank / deadbug\"},{\"done\":false,\"id\":\"i\",\"target\":\"Focus: consistency\",\"text\":\"Tennis session (60 min)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Downshift\",\"text\":\"Cool-down: walk + light stretch (5 min)\"}],\"mainNotes\":\"\",\"mainTimerMs\":0,\"sessionType\":\"tennis\",\"warmup\":[{\"done\":false,\"id\":\"i\",\"target\":\"Raise heart rate\",\"text\":\"2-3 min brisk walk / light jog\"},{\"done\":false,\"id\":\"i\",\"target\":\"Loosen up\",\"text\":\"Joint prep: ankles, hips, T-spine (30-60s)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Open hips\",\"text\":\"Dynamic legs: leg swings + lunges (2 x 6 each)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Shoulders ready\",\"text\":\"Shoulder prep: arm circles + band pull-aparts (2 x 10)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Tennis comfort\",\"text\":\"Wrist/forearm prep (30-60s)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Groove form\",\"text\":\"Easy shadow swings (1-2 min)\"}],\"warmupNotes\":\"\",\"warmupTimerMs\":0,\"weight\":\"\"}",
+    "hash": "spihaklp06"
+   },
+   {
+    "name": "session type is trimmed",
+    "date": "2026-10-01",
+    "raw": {
+     "sessionType": "  gym  "
+    },
+    "serialized": "{\"checkNotes\":\"\",\"date\":\"2026-10-01\",\"main\":[{\"done\":false,\"id\":\"i\",\"target\":\"3x8-12\",\"text\":\"Leg Press\"},{\"done\":false,\"id\":\"i\",\"target\":\"3x8-12\",\"text\":\"Chest Press\"},{\"done\":false,\"id\":\"i\",\"target\":\"3x8-12\",\"text\":\"Lat Pulldown\"},{\"done\":false,\"id\":\"i\",\"target\":\"3x8-12\",\"text\":\"Seated Row\"},{\"done\":false,\"id\":\"i\",\"target\":\"3 sets\",\"text\":\"Plank\"}],\"mainNotes\":\"\",\"mainTimerMs\":0,\"sessionType\":\"gym\",\"warmup\":[{\"done\":false,\"id\":\"i\",\"target\":\"Warm body\",\"text\":\"5 min easy cardio (walk/bike)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Move well\",\"text\":\"Mobility: hips + T-spine (2-3 min)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Prepare load\",\"text\":\"2 ramp-up sets for first lift\"}],\"warmupNotes\":\"\",\"warmupTimerMs\":0,\"weight\":\"\"}",
+    "hash": "2a8nw8h55c3"
+   },
+   {
+    "name": "custom session keeps empty sections",
+    "date": "2026-10-01",
+    "raw": {
+     "sessionType": "yoga",
+     "warmup": [],
+     "main": []
+    },
+    "serialized": "{\"checkNotes\":\"\",\"date\":\"2026-10-01\",\"main\":[],\"mainNotes\":\"\",\"mainTimerMs\":0,\"sessionType\":\"yoga\",\"warmup\":[],\"warmupNotes\":\"\",\"warmupTimerMs\":0,\"weight\":\"\"}",
+    "hash": "1tyly7o5etg"
+   },
+   {
+    "name": "built-in session with empty sections is refilled from defaults",
+    "date": "2026-10-01",
+    "raw": {
+     "sessionType": "rest",
+     "warmup": [],
+     "main": []
+    },
+    "serialized": "{\"checkNotes\":\"\",\"date\":\"2026-10-01\",\"main\":[{\"done\":false,\"id\":\"i\",\"target\":\"Recovery\",\"text\":\"10-20 min walk\"},{\"done\":false,\"id\":\"i\",\"target\":\"Loosen up\",\"text\":\"5-10 min mobility\"}],\"mainNotes\":\"\",\"mainTimerMs\":0,\"sessionType\":\"rest\",\"warmup\":[],\"warmupNotes\":\"\",\"warmupTimerMs\":0,\"weight\":\"\"}",
+    "hash": "8uh713j9xu"
+   },
+   {
+    "name": "items: junk dropped, ids and urls repaired, truthy done",
+    "date": "2026-10-02",
+    "raw": {
+     "sessionType": "yoga",
+     "main": [
+      null,
+      "x",
+      42,
+      {
+       "id": "ID-1",
+       "text": "Squat",
+       "done": false
+      },
+      {
+       "text": "No id"
+      },
+      {
+       "id": "",
+       "text": "Empty id"
+      },
+      {
+       "id": "ID-2",
+       "text": "   "
+      },
+      {
+       "id": "ID-3",
+       "text": "Video",
+       "videoUrl": "  https://example.com/v  "
+      },
+      {
+       "id": "ID-4",
+       "text": "Blank video",
+       "videoUrl": "   "
+      },
+      {
+       "id": "ID-5",
+       "text": "Target kept as empty",
+       "target": ""
+      },
+      {
+       "id": "ID-6",
+       "text": "Done 1",
+       "done": 1
+      },
+      {
+       "id": "ID-7",
+       "text": "Done string",
+       "done": "yes"
+      },
+      {
+       "id": "ID-8",
+       "text": "Done zero",
+       "done": 0
+      },
+      {
+       "id": "ID-9",
+       "text": "Done empty string",
+       "done": ""
+      },
+      {
+       "id": "ID-10",
+       "text": 5
+      }
+     ]
+    },
+    "serialized": "{\"checkNotes\":\"\",\"date\":\"2026-10-02\",\"main\":[{\"done\":false,\"id\":\"ID-1\",\"target\":undefined,\"text\":\"Squat\",\"videoUrl\":undefined},{\"done\":false,\"id\":\"2026-10-02-1\",\"target\":undefined,\"text\":\"No id\",\"videoUrl\":undefined},{\"done\":false,\"id\":\"2026-10-02-2\",\"target\":undefined,\"text\":\"Empty id\",\"videoUrl\":undefined},{\"done\":false,\"id\":\"ID-3\",\"target\":undefined,\"text\":\"Video\",\"videoUrl\":\"https://example.com/v\"},{\"done\":false,\"id\":\"ID-4\",\"target\":undefined,\"text\":\"Blank video\",\"videoUrl\":undefined},{\"done\":false,\"id\":\"ID-5\",\"target\":\"\",\"text\":\"Target kept as empty\",\"videoUrl\":undefined},{\"done\":true,\"id\":\"ID-6\",\"target\":undefined,\"text\":\"Done 1\",\"videoUrl\":undefined},{\"done\":true,\"id\":\"ID-7\",\"target\":undefined,\"text\":\"Done string\",\"videoUrl\":undefined},{\"done\":false,\"id\":\"ID-8\",\"target\":undefined,\"text\":\"Done zero\",\"videoUrl\":undefined},{\"done\":false,\"id\":\"ID-9\",\"target\":undefined,\"text\":\"Done empty string\",\"videoUrl\":undefined}],\"mainNotes\":\"\",\"mainTimerMs\":0,\"sessionType\":\"yoga\",\"warmup\":[],\"warmupNotes\":\"\",\"warmupTimerMs\":0,\"weight\":\"\"}",
+    "hash": "260x4u819od"
+   },
+   {
+    "name": "equipment and description are dropped from day items",
+    "date": "2026-10-02",
+    "raw": {
+     "sessionType": "yoga",
+     "main": [
+      {
+       "id": "ID-1",
+       "text": "Squat",
+       "done": false,
+       "equipment": "mat",
+       "description": "slow",
+       "target": "3x10",
+       "videoUrl": "https://example.com"
+      }
+     ]
+    },
+    "serialized": "{\"checkNotes\":\"\",\"date\":\"2026-10-02\",\"main\":[{\"done\":false,\"id\":\"ID-1\",\"target\":\"3x10\",\"text\":\"Squat\",\"videoUrl\":\"https://example.com\"}],\"mainNotes\":\"\",\"mainTimerMs\":0,\"sessionType\":\"yoga\",\"warmup\":[],\"warmupNotes\":\"\",\"warmupTimerMs\":0,\"weight\":\"\"}",
+    "hash": "8cy6b3kgwq"
+   },
+   {
+    "name": "all items blank falls back to the session default",
+    "date": "2026-10-02",
+    "raw": {
+     "sessionType": "swim",
+     "warmup": [
+      {
+       "id": "ID-1",
+       "text": " "
+      }
+     ],
+     "main": "not an array"
+    },
+    "serialized": "{\"checkNotes\":\"\",\"date\":\"2026-10-02\",\"main\":[{\"done\":false,\"id\":\"i\",\"target\":\"Easy/moderate\",\"text\":\"Swim (30 min)\"},{\"done\":false,\"id\":\"i\",\"target\":\"Relax\",\"text\":\"Cool-down: easy float / stretch\"}],\"mainNotes\":\"\",\"mainTimerMs\":0,\"sessionType\":\"swim\",\"warmup\":[{\"done\":false,\"id\":\"i\",\"target\":\"Warm body\",\"text\":\"2-3 min brisk walk\"},{\"done\":false,\"id\":\"i\",\"target\":\"Protect shoulders\",\"text\":\"Shoulders: circles + light band work (2 x 10)\"}],\"warmupNotes\":\"\",\"warmupTimerMs\":0,\"weight\":\"\"}",
+    "hash": "27xvbr1uwi1"
+   },
+   {
+    "name": "scalars: negative and wrong-typed values",
+    "date": "2026-10-03",
+    "raw": {
+     "sessionType": "yoga",
+     "warmupNotes": 5,
+     "mainNotes": "ok",
+     "warmupTimerMs": -50,
+     "mainTimerMs": "3",
+     "weight": 80,
+     "checkNotes": null
+    },
+    "serialized": "{\"checkNotes\":\"\",\"date\":\"2026-10-03\",\"main\":[],\"mainNotes\":\"ok\",\"mainTimerMs\":0,\"sessionType\":\"yoga\",\"warmup\":[],\"warmupNotes\":\"\",\"warmupTimerMs\":0,\"weight\":\"\"}",
+    "hash": "2b8n5vfssxe"
+   },
+   {
+    "name": "scalars: valid values",
+    "date": "2026-10-03",
+    "raw": {
+     "sessionType": "yoga",
+     "warmupNotes": "w",
+     "mainNotes": "m",
+     "warmupTimerMs": 1234,
+     "mainTimerMs": 0,
+     "weight": "79,5",
+     "checkNotes": "c"
+    },
+    "serialized": "{\"checkNotes\":\"c\",\"date\":\"2026-10-03\",\"main\":[],\"mainNotes\":\"m\",\"mainTimerMs\":0,\"sessionType\":\"yoga\",\"warmup\":[],\"warmupNotes\":\"w\",\"warmupTimerMs\":1234,\"weight\":\"79,5\"}",
+    "hash": "1ud5yirtfbe"
+   }
+  ],
+  "templates": [
+   {
+    "name": "null",
+    "raw": null,
+    "items": {}
+   },
+   {
+    "name": "empty",
+    "raw": {},
+    "items": {}
+   },
+   {
+    "name": "blank session name skipped",
+    "raw": {
+     "  ": {
+      "warmup": [
+       {
+        "text": "x"
+       }
+      ],
+      "main": []
+     },
+     "ok": {
+      "warmup": [],
+      "main": []
+     }
+    },
+    "items": {
+     "ok": {
+      "serialized": "{\"focus\":undefined,\"label\":undefined,\"main\":[],\"source\":undefined,\"videoUrl\":undefined,\"warmup\":[]}",
+      "hash": "3vmwhs7ujc"
+     }
+    }
+   },
+   {
+    "name": "built-in session with empty sections refills from defaults",
+    "raw": {
+     "gym": {
+      "warmup": [],
+      "main": []
+     }
+    },
+    "items": {
+     "gym": {
+      "serialized": "{\"focus\":undefined,\"label\":undefined,\"main\":[{\"target\":\"3x8-12\",\"text\":\"Leg Press\"},{\"target\":\"3x8-12\",\"text\":\"Chest Press\"},{\"target\":\"3x8-12\",\"text\":\"Lat Pulldown\"},{\"target\":\"3x8-12\",\"text\":\"Seated Row\"},{\"target\":\"3 sets\",\"text\":\"Plank\"}],\"source\":undefined,\"videoUrl\":undefined,\"warmup\":[{\"target\":\"Warm body\",\"text\":\"5 min easy cardio (walk/bike)\"},{\"target\":\"Move well\",\"text\":\"Mobility: hips + T-spine (2-3 min)\"},{\"target\":\"Prepare load\",\"text\":\"2 ramp-up sets for first lift\"}]}",
+      "hash": "1qv4zqwf721"
+     }
+    }
+   },
+   {
+    "name": "custom session: cell trimming, caps and optional fields",
+    "raw": {
+     "yoga": {
+      "source": "user",
+      "label": "  LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL  ",
+      "focus": "  flow  ",
+      "videoUrl": "  https://example.com/uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu  ",
+      "warmup": [
+       {
+        "id": "ID-1",
+        "text": "  TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT  ",
+        "target": "  GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG  ",
+        "equipment": " EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE ",
+        "description": " DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD ",
+        "videoUrl": "  https://example.com/a  "
+       },
+       {
+        "text": "Generated id",
+        "target": "   ",
+        "equipment": "   ",
+        "description": "",
+        "videoUrl": ""
+       },
+       {
+        "id": "ID-2",
+        "text": "   "
+       }
+      ],
+      "main": [
+       {
+        "id": "ID-3",
+        "text": "Pose",
+        "target": "1 min"
+       }
+      ]
+     }
+    },
+    "items": {
+     "yoga": {
+      "serialized": "{\"focus\":\"flow\",\"label\":\"LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL\",\"main\":[{\"description\":undefined,\"equipment\":undefined,\"id\":\"ID-3\",\"target\":\"1 min\",\"text\":\"Pose\",\"videoUrl\":undefined}],\"source\":\"user\",\"videoUrl\":\"https://example.com/uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu\",\"warmup\":[{\"description\":\"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\",\"equipment\":\"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE\",\"id\":\"ID-1\",\"target\":\"GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG\",\"text\":\"TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT\",\"videoUrl\":\"https://example.com/a\"},{\"description\":undefined,\"equipment\":undefined,\"id\":\"i\",\"target\":undefined,\"text\":\"Generated id\",\"videoUrl\":undefined}]}",
+      "hash": "nqnugl5qfs"
+     }
+    }
+   },
+   {
+    "name": "bad source and blank label/focus",
+    "raw": {
+     "yoga": {
+      "source": "robot",
+      "label": "  ",
+      "focus": "   ",
+      "warmup": [],
+      "main": []
+     }
+    },
+    "items": {
+     "yoga": {
+      "serialized": "{\"focus\":undefined,\"label\":undefined,\"main\":[],\"source\":undefined,\"videoUrl\":undefined,\"warmup\":[]}",
+      "hash": "3vmwhs7ujc"
+     }
+    }
+   },
+   {
+    "name": "non-object template and non-array sections",
+    "raw": {
+     "a": "junk",
+     "b": {
+      "warmup": "x",
+      "main": 5
+     },
+     "c": null
+    },
+    "items": {
+     "a": {
+      "serialized": "{\"focus\":undefined,\"label\":undefined,\"main\":[],\"source\":undefined,\"videoUrl\":undefined,\"warmup\":[]}",
+      "hash": "3vmwhs7ujc"
+     },
+     "b": {
+      "serialized": "{\"focus\":undefined,\"label\":undefined,\"main\":[],\"source\":undefined,\"videoUrl\":undefined,\"warmup\":[]}",
+      "hash": "3vmwhs7ujc"
+     },
+     "c": {
+      "serialized": "{\"focus\":undefined,\"label\":undefined,\"main\":[],\"source\":undefined,\"videoUrl\":undefined,\"warmup\":[]}",
+      "hash": "3vmwhs7ujc"
+     }
+    }
+   }
+  ]
+ },
+ "sanitizeDay": [
+  {
+   "name": "null raw falls back to the default session",
+   "date": "2026-10-01",
+   "raw": null,
+   "expected": {
+    "date": "2026-10-01",
+    "sessionType": "tennis",
+    "warmup": [
+     {
+      "text": "2-3 min brisk walk / light jog",
+      "target": "Raise heart rate",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Joint prep: ankles, hips, T-spine (30-60s)",
+      "target": "Loosen up",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Dynamic legs: leg swings + lunges (2 x 6 each)",
+      "target": "Open hips",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Shoulder prep: arm circles + band pull-aparts (2 x 10)",
+      "target": "Shoulders ready",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Wrist/forearm prep (30-60s)",
+      "target": "Tennis comfort",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Easy shadow swings (1-2 min)",
+      "target": "Groove form",
+      "id": "<gen>",
+      "done": false
+     }
+    ],
+    "main": [
+     {
+      "text": "Strength (30 min): squat pattern",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Strength hinge pattern",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Strength push (press)",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Strength pull (row)",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Core: plank / deadbug",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Tennis session (60 min)",
+      "target": "Focus: consistency",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Cool-down: walk + light stretch (5 min)",
+      "target": "Downshift",
+      "id": "<gen>",
+      "done": false
+     }
+    ],
+    "warmupNotes": "",
+    "mainNotes": "",
+    "warmupTimerMs": 0,
+    "mainTimerMs": 0,
+    "weight": "",
+    "checkNotes": ""
+   }
+  },
+  {
+   "name": "string raw",
+   "date": "2026-10-01",
+   "raw": "junk",
+   "expected": {
+    "date": "2026-10-01",
+    "sessionType": "tennis",
+    "warmup": [
+     {
+      "text": "2-3 min brisk walk / light jog",
+      "target": "Raise heart rate",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Joint prep: ankles, hips, T-spine (30-60s)",
+      "target": "Loosen up",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Dynamic legs: leg swings + lunges (2 x 6 each)",
+      "target": "Open hips",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Shoulder prep: arm circles + band pull-aparts (2 x 10)",
+      "target": "Shoulders ready",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Wrist/forearm prep (30-60s)",
+      "target": "Tennis comfort",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Easy shadow swings (1-2 min)",
+      "target": "Groove form",
+      "id": "<gen>",
+      "done": false
+     }
+    ],
+    "main": [
+     {
+      "text": "Strength (30 min): squat pattern",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Strength hinge pattern",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Strength push (press)",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Strength pull (row)",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Core: plank / deadbug",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Tennis session (60 min)",
+      "target": "Focus: consistency",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Cool-down: walk + light stretch (5 min)",
+      "target": "Downshift",
+      "id": "<gen>",
+      "done": false
+     }
+    ],
+    "warmupNotes": "",
+    "mainNotes": "",
+    "warmupTimerMs": 0,
+    "mainTimerMs": 0,
+    "weight": "",
+    "checkNotes": ""
+   }
+  },
+  {
+   "name": "empty object",
+   "date": "2026-10-01",
+   "raw": {},
+   "expected": {
+    "date": "2026-10-01",
+    "sessionType": "tennis",
+    "warmup": [
+     {
+      "text": "2-3 min brisk walk / light jog",
+      "target": "Raise heart rate",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Joint prep: ankles, hips, T-spine (30-60s)",
+      "target": "Loosen up",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Dynamic legs: leg swings + lunges (2 x 6 each)",
+      "target": "Open hips",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Shoulder prep: arm circles + band pull-aparts (2 x 10)",
+      "target": "Shoulders ready",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Wrist/forearm prep (30-60s)",
+      "target": "Tennis comfort",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Easy shadow swings (1-2 min)",
+      "target": "Groove form",
+      "id": "<gen>",
+      "done": false
+     }
+    ],
+    "main": [
+     {
+      "text": "Strength (30 min): squat pattern",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Strength hinge pattern",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Strength push (press)",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Strength pull (row)",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Core: plank / deadbug",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Tennis session (60 min)",
+      "target": "Focus: consistency",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Cool-down: walk + light stretch (5 min)",
+      "target": "Downshift",
+      "id": "<gen>",
+      "done": false
+     }
+    ],
+    "warmupNotes": "",
+    "mainNotes": "",
+    "warmupTimerMs": 0,
+    "mainTimerMs": 0,
+    "weight": "",
+    "checkNotes": ""
+   }
+  },
+  {
+   "name": "blank session type",
+   "date": "2026-10-01",
+   "raw": {
+    "sessionType": "   "
+   },
+   "expected": {
+    "date": "2026-10-01",
+    "sessionType": "tennis",
+    "warmup": [
+     {
+      "text": "2-3 min brisk walk / light jog",
+      "target": "Raise heart rate",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Joint prep: ankles, hips, T-spine (30-60s)",
+      "target": "Loosen up",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Dynamic legs: leg swings + lunges (2 x 6 each)",
+      "target": "Open hips",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Shoulder prep: arm circles + band pull-aparts (2 x 10)",
+      "target": "Shoulders ready",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Wrist/forearm prep (30-60s)",
+      "target": "Tennis comfort",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Easy shadow swings (1-2 min)",
+      "target": "Groove form",
+      "id": "<gen>",
+      "done": false
+     }
+    ],
+    "main": [
+     {
+      "text": "Strength (30 min): squat pattern",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Strength hinge pattern",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Strength push (press)",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Strength pull (row)",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Core: plank / deadbug",
+      "target": "2-3 sets",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Tennis session (60 min)",
+      "target": "Focus: consistency",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Cool-down: walk + light stretch (5 min)",
+      "target": "Downshift",
+      "id": "<gen>",
+      "done": false
+     }
+    ],
+    "warmupNotes": "",
+    "mainNotes": "",
+    "warmupTimerMs": 0,
+    "mainTimerMs": 0,
+    "weight": "",
+    "checkNotes": ""
+   }
+  },
+  {
+   "name": "session type is trimmed",
+   "date": "2026-10-01",
+   "raw": {
+    "sessionType": "  gym  "
+   },
+   "expected": {
+    "date": "2026-10-01",
+    "sessionType": "gym",
+    "warmup": [
+     {
+      "text": "5 min easy cardio (walk/bike)",
+      "target": "Warm body",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Mobility: hips + T-spine (2-3 min)",
+      "target": "Move well",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "2 ramp-up sets for first lift",
+      "target": "Prepare load",
+      "id": "<gen>",
+      "done": false
+     }
+    ],
+    "main": [
+     {
+      "text": "Leg Press",
+      "target": "3x8-12",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Chest Press",
+      "target": "3x8-12",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Lat Pulldown",
+      "target": "3x8-12",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Seated Row",
+      "target": "3x8-12",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Plank",
+      "target": "3 sets",
+      "id": "<gen>",
+      "done": false
+     }
+    ],
+    "warmupNotes": "",
+    "mainNotes": "",
+    "warmupTimerMs": 0,
+    "mainTimerMs": 0,
+    "weight": "",
+    "checkNotes": ""
+   }
+  },
+  {
+   "name": "custom session keeps empty sections",
+   "date": "2026-10-01",
+   "raw": {
+    "sessionType": "yoga",
+    "warmup": [],
+    "main": []
+   },
+   "expected": {
+    "date": "2026-10-01",
+    "sessionType": "yoga",
+    "warmup": [],
+    "main": [],
+    "warmupNotes": "",
+    "mainNotes": "",
+    "warmupTimerMs": 0,
+    "mainTimerMs": 0,
+    "weight": "",
+    "checkNotes": ""
+   }
+  },
+  {
+   "name": "built-in session with empty sections is refilled from defaults",
+   "date": "2026-10-01",
+   "raw": {
+    "sessionType": "rest",
+    "warmup": [],
+    "main": []
+   },
+   "expected": {
+    "date": "2026-10-01",
+    "sessionType": "rest",
+    "warmup": [],
+    "main": [
+     {
+      "text": "10-20 min walk",
+      "target": "Recovery",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "5-10 min mobility",
+      "target": "Loosen up",
+      "id": "<gen>",
+      "done": false
+     }
+    ],
+    "warmupNotes": "",
+    "mainNotes": "",
+    "warmupTimerMs": 0,
+    "mainTimerMs": 0,
+    "weight": "",
+    "checkNotes": ""
+   }
+  },
+  {
+   "name": "items: junk dropped, ids and urls repaired, truthy done",
+   "date": "2026-10-02",
+   "raw": {
+    "sessionType": "yoga",
+    "main": [
+     null,
+     "x",
+     42,
+     {
+      "id": "ID-1",
+      "text": "Squat",
+      "done": false
+     },
+     {
+      "text": "No id"
+     },
+     {
+      "id": "",
+      "text": "Empty id"
+     },
+     {
+      "id": "ID-2",
+      "text": "   "
+     },
+     {
+      "id": "ID-3",
+      "text": "Video",
+      "videoUrl": "  https://example.com/v  "
+     },
+     {
+      "id": "ID-4",
+      "text": "Blank video",
+      "videoUrl": "   "
+     },
+     {
+      "id": "ID-5",
+      "text": "Target kept as empty",
+      "target": ""
+     },
+     {
+      "id": "ID-6",
+      "text": "Done 1",
+      "done": 1
+     },
+     {
+      "id": "ID-7",
+      "text": "Done string",
+      "done": "yes"
+     },
+     {
+      "id": "ID-8",
+      "text": "Done zero",
+      "done": 0
+     },
+     {
+      "id": "ID-9",
+      "text": "Done empty string",
+      "done": ""
+     },
+     {
+      "id": "ID-10",
+      "text": 5
+     }
+    ]
+   },
+   "expected": {
+    "date": "2026-10-02",
+    "sessionType": "yoga",
+    "warmup": [],
+    "main": [
+     {
+      "id": "ID-1",
+      "text": "Squat",
+      "done": false
+     },
+     {
+      "id": "2026-10-02-1",
+      "text": "No id",
+      "done": false
+     },
+     {
+      "id": "2026-10-02-2",
+      "text": "Empty id",
+      "done": false
+     },
+     {
+      "id": "ID-3",
+      "text": "Video",
+      "videoUrl": "https://example.com/v",
+      "done": false
+     },
+     {
+      "id": "ID-4",
+      "text": "Blank video",
+      "done": false
+     },
+     {
+      "id": "ID-5",
+      "text": "Target kept as empty",
+      "target": "",
+      "done": false
+     },
+     {
+      "id": "ID-6",
+      "text": "Done 1",
+      "done": true
+     },
+     {
+      "id": "ID-7",
+      "text": "Done string",
+      "done": true
+     },
+     {
+      "id": "ID-8",
+      "text": "Done zero",
+      "done": false
+     },
+     {
+      "id": "ID-9",
+      "text": "Done empty string",
+      "done": false
+     }
+    ],
+    "warmupNotes": "",
+    "mainNotes": "",
+    "warmupTimerMs": 0,
+    "mainTimerMs": 0,
+    "weight": "",
+    "checkNotes": ""
+   }
+  },
+  {
+   "name": "equipment and description are dropped from day items",
+   "date": "2026-10-02",
+   "raw": {
+    "sessionType": "yoga",
+    "main": [
+     {
+      "id": "ID-1",
+      "text": "Squat",
+      "done": false,
+      "equipment": "mat",
+      "description": "slow",
+      "target": "3x10",
+      "videoUrl": "https://example.com"
+     }
+    ]
+   },
+   "expected": {
+    "date": "2026-10-02",
+    "sessionType": "yoga",
+    "warmup": [],
+    "main": [
+     {
+      "id": "ID-1",
+      "text": "Squat",
+      "target": "3x10",
+      "videoUrl": "https://example.com",
+      "done": false
+     }
+    ],
+    "warmupNotes": "",
+    "mainNotes": "",
+    "warmupTimerMs": 0,
+    "mainTimerMs": 0,
+    "weight": "",
+    "checkNotes": ""
+   }
+  },
+  {
+   "name": "all items blank falls back to the session default",
+   "date": "2026-10-02",
+   "raw": {
+    "sessionType": "swim",
+    "warmup": [
+     {
+      "id": "ID-1",
+      "text": " "
+     }
+    ],
+    "main": "not an array"
+   },
+   "expected": {
+    "date": "2026-10-02",
+    "sessionType": "swim",
+    "warmup": [
+     {
+      "text": "2-3 min brisk walk",
+      "target": "Warm body",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Shoulders: circles + light band work (2 x 10)",
+      "target": "Protect shoulders",
+      "id": "<gen>",
+      "done": false
+     }
+    ],
+    "main": [
+     {
+      "text": "Swim (30 min)",
+      "target": "Easy/moderate",
+      "id": "<gen>",
+      "done": false
+     },
+     {
+      "text": "Cool-down: easy float / stretch",
+      "target": "Relax",
+      "id": "<gen>",
+      "done": false
+     }
+    ],
+    "warmupNotes": "",
+    "mainNotes": "",
+    "warmupTimerMs": 0,
+    "mainTimerMs": 0,
+    "weight": "",
+    "checkNotes": ""
+   }
+  },
+  {
+   "name": "scalars: negative and wrong-typed values",
+   "date": "2026-10-03",
+   "raw": {
+    "sessionType": "yoga",
+    "warmupNotes": 5,
+    "mainNotes": "ok",
+    "warmupTimerMs": -50,
+    "mainTimerMs": "3",
+    "weight": 80,
+    "checkNotes": null
+   },
+   "expected": {
+    "date": "2026-10-03",
+    "sessionType": "yoga",
+    "warmup": [],
+    "main": [],
+    "warmupNotes": "",
+    "mainNotes": "ok",
+    "warmupTimerMs": 0,
+    "mainTimerMs": 0,
+    "weight": "",
+    "checkNotes": ""
+   }
+  },
+  {
+   "name": "scalars: valid values",
+   "date": "2026-10-03",
+   "raw": {
+    "sessionType": "yoga",
+    "warmupNotes": "w",
+    "mainNotes": "m",
+    "warmupTimerMs": 1234,
+    "mainTimerMs": 0,
+    "weight": "79,5",
+    "checkNotes": "c"
+   },
+   "expected": {
+    "date": "2026-10-03",
+    "sessionType": "yoga",
+    "warmup": [],
+    "main": [],
+    "warmupNotes": "w",
+    "mainNotes": "m",
+    "warmupTimerMs": 1234,
+    "mainTimerMs": 0,
+    "weight": "79,5",
+    "checkNotes": "c"
+   }
+  }
+ ],
+ "sanitizeTemplates": [
+  {
+   "name": "null",
+   "raw": null,
+   "expected": {}
+  },
+  {
+   "name": "empty",
+   "raw": {},
+   "expected": {}
+  },
+  {
+   "name": "blank session name skipped",
+   "raw": {
+    "  ": {
+     "warmup": [
+      {
+       "text": "x"
+      }
+     ],
+     "main": []
+    },
+    "ok": {
+     "warmup": [],
+     "main": []
+    }
+   },
+   "expected": {
+    "ok": {
+     "warmup": [],
+     "main": []
+    }
+   }
+  },
+  {
+   "name": "built-in session with empty sections refills from defaults",
+   "raw": {
+    "gym": {
+     "warmup": [],
+     "main": []
+    }
+   },
+   "expected": {
+    "gym": {
+     "warmup": [
+      {
+       "text": "5 min easy cardio (walk/bike)",
+       "target": "Warm body"
+      },
+      {
+       "text": "Mobility: hips + T-spine (2-3 min)",
+       "target": "Move well"
+      },
+      {
+       "text": "2 ramp-up sets for first lift",
+       "target": "Prepare load"
+      }
+     ],
+     "main": [
+      {
+       "text": "Leg Press",
+       "target": "3x8-12"
+      },
+      {
+       "text": "Chest Press",
+       "target": "3x8-12"
+      },
+      {
+       "text": "Lat Pulldown",
+       "target": "3x8-12"
+      },
+      {
+       "text": "Seated Row",
+       "target": "3x8-12"
+      },
+      {
+       "text": "Plank",
+       "target": "3 sets"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "custom session: cell trimming, caps and optional fields",
+   "raw": {
+    "yoga": {
+     "source": "user",
+     "label": "  LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL  ",
+     "focus": "  flow  ",
+     "videoUrl": "  https://example.com/uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu  ",
+     "warmup": [
+      {
+       "id": "ID-1",
+       "text": "  TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT  ",
+       "target": "  GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG  ",
+       "equipment": " EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE ",
+       "description": " DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD ",
+       "videoUrl": "  https://example.com/a  "
+      },
+      {
+       "text": "Generated id",
+       "target": "   ",
+       "equipment": "   ",
+       "description": "",
+       "videoUrl": ""
+      },
+      {
+       "id": "ID-2",
+       "text": "   "
+      }
+     ],
+     "main": [
+      {
+       "id": "ID-3",
+       "text": "Pose",
+       "target": "1 min"
+      }
+     ]
+    }
+   },
+   "expected": {
+    "yoga": {
+     "source": "user",
+     "label": "LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+     "focus": "flow",
+     "videoUrl": "https://example.com/uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu",
+     "warmup": [
+      {
+       "id": "ID-1",
+       "text": "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+       "target": "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+       "equipment": "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+       "description": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+       "videoUrl": "https://example.com/a"
+      },
+      {
+       "id": "<gen>",
+       "text": "Generated id"
+      }
+     ],
+     "main": [
+      {
+       "id": "ID-3",
+       "text": "Pose",
+       "target": "1 min"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "bad source and blank label/focus",
+   "raw": {
+    "yoga": {
+     "source": "robot",
+     "label": "  ",
+     "focus": "   ",
+     "warmup": [],
+     "main": []
+    }
+   },
+   "expected": {
+    "yoga": {
+     "warmup": [],
+     "main": []
+    }
+   }
+  },
+  {
+   "name": "non-object template and non-array sections",
+   "raw": {
+    "a": "junk",
+    "b": {
+     "warmup": "x",
+     "main": 5
+    },
+    "c": null
+   },
+   "expected": {
+    "a": {
+     "warmup": [],
+     "main": []
+    },
+    "b": {
+     "warmup": [],
+     "main": []
+    },
+    "c": {
+     "warmup": [],
+     "main": []
+    }
+   }
+  }
+ ],
+ "migrateWorkout": [
+  {
+   "raw": null,
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": {}
+   }
+  },
+  {
+   "raw": [],
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": {}
+   }
+  },
+  {
+   "raw": "x",
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": {}
+   }
+  },
+  {
+   "raw": {
+    "2026-10-01": {
+     "sessionType": "yoga",
+     "main": [
+      {
+       "id": "ID-1",
+       "text": "A"
+      }
+     ]
+    }
+   },
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": {
+     "2026-10-01": {
+      "date": "2026-10-01",
+      "sessionType": "yoga",
+      "warmup": [],
+      "main": [
+       {
+        "id": "ID-1",
+        "text": "A",
+        "done": false
+       }
+      ],
+      "warmupNotes": "",
+      "mainNotes": "",
+      "warmupTimerMs": 0,
+      "mainTimerMs": 0,
+      "weight": "",
+      "checkNotes": ""
+     }
+    }
+   }
+  },
+  {
+   "raw": {
+    "version": 1,
+    "updatedAt": "2026-01-01T00:00:00.000Z",
+    "data": {
+     "2026-10-01": {
+      "sessionType": "yoga"
+     }
+    }
+   },
+   "expected": {
+    "version": 1,
+    "updatedAt": "2026-01-01T00:00:00.000Z",
+    "data": {
+     "2026-10-01": {
+      "date": "2026-10-01",
+      "sessionType": "yoga",
+      "warmup": [],
+      "main": [],
+      "warmupNotes": "",
+      "mainNotes": "",
+      "warmupTimerMs": 0,
+      "mainTimerMs": 0,
+      "weight": "",
+      "checkNotes": ""
+     }
+    }
+   }
+  },
+  {
+   "raw": {
+    "version": 1,
+    "data": {}
+   },
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": {}
+   }
+  },
+  {
+   "raw": {
+    "version": "1",
+    "data": {}
+   },
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": {
+     "version": {
+      "date": "version",
+      "sessionType": "tennis",
+      "warmup": [
+       {
+        "text": "2-3 min brisk walk / light jog",
+        "target": "Raise heart rate",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Joint prep: ankles, hips, T-spine (30-60s)",
+        "target": "Loosen up",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Dynamic legs: leg swings + lunges (2 x 6 each)",
+        "target": "Open hips",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Shoulder prep: arm circles + band pull-aparts (2 x 10)",
+        "target": "Shoulders ready",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Wrist/forearm prep (30-60s)",
+        "target": "Tennis comfort",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Easy shadow swings (1-2 min)",
+        "target": "Groove form",
+        "id": "<gen>",
+        "done": false
+       }
+      ],
+      "main": [
+       {
+        "text": "Strength (30 min): squat pattern",
+        "target": "2-3 sets",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Strength hinge pattern",
+        "target": "2-3 sets",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Strength push (press)",
+        "target": "2-3 sets",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Strength pull (row)",
+        "target": "2-3 sets",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Core: plank / deadbug",
+        "target": "2-3 sets",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Tennis session (60 min)",
+        "target": "Focus: consistency",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Cool-down: walk + light stretch (5 min)",
+        "target": "Downshift",
+        "id": "<gen>",
+        "done": false
+       }
+      ],
+      "warmupNotes": "",
+      "mainNotes": "",
+      "warmupTimerMs": 0,
+      "mainTimerMs": 0,
+      "weight": "",
+      "checkNotes": ""
+     },
+     "data": {
+      "date": "data",
+      "sessionType": "tennis",
+      "warmup": [
+       {
+        "text": "2-3 min brisk walk / light jog",
+        "target": "Raise heart rate",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Joint prep: ankles, hips, T-spine (30-60s)",
+        "target": "Loosen up",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Dynamic legs: leg swings + lunges (2 x 6 each)",
+        "target": "Open hips",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Shoulder prep: arm circles + band pull-aparts (2 x 10)",
+        "target": "Shoulders ready",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Wrist/forearm prep (30-60s)",
+        "target": "Tennis comfort",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Easy shadow swings (1-2 min)",
+        "target": "Groove form",
+        "id": "<gen>",
+        "done": false
+       }
+      ],
+      "main": [
+       {
+        "text": "Strength (30 min): squat pattern",
+        "target": "2-3 sets",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Strength hinge pattern",
+        "target": "2-3 sets",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Strength push (press)",
+        "target": "2-3 sets",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Strength pull (row)",
+        "target": "2-3 sets",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Core: plank / deadbug",
+        "target": "2-3 sets",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Tennis session (60 min)",
+        "target": "Focus: consistency",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Cool-down: walk + light stretch (5 min)",
+        "target": "Downshift",
+        "id": "<gen>",
+        "done": false
+       }
+      ],
+      "warmupNotes": "",
+      "mainNotes": "",
+      "warmupTimerMs": 0,
+      "mainTimerMs": 0,
+      "weight": "",
+      "checkNotes": ""
+     }
+    }
+   }
+  },
+  {
+   "raw": {
+    "version": 1
+   },
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": {
+     "version": {
+      "date": "version",
+      "sessionType": "tennis",
+      "warmup": [
+       {
+        "text": "2-3 min brisk walk / light jog",
+        "target": "Raise heart rate",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Joint prep: ankles, hips, T-spine (30-60s)",
+        "target": "Loosen up",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Dynamic legs: leg swings + lunges (2 x 6 each)",
+        "target": "Open hips",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Shoulder prep: arm circles + band pull-aparts (2 x 10)",
+        "target": "Shoulders ready",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Wrist/forearm prep (30-60s)",
+        "target": "Tennis comfort",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Easy shadow swings (1-2 min)",
+        "target": "Groove form",
+        "id": "<gen>",
+        "done": false
+       }
+      ],
+      "main": [
+       {
+        "text": "Strength (30 min): squat pattern",
+        "target": "2-3 sets",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Strength hinge pattern",
+        "target": "2-3 sets",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Strength push (press)",
+        "target": "2-3 sets",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Strength pull (row)",
+        "target": "2-3 sets",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Core: plank / deadbug",
+        "target": "2-3 sets",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Tennis session (60 min)",
+        "target": "Focus: consistency",
+        "id": "<gen>",
+        "done": false
+       },
+       {
+        "text": "Cool-down: walk + light stretch (5 min)",
+        "target": "Downshift",
+        "id": "<gen>",
+        "done": false
+       }
+      ],
+      "warmupNotes": "",
+      "mainNotes": "",
+      "warmupTimerMs": 0,
+      "mainTimerMs": 0,
+      "weight": "",
+      "checkNotes": ""
+     }
+    }
+   }
+  }
+ ],
+ "migrateTemplates": [
+  {
+   "raw": null,
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": {}
+   }
+  },
+  {
+   "raw": [],
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": {}
+   }
+  },
+  {
+   "raw": {
+    "yoga": {
+     "warmup": [
+      {
+       "id": "ID-1",
+       "text": "A"
+      }
+     ],
+     "main": []
+    }
+   },
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": {
+     "yoga": {
+      "warmup": [
+       {
+        "id": "ID-1",
+        "text": "A"
+       }
+      ],
+      "main": []
+     }
+    }
+   }
+  },
+  {
+   "raw": {
+    "version": 1,
+    "updatedAt": "2026-01-01T00:00:00.000Z",
+    "templates": {
+     "yoga": {
+      "warmup": [],
+      "main": []
+     }
+    }
+   },
+   "expected": {
+    "version": 1,
+    "updatedAt": "2026-01-01T00:00:00.000Z",
+    "data": {
+     "yoga": {
+      "warmup": [],
+      "main": []
+     }
+    }
+   }
+  },
+  {
+   "raw": {
+    "version": 1,
+    "templates": {}
+   },
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": {}
+   }
+  },
+  {
+   "raw": {
+    "version": 1
+   },
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": {
+     "version": {
+      "warmup": [],
+      "main": []
+     }
+    }
+   }
+  }
+ ],
+ "migratePlans": [
+  {
+   "raw": null,
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": []
+   }
+  },
+  {
+   "raw": "x",
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": []
+   }
+  },
+  {
+   "raw": 5,
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": []
+   }
+  },
+  {
+   "raw": [
+    {
+     "id": "plan-1",
+     "label": "A",
+     "sessionIds": [
+      "x"
+     ]
+    },
+    {
+     "id": 1
+    },
+    null,
+    {
+     "id": "plan-2",
+     "label": "B",
+     "sessionIds": [
+      1
+     ]
+    }
+   ],
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": [
+     {
+      "id": "plan-1",
+      "label": "A",
+      "sessionIds": [
+       "x"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "raw": {
+    "version": 1,
+    "updatedAt": "2026-01-01T00:00:00.000Z",
+    "plans": [
+     {
+      "id": "plan-1",
+      "label": "A",
+      "sessionIds": [
+       "x"
+      ],
+      "schedule": {
+       "0": "x"
+      }
+     },
+     {
+      "id": "plan-3"
+     }
+    ]
+   },
+   "expected": {
+    "version": 1,
+    "updatedAt": "2026-01-01T00:00:00.000Z",
+    "data": [
+     {
+      "id": "plan-1",
+      "label": "A",
+      "sessionIds": [
+       "x"
+      ],
+      "schedule": {
+       "0": "x"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "raw": {
+    "version": 1,
+    "plans": []
+   },
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": []
+   }
+  },
+  {
+   "raw": {
+    "version": 1,
+    "updatedAt": "2026-01-01T00:00:00.000Z"
+   },
+   "expected": {
+    "version": 1,
+    "updatedAt": "<now>",
+    "data": []
+   }
+  }
+ ]
+}

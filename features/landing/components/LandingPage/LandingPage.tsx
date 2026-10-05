@@ -450,6 +450,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           </RevealSection>
 
+          <footer className="flex items-center justify-center gap-4 pb-8 text-sm text-labelSecondary">
+            <a href="/terms" className="underline-offset-2 hover:underline">Terms of Use</a>
+            <a href="/privacy" className="underline-offset-2 hover:underline">Privacy Policy</a>
+          </footer>
+
         </div>
       </div>
     </div>

@@ -15,6 +15,7 @@ export default defineConfig({
       "components/**/*.test.ts",
       "components/**/*.test.tsx",
       "design/**/*.test.ts",
+      "contract/**/*.test.{ts,tsx}",
     ],
   },
 });

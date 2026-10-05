@@ -39,7 +39,27 @@
 		}
 	}
 
+	# Supabase Realtime (only when the `realtime` profile runs; otherwise this answers 502 and nothing listens).
+	# Realtime finds its tenant from the first label of the Host header, so it is set to the self-host default, `realtime-dev`.
+	# Management API (/realtime/v1/api/ping, ...) before the websocket, which Kong maps to /socket.
+	handle_path /realtime/v1/api/* {
+		rewrite * /api{uri}
+		reverse_proxy realtime:4000 {
+			header_up Host realtime-dev.gym.local
+			header_down -Access-Control-Allow-Origin
+			header_down -Access-Control-Allow-Credentials
+			header_down -Access-Control-Expose-Headers
+		}
+	}
+
+	handle_path /realtime/v1/* {
+		rewrite * /socket{uri}
+		reverse_proxy realtime:4000 {
+			header_up Host realtime-dev.gym.local
+		}
+	}
+
 	handle {
-		respond "gym-app gateway: /auth/v1 and /rest/v1" 200
+		respond "gym-app gateway: /auth/v1, /rest/v1 and (realtime profile) /realtime/v1" 200
 	}
 }

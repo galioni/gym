@@ -48,6 +48,9 @@ export function useWorkoutTracker(
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const pendingPersistRef = useRef<Record<string, DayData> | null>(null);
+  // Counts the person's edits, and holds the save that is running, so a re-read can tell it has been overtaken (see reload).
+  const editRevisionRef = useRef(0);
+  const saveInFlightRef = useRef<Promise<void> | null>(null);
   const persistTimerRef = useRef<number | null>(null);
   const savingIndicatorTimerRef = useRef<number | null>(null);
 
@@ -104,28 +107,45 @@ export function useWorkoutTracker(
 
     pendingPersistRef.current = null;
     setIsSaving(true);
-    try {
-      await service.saveAllData(dataToSave);
-      if (savingIndicatorTimerRef.current) {
-        clearTimeout(savingIndicatorTimerRef.current);
+    const save = (async () => {
+      try {
+        await service.saveAllData(dataToSave);
+        if (savingIndicatorTimerRef.current) {
+          clearTimeout(savingIndicatorTimerRef.current);
+        }
+        savingIndicatorTimerRef.current = window.setTimeout(() => setIsSaving(false), 300);
+      } catch (error) {
+        console.error("Failed to save workout data", error);
+        setIsSaving(false);
       }
-      savingIndicatorTimerRef.current = window.setTimeout(() => setIsSaving(false), 300);
-    } catch (error) {
-      console.error("Failed to save workout data", error);
-      setIsSaving(false);
+    })();
+    saveInFlightRef.current = save;
+    try {
+      await save;
+    } finally {
+      if (saveInFlightRef.current === save) saveInFlightRef.current = null;
     }
   }, [service]);
 
-  // Storage changed underneath us: re-read it. Pending edits are saved first, and if the user types while
-  // we load we keep their state (the next change signal reloads again) rather than overwrite it.
+  // Storage changed underneath us: re-read it. Pending edits are saved first. If the person edits while we read, what was
+  // read is already out of date, so it is thrown away and read again once that edit is saved: an edit is never replaced by
+  // older data. (Checking only for an unsaved edit is not enough: one that saves the instant it is made, like ticking an
+  // item, has already left the queue by the time the read finishes.)
   useEffect(() => {
     if (reloadToken === 0) return;
     let cancelled = false;
     const reload = async () => {
-      await flushPersist();
-      const loaded = await service.loadAllData();
-      if (cancelled || pendingPersistRef.current) return;
-      setAllData(loaded);
+      for (let attempt = 0; attempt < 3; attempt++) {
+        await flushPersist();
+        await saveInFlightRef.current;
+        const revision = editRevisionRef.current;
+        const loaded = await service.loadAllData();
+        if (cancelled) return;
+        if (revision !== editRevisionRef.current || pendingPersistRef.current) continue;
+        setAllData(loaded);
+        return;
+      }
+      // Still being edited after three tries: the next change signal reads again.
     };
     void reload().catch((error) => console.error("Failed to reload workout data", error));
     return () => {
@@ -135,6 +155,7 @@ export function useWorkoutTracker(
 
   const schedulePersist = useCallback(
     (newData: Record<string, DayData>, debounceMs = 0) => {
+      editRevisionRef.current++;
       pendingPersistRef.current = newData;
 
       if (persistTimerRef.current) {

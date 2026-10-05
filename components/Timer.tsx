@@ -16,6 +16,9 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, initialIsRunning = fals
   const intervalRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(0);
   const msRef = useRef(initialMs);
+  // The last value this timer handed to onSave while running. The parent stores it and passes it back as initialMs, which
+  // must not be mistaken for a change from outside (see the initialMs effect).
+  const lastAutosavedRef = useRef<number | null>(null);
   const isRunningRef = useRef(initialIsRunning);
   const onSaveRef = useRef(onSave);
   const onRunningChangeRef = useRef(onRunningChange);
@@ -59,11 +62,13 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, initialIsRunning = fals
 
   // Sync with prop changes (e.g., date change resets timerMs to 0)
   useEffect(() => {
+    // A running timer saves itself every 5 seconds and the saved value comes straight back in as this prop. That echo is
+    // not a change from outside: resetting on it would stop the stopwatch at its first autosave.
+    if (isRunningRef.current && initialMs === lastAutosavedRef.current) return;
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMs(initialMs);
     msRef.current = initialMs;
      
@@ -82,6 +87,7 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, initialIsRunning = fals
       onRunningChange?.(false);
       onSave(msRef.current);
     } else {
+      lastAutosavedRef.current = null;
       lastTimeRef.current = Date.now();
       intervalRef.current = window.setInterval(tick, 100);
       setIsRunning(true);
@@ -103,7 +109,10 @@ export const Timer: React.FC<TimerProps> = ({ initialMs, initialIsRunning = fals
   // Autosave every 5 seconds while running
   useEffect(() => {
     if (isRunning) {
-      const saveInterval = setInterval(() => onSaveRef.current(msRef.current), 5000);
+      const saveInterval = setInterval(() => {
+        lastAutosavedRef.current = msRef.current;
+        onSaveRef.current(msRef.current);
+      }, 5000);
       return () => clearInterval(saveInterval);
     }
   }, [isRunning]);

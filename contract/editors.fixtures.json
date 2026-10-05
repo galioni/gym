@@ -1,0 +1,452 @@
+{
+ "youtube": [
+  {
+   "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+   "valid": true
+  },
+  {
+   "url": "http://youtube.com/watch?v=dQw4w9WgXcQ",
+   "valid": true
+  },
+  {
+   "url": "https://m.youtube.com/watch?v=dQw4w9WgXcQ",
+   "valid": true
+  },
+  {
+   "url": "https://youtu.be/dQw4w9WgXcQ",
+   "valid": true
+  },
+  {
+   "url": "https://www.youtube.com/shorts/dQw4w9WgXcQ",
+   "valid": true
+  },
+  {
+   "url": "https://youtube.com/shorts/abcdefghijk&t=3",
+   "valid": true
+  },
+  {
+   "url": "https://www.youtube.com/watch?v=short",
+   "valid": false
+  },
+  {
+   "url": "https://example.com/watch?v=dQw4w9WgXcQ",
+   "valid": false
+  },
+  {
+   "url": "youtube.com/watch?v=dQw4w9WgXcQ",
+   "valid": false
+  },
+  {
+   "url": "https://www.youtube.com/playlist?list=PL1234567890",
+   "valid": false
+  },
+  {
+   "url": "ftp://youtu.be/dQw4w9WgXcQ",
+   "valid": false
+  },
+  {
+   "url": "https://youtu.be/dQw4w9WgXc!",
+   "valid": false
+  },
+  {
+   "url": "",
+   "valid": false
+  },
+  {
+   "url": "  ",
+   "valid": false
+  },
+  {
+   "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ with trailing text",
+   "valid": true
+  },
+  {
+   "url": "HTTPS://WWW.YOUTUBE.COM/watch?v=dQw4w9WgXcQ",
+   "valid": false
+  }
+ ],
+ "rows": [
+  {
+   "rows": [],
+   "errors": []
+  },
+  {
+   "rows": [
+    {
+     "text": "Squat",
+     "target": "3x8"
+    }
+   ],
+   "errors": []
+  },
+  {
+   "rows": [
+    {
+     "text": ""
+    }
+   ],
+   "errors": [
+    {
+     "rowIndex": 0,
+     "field": "text",
+     "message": "Exercise name is required."
+    }
+   ]
+  },
+  {
+   "rows": [
+    {
+     "text": "   "
+    }
+   ],
+   "errors": [
+    {
+     "rowIndex": 0,
+     "field": "text",
+     "message": "Exercise name is required."
+    }
+   ]
+  },
+  {
+   "rows": [
+    {
+     "text": "Ok"
+    },
+    {
+     "text": ""
+    },
+    {
+     "text": "Fine",
+     "target": "1"
+    }
+   ],
+   "errors": [
+    {
+     "rowIndex": 1,
+     "field": "text",
+     "message": "Exercise name is required."
+    }
+   ]
+  },
+  {
+   "rows": [
+    {
+     "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+   ],
+   "errors": []
+  },
+  {
+   "rows": [
+    {
+     "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+   ],
+   "errors": [
+    {
+     "rowIndex": 0,
+     "field": "text",
+     "message": "Exercise name must be <= 80 characters."
+    }
+   ]
+  },
+  {
+   "rows": [
+    {
+     "text": " xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx "
+    }
+   ],
+   "errors": []
+  },
+  {
+   "rows": [
+    {
+     "text": "A",
+     "target": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+   ],
+   "errors": []
+  },
+  {
+   "rows": [
+    {
+     "text": "A",
+     "target": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+   ],
+   "errors": [
+    {
+     "rowIndex": 0,
+     "field": "target",
+     "message": "Target must be <= 40 characters."
+    }
+   ]
+  },
+  {
+   "rows": [
+    {
+     "text": "",
+     "target": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+   ],
+   "errors": [
+    {
+     "rowIndex": 0,
+     "field": "text",
+     "message": "Exercise name is required."
+    },
+    {
+     "rowIndex": 0,
+     "field": "target",
+     "message": "Target must be <= 40 characters."
+    }
+   ]
+  },
+  {
+   "rows": [
+    {
+     "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "target": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+   ],
+   "errors": [
+    {
+     "rowIndex": 0,
+     "field": "text",
+     "message": "Exercise name must be <= 80 characters."
+    },
+    {
+     "rowIndex": 0,
+     "field": "target",
+     "message": "Target must be <= 40 characters."
+    }
+   ]
+  },
+  {
+   "rows": [
+    {
+     "text": "A",
+     "target": " xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx "
+    }
+   ],
+   "errors": []
+  }
+ ],
+ "library": [
+  {
+   "name": "empty",
+   "days": {},
+   "entries": []
+  },
+  {
+   "name": "dedupe",
+   "days": {
+    "2026-10-01": {
+     "date": "2026-10-01",
+     "sessionType": "gym",
+     "warmup": [
+      {
+       "id": "a",
+       "text": "Squat",
+       "done": false,
+       "target": "3x5"
+      }
+     ],
+     "main": [
+      {
+       "id": "b",
+       "text": "Bench",
+       "done": false,
+       "target": "3x8"
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-10-03": {
+     "date": "2026-10-03",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "c",
+       "text": "squat ",
+       "done": false,
+       "target": "5x5"
+      },
+      {
+       "id": "d",
+       "text": "Deadlift",
+       "done": false
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-10-02": {
+     "date": "2026-10-02",
+     "sessionType": "gym",
+     "warmup": [
+      {
+       "id": "e",
+       "text": "  BENCH  ",
+       "done": false,
+       "target": "4x6"
+      }
+     ],
+     "main": [],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    }
+   },
+   "entries": [
+    {
+     "text": "BENCH",
+     "target": "4x6"
+    },
+    {
+     "text": "Deadlift"
+    },
+    {
+     "text": "squat",
+     "target": "5x5"
+    }
+   ]
+  },
+  {
+   "name": "sortingAndBlanks",
+   "days": {
+    "2026-10-01": {
+     "date": "2026-10-01",
+     "sessionType": "gym",
+     "warmup": [
+      {
+       "id": "1",
+       "text": "pull-up",
+       "done": false
+      },
+      {
+       "id": "2",
+       "text": "Pull Up",
+       "done": false
+      },
+      {
+       "id": "3",
+       "text": "  ",
+       "done": false
+      },
+      {
+       "id": "4",
+       "text": "arm circles",
+       "done": false
+      }
+     ],
+     "main": [
+      {
+       "id": "5",
+       "text": "Zottman curl",
+       "done": false
+      },
+      {
+       "id": "6",
+       "text": "Ab wheel",
+       "done": false
+      },
+      {
+       "id": "7",
+       "text": "ab roller",
+       "done": false,
+       "target": "3x10"
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    }
+   },
+   "entries": [
+    {
+     "text": "ab roller",
+     "target": "3x10"
+    },
+    {
+     "text": "Ab wheel"
+    },
+    {
+     "text": "arm circles"
+    },
+    {
+     "text": "Pull Up"
+    },
+    {
+     "text": "pull-up"
+    },
+    {
+     "text": "Zottman curl"
+    }
+   ]
+  },
+  {
+   "name": "targetsKeepFirstSeen",
+   "days": {
+    "2026-09-01": {
+     "date": "2026-09-01",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "1",
+       "text": "Row",
+       "done": false,
+       "target": "old"
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    },
+    "2026-10-01": {
+     "date": "2026-10-01",
+     "sessionType": "gym",
+     "warmup": [],
+     "main": [
+      {
+       "id": "2",
+       "text": "Row",
+       "done": false
+      }
+     ],
+     "warmupNotes": "",
+     "mainNotes": "",
+     "warmupTimerMs": 0,
+     "mainTimerMs": 0,
+     "weight": "",
+     "checkNotes": ""
+    }
+   },
+   "entries": [
+    {
+     "text": "Row"
+    }
+   ]
+  }
+ ]
+}

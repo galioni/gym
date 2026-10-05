@@ -1,0 +1,1717 @@
+{
+ "formatTimer": [
+  {
+   "ms": 0,
+   "text": "00:00"
+  },
+  {
+   "ms": 1,
+   "text": "00:00"
+  },
+  {
+   "ms": 999,
+   "text": "00:00"
+  },
+  {
+   "ms": 1000,
+   "text": "00:01"
+  },
+  {
+   "ms": 59999,
+   "text": "00:59"
+  },
+  {
+   "ms": 60000,
+   "text": "01:00"
+  },
+  {
+   "ms": 61000,
+   "text": "01:01"
+  },
+  {
+   "ms": 3599000,
+   "text": "59:59"
+  },
+  {
+   "ms": 3600000,
+   "text": "60:00"
+  },
+  {
+   "ms": 5999000,
+   "text": "99:59"
+  },
+  {
+   "ms": 6000000,
+   "text": "100:00"
+  },
+  {
+   "ms": 86400000,
+   "text": "1440:00"
+  }
+ ],
+ "progress": [
+  {
+   "done": [],
+   "percent": 0
+  },
+  {
+   "done": [
+    false
+   ],
+   "percent": 0
+  },
+  {
+   "done": [
+    true
+   ],
+   "percent": 100
+  },
+  {
+   "done": [
+    true,
+    false
+   ],
+   "percent": 50
+  },
+  {
+   "done": [
+    true,
+    true,
+    false
+   ],
+   "percent": 67
+  },
+  {
+   "done": [
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "percent": 13
+  },
+  {
+   "done": [
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "percent": 38
+  },
+  {
+   "done": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false
+   ],
+   "percent": 63
+  },
+  {
+   "done": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "percent": 100
+  }
+ ],
+ "sessionLabels": [
+  {
+   "id": "tennis",
+   "label": "Tennis day (warm-up + strength mini)"
+  },
+  {
+   "id": "gym",
+   "label": "Gym day (full session)"
+  },
+  {
+   "id": "swim",
+   "label": "Swim day (short warm-up)"
+  },
+  {
+   "id": "rest",
+   "label": "Rest / Recovery"
+  },
+  {
+   "id": "leg-day",
+   "label": "Leg Day"
+  },
+  {
+   "id": "push_pull",
+   "label": "Push Pull"
+  },
+  {
+   "id": "upper  lower",
+   "label": "Upper Lower"
+  },
+  {
+   "id": "-x-",
+   "label": "X"
+  },
+  {
+   "id": "5k",
+   "label": "5k"
+  },
+  {
+   "id": "yoga flow",
+   "label": "Yoga Flow"
+  },
+  {
+   "id": "A",
+   "label": "A"
+  },
+  {
+   "id": "",
+   "label": ""
+  }
+ ],
+ "sessionOptions": [
+  {
+   "name": "builtInsOnly",
+   "templates": {
+    "tennis": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ]
+    },
+    "gym": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ]
+    },
+    "swim": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ]
+    },
+    "rest": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ]
+    }
+   },
+   "options": [
+    {
+     "value": "tennis",
+     "label": "Tennis day (warm-up + strength mini)"
+    },
+    {
+     "value": "gym",
+     "label": "Gym day (full session)"
+    },
+    {
+     "value": "swim",
+     "label": "Swim day (short warm-up)"
+    },
+    {
+     "value": "rest",
+     "label": "Rest / Recovery"
+    }
+   ]
+  },
+  {
+   "name": "builtInsInOddOrder",
+   "templates": {
+    "rest": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ]
+    },
+    "gym": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ]
+    },
+    "tennis": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ]
+    }
+   },
+   "options": [
+    {
+     "value": "tennis",
+     "label": "Tennis day (warm-up + strength mini)"
+    },
+    {
+     "value": "gym",
+     "label": "Gym day (full session)"
+    },
+    {
+     "value": "rest",
+     "label": "Rest / Recovery"
+    }
+   ]
+  },
+  {
+   "name": "customSorting",
+   "templates": {
+    "gym": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ]
+    },
+    "leg-day": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ]
+    },
+    "5k-run": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ]
+    },
+    "arms": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ],
+     "label": "arms"
+    },
+    "arms-2": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ],
+     "label": "Arms"
+    },
+    "a-b": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ],
+     "label": "a b"
+    },
+    "a-1": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ],
+     "label": "a-1"
+    },
+    "a1": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ],
+     "label": "A1"
+    },
+    "ab": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ],
+     "label": "ab"
+    },
+    "eclair": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ],
+     "label": "éclair"
+    },
+    "eclair2": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ],
+     "label": "Éclair"
+    },
+    "zeta": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ],
+     "label": "Zeta"
+    },
+    "alpha": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ],
+     "label": "alpha"
+    }
+   },
+   "options": [
+    {
+     "value": "gym",
+     "label": "Gym day (full session)"
+    },
+    {
+     "value": "5k-run",
+     "label": "5k Run"
+    },
+    {
+     "value": "a-b",
+     "label": "a b"
+    },
+    {
+     "value": "a-1",
+     "label": "a-1"
+    },
+    {
+     "value": "a1",
+     "label": "A1"
+    },
+    {
+     "value": "ab",
+     "label": "ab"
+    },
+    {
+     "value": "alpha",
+     "label": "alpha"
+    },
+    {
+     "value": "arms",
+     "label": "arms"
+    },
+    {
+     "value": "arms-2",
+     "label": "Arms"
+    },
+    {
+     "value": "eclair",
+     "label": "éclair"
+    },
+    {
+     "value": "eclair2",
+     "label": "Éclair"
+    },
+    {
+     "value": "leg-day",
+     "label": "Leg Day"
+    },
+    {
+     "value": "zeta",
+     "label": "Zeta"
+    }
+   ]
+  },
+  {
+   "name": "withMeta",
+   "templates": {
+    "gym": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ],
+     "label": "Gym day",
+     "focus": "Strength",
+     "source": "ai"
+    },
+    "yoga": {
+     "warmup": [],
+     "main": [
+      {
+       "text": "Move",
+       "target": "3x8"
+      }
+     ],
+     "focus": "Calm",
+     "source": "user"
+    }
+   },
+   "options": [
+    {
+     "value": "gym",
+     "label": "Gym day",
+     "focus": "Strength",
+     "source": "ai"
+    },
+    {
+     "value": "yoga",
+     "label": "Yoga",
+     "focus": "Calm",
+     "source": "user"
+    }
+   ]
+  },
+  {
+   "name": "empty",
+   "templates": {},
+   "options": []
+  }
+ ],
+ "normalizeId": [
+  {
+   "label": "Gym",
+   "id": "gym"
+  },
+  {
+   "label": "Leg Day",
+   "id": "leg-day"
+  },
+  {
+   "label": "  lower  ",
+   "id": "lower"
+  },
+  {
+   "label": "Ünï",
+   "id": "n"
+  },
+  {
+   "label": "a--b",
+   "id": "a-b"
+  },
+  {
+   "label": "5K",
+   "id": "5k"
+  },
+  {
+   "label": "!!!",
+   "id": null
+  },
+  {
+   "label": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  {
+   "label": "Tennis day",
+   "id": "tennis-day"
+  },
+  {
+   "label": "Rest / Recovery",
+   "id": "rest-recovery"
+  }
+ ],
+ "createSession": [
+  {
+   "label": "Gym",
+   "result": {
+    "status": "error",
+    "message": "Session type \"Gym day (full session)\" already exists."
+   }
+  },
+  {
+   "label": "Leg Day",
+   "result": {
+    "status": "success",
+    "sessionType": "leg-day",
+    "message": "Session type \"Leg Day\" added.",
+    "templates": {
+     "gym": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "label": "Gym day",
+      "focus": "Strength",
+      "source": "ai"
+     },
+     "yoga": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "focus": "Calm",
+      "source": "user"
+     },
+     "leg-day": {
+      "warmup": [],
+      "main": [],
+      "source": "user"
+     }
+    }
+   }
+  },
+  {
+   "label": "  lower  ",
+   "result": {
+    "status": "success",
+    "sessionType": "lower",
+    "message": "Session type \"Lower\" added.",
+    "templates": {
+     "gym": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "label": "Gym day",
+      "focus": "Strength",
+      "source": "ai"
+     },
+     "yoga": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "focus": "Calm",
+      "source": "user"
+     },
+     "lower": {
+      "warmup": [],
+      "main": [],
+      "source": "user"
+     }
+    }
+   }
+  },
+  {
+   "label": "Ünï",
+   "result": {
+    "status": "success",
+    "sessionType": "n",
+    "message": "Session type \"N\" added.",
+    "templates": {
+     "gym": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "label": "Gym day",
+      "focus": "Strength",
+      "source": "ai"
+     },
+     "yoga": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "focus": "Calm",
+      "source": "user"
+     },
+     "n": {
+      "warmup": [],
+      "main": [],
+      "source": "user"
+     }
+    }
+   }
+  },
+  {
+   "label": "a--b",
+   "result": {
+    "status": "success",
+    "sessionType": "a-b",
+    "message": "Session type \"A B\" added.",
+    "templates": {
+     "gym": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "label": "Gym day",
+      "focus": "Strength",
+      "source": "ai"
+     },
+     "yoga": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "focus": "Calm",
+      "source": "user"
+     },
+     "a-b": {
+      "warmup": [],
+      "main": [],
+      "source": "user"
+     }
+    }
+   }
+  },
+  {
+   "label": "5K",
+   "result": {
+    "status": "success",
+    "sessionType": "5k",
+    "message": "Session type \"5k\" added.",
+    "templates": {
+     "gym": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "label": "Gym day",
+      "focus": "Strength",
+      "source": "ai"
+     },
+     "yoga": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "focus": "Calm",
+      "source": "user"
+     },
+     "5k": {
+      "warmup": [],
+      "main": [],
+      "source": "user"
+     }
+    }
+   }
+  },
+  {
+   "label": "!!!",
+   "result": {
+    "status": "error",
+    "message": "Enter a session type name using letters or numbers."
+   }
+  },
+  {
+   "label": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+   "result": {
+    "status": "success",
+    "sessionType": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "message": "Session type \"Xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\" added.",
+    "templates": {
+     "gym": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "label": "Gym day",
+      "focus": "Strength",
+      "source": "ai"
+     },
+     "yoga": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "focus": "Calm",
+      "source": "user"
+     },
+     "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx": {
+      "warmup": [],
+      "main": [],
+      "source": "user"
+     }
+    }
+   }
+  },
+  {
+   "label": "Tennis day",
+   "result": {
+    "status": "success",
+    "sessionType": "tennis-day",
+    "message": "Session type \"Tennis Day\" added.",
+    "templates": {
+     "gym": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "label": "Gym day",
+      "focus": "Strength",
+      "source": "ai"
+     },
+     "yoga": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "focus": "Calm",
+      "source": "user"
+     },
+     "tennis-day": {
+      "warmup": [],
+      "main": [],
+      "source": "user"
+     }
+    }
+   }
+  },
+  {
+   "label": "Rest / Recovery",
+   "result": {
+    "status": "success",
+    "sessionType": "rest-recovery",
+    "message": "Session type \"Rest Recovery\" added.",
+    "templates": {
+     "gym": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "label": "Gym day",
+      "focus": "Strength",
+      "source": "ai"
+     },
+     "yoga": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "focus": "Calm",
+      "source": "user"
+     },
+     "rest-recovery": {
+      "warmup": [],
+      "main": [],
+      "source": "user"
+     }
+    }
+   }
+  }
+ ],
+ "deleteSession": [
+  {
+   "type": "gym",
+   "result": {
+    "status": "success",
+    "message": "Session type \"Gym day (full session)\" deleted.",
+    "templates": {
+     "yoga": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "focus": "Calm",
+      "source": "user"
+     }
+    }
+   }
+  },
+  {
+   "type": "yoga",
+   "result": {
+    "status": "success",
+    "message": "Session type \"Yoga\" deleted.",
+    "templates": {
+     "gym": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "label": "Gym day",
+      "focus": "Strength",
+      "source": "ai"
+     }
+    }
+   }
+  },
+  {
+   "type": "nope",
+   "result": {
+    "status": "error",
+    "message": "Session type \"Nope\" not found."
+   }
+  }
+ ],
+ "renameSession": [
+  {
+   "type": "gym",
+   "label": "Gym day",
+   "result": {
+    "status": "error",
+    "message": "New name is the same as the current name."
+   }
+  },
+  {
+   "type": "gym",
+   "label": "gym DAY",
+   "result": {
+    "status": "error",
+    "message": "New name is the same as the current name."
+   }
+  },
+  {
+   "type": "gym",
+   "label": "  New name ",
+   "result": {
+    "status": "success",
+    "oldSessionType": "gym",
+    "newSessionType": "gym",
+    "message": "Session type renamed to \"New name\".",
+    "templates": {
+     "gym": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "label": "New name",
+      "focus": "Strength",
+      "source": "ai"
+     },
+     "yoga": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "focus": "Calm",
+      "source": "user"
+     }
+    }
+   }
+  },
+  {
+   "type": "gym",
+   "label": "***",
+   "result": {
+    "status": "error",
+    "message": "Enter a session type name using letters or numbers."
+   }
+  },
+  {
+   "type": "gym",
+   "label": "",
+   "result": {
+    "status": "error",
+    "message": "Enter a session type name using letters or numbers."
+   }
+  },
+  {
+   "type": "yoga",
+   "label": "Gym day",
+   "result": {
+    "status": "error",
+    "message": "Session type \"Gym day\" already exists."
+   }
+  },
+  {
+   "type": "yoga",
+   "label": "Yoga!",
+   "result": {
+    "status": "success",
+    "oldSessionType": "yoga",
+    "newSessionType": "yoga",
+    "message": "Session type renamed to \"Yoga!\".",
+    "templates": {
+     "gym": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "label": "Gym day",
+      "focus": "Strength",
+      "source": "ai"
+     },
+     "yoga": {
+      "warmup": [],
+      "main": [
+       {
+        "text": "Move",
+        "target": "3x8"
+       }
+      ],
+      "focus": "Calm",
+      "source": "user",
+      "label": "Yoga!"
+     }
+    }
+   }
+  },
+  {
+   "type": "yoga",
+   "label": "yoga",
+   "result": {
+    "status": "error",
+    "message": "New name is the same as the current name."
+   }
+  }
+ ],
+ "transitions": {
+  "day": {
+   "date": "2026-10-01",
+   "sessionType": "gym",
+   "warmup": [
+    {
+     "id": "w0",
+     "text": "w0",
+     "done": true
+    },
+    {
+     "id": "w1",
+     "text": "w1",
+     "done": false
+    }
+   ],
+   "main": [
+    {
+     "id": "m0",
+     "text": "m0",
+     "done": true
+    },
+    {
+     "id": "m1",
+     "text": "m1",
+     "done": true
+    }
+   ],
+   "warmupNotes": "n",
+   "mainNotes": "m",
+   "warmupTimerMs": 5000,
+   "mainTimerMs": 7000,
+   "weight": "80",
+   "checkNotes": "c"
+  },
+  "templates": {
+   "yoga": {
+    "warmup": [
+     {
+      "text": "Cat-cow",
+      "target": "1 min",
+      "id": "x"
+     }
+    ],
+    "main": [
+     {
+      "text": "Flow"
+     }
+    ]
+   }
+  },
+  "toggle": {
+   "date": "2026-10-01",
+   "sessionType": "gym",
+   "warmup": [
+    {
+     "id": "w0",
+     "text": "w0",
+     "done": true
+    },
+    {
+     "id": "w1",
+     "text": "w1",
+     "done": false
+    }
+   ],
+   "main": [
+    {
+     "id": "m0",
+     "text": "m0",
+     "done": false
+    },
+    {
+     "id": "m1",
+     "text": "m1",
+     "done": true
+    }
+   ],
+   "warmupNotes": "n",
+   "mainNotes": "m",
+   "warmupTimerMs": 5000,
+   "mainTimerMs": 7000,
+   "weight": "80",
+   "checkNotes": "c"
+  },
+  "toggleMissing": {
+   "date": "2026-10-01",
+   "sessionType": "gym",
+   "warmup": [
+    {
+     "id": "w0",
+     "text": "w0",
+     "done": true
+    },
+    {
+     "id": "w1",
+     "text": "w1",
+     "done": false
+    }
+   ],
+   "main": [
+    {
+     "id": "m0",
+     "text": "m0",
+     "done": true
+    },
+    {
+     "id": "m1",
+     "text": "m1",
+     "done": true
+    }
+   ],
+   "warmupNotes": "n",
+   "mainNotes": "m",
+   "warmupTimerMs": 5000,
+   "mainTimerMs": 7000,
+   "weight": "80",
+   "checkNotes": "c"
+  },
+  "deleteItem": {
+   "date": "2026-10-01",
+   "sessionType": "gym",
+   "warmup": [
+    {
+     "id": "w0",
+     "text": "w0",
+     "done": true
+    }
+   ],
+   "main": [
+    {
+     "id": "m0",
+     "text": "m0",
+     "done": true
+    },
+    {
+     "id": "m1",
+     "text": "m1",
+     "done": true
+    }
+   ],
+   "warmupNotes": "n",
+   "mainNotes": "m",
+   "warmupTimerMs": 5000,
+   "mainTimerMs": 7000,
+   "weight": "80",
+   "checkNotes": "c"
+  },
+  "reset": {
+   "date": "2026-10-01",
+   "sessionType": "yoga",
+   "warmup": [
+    {
+     "text": "Cat-cow",
+     "target": "1 min",
+     "id": "i",
+     "done": false
+    }
+   ],
+   "main": [
+    {
+     "text": "Flow",
+     "id": "i",
+     "done": false
+    }
+   ],
+   "warmupNotes": "n",
+   "mainNotes": "m",
+   "warmupTimerMs": 0,
+   "mainTimerMs": 0,
+   "weight": "80",
+   "checkNotes": "c"
+  },
+  "resetUnknown": {
+   "date": "2026-10-01",
+   "sessionType": "mystery",
+   "warmup": [],
+   "main": [],
+   "warmupNotes": "n",
+   "mainNotes": "m",
+   "warmupTimerMs": 0,
+   "mainTimerMs": 0,
+   "weight": "80",
+   "checkNotes": "c"
+  },
+  "clear": {
+   "date": "2026-10-02",
+   "sessionType": "yoga",
+   "warmup": [
+    {
+     "text": "Cat-cow",
+     "target": "1 min",
+     "id": "i",
+     "done": false
+    }
+   ],
+   "main": [
+    {
+     "text": "Flow",
+     "id": "i",
+     "done": false
+    }
+   ],
+   "warmupNotes": "",
+   "mainNotes": "",
+   "warmupTimerMs": 0,
+   "mainTimerMs": 0,
+   "weight": "",
+   "checkNotes": ""
+  },
+  "emptyDefault": {
+   "date": "2026-10-02",
+   "sessionType": "tennis",
+   "warmup": [
+    {
+     "text": "2-3 min brisk walk / light jog",
+     "target": "Raise heart rate",
+     "id": "i",
+     "done": false
+    },
+    {
+     "text": "Joint prep: ankles, hips, T-spine (30-60s)",
+     "target": "Loosen up",
+     "id": "i",
+     "done": false
+    },
+    {
+     "text": "Dynamic legs: leg swings + lunges (2 x 6 each)",
+     "target": "Open hips",
+     "id": "i",
+     "done": false
+    },
+    {
+     "text": "Shoulder prep: arm circles + band pull-aparts (2 x 10)",
+     "target": "Shoulders ready",
+     "id": "i",
+     "done": false
+    },
+    {
+     "text": "Wrist/forearm prep (30-60s)",
+     "target": "Tennis comfort",
+     "id": "i",
+     "done": false
+    },
+    {
+     "text": "Easy shadow swings (1-2 min)",
+     "target": "Groove form",
+     "id": "i",
+     "done": false
+    }
+   ],
+   "main": [
+    {
+     "text": "Strength (30 min): squat pattern",
+     "target": "2-3 sets",
+     "id": "i",
+     "done": false
+    },
+    {
+     "text": "Strength hinge pattern",
+     "target": "2-3 sets",
+     "id": "i",
+     "done": false
+    },
+    {
+     "text": "Strength push (press)",
+     "target": "2-3 sets",
+     "id": "i",
+     "done": false
+    },
+    {
+     "text": "Strength pull (row)",
+     "target": "2-3 sets",
+     "id": "i",
+     "done": false
+    },
+    {
+     "text": "Core: plank / deadbug",
+     "target": "2-3 sets",
+     "id": "i",
+     "done": false
+    },
+    {
+     "text": "Tennis session (60 min)",
+     "target": "Focus: consistency",
+     "id": "i",
+     "done": false
+    },
+    {
+     "text": "Cool-down: walk + light stretch (5 min)",
+     "target": "Downshift",
+     "id": "i",
+     "done": false
+    }
+   ],
+   "warmupNotes": "",
+   "mainNotes": "",
+   "warmupTimerMs": 0,
+   "mainTimerMs": 0,
+   "weight": "",
+   "checkNotes": ""
+  }
+ },
+ "syncStatus": [
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": true,
+    "conflictCount": 1,
+    "lastError": null,
+    "lastSyncedAt": null,
+    "now": 1791028800000
+   },
+   "status": {
+    "kind": "attention",
+    "label": "Needs attention",
+    "detail": "1 conflict needs your decision. Nothing has been overwritten."
+   }
+  },
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": false,
+    "conflictCount": 3,
+    "lastError": "x",
+    "lastSyncedAt": null,
+    "now": 1791028800000
+   },
+   "status": {
+    "kind": "attention",
+    "label": "Needs attention",
+    "detail": "3 conflicts need your decision. Nothing has been overwritten."
+   }
+  },
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": false,
+    "conflictCount": 0,
+    "lastError": null,
+    "lastSyncedAt": null,
+    "now": 1791028800000
+   },
+   "status": {
+    "kind": "offline",
+    "label": "Offline",
+    "detail": "You're offline. Changes are saved on this device and will sync when you're back online."
+   }
+  },
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": true,
+    "conflictCount": 0,
+    "lastError": "Boom",
+    "lastSyncedAt": null,
+    "now": 1791028800000
+   },
+   "status": {
+    "kind": "attention",
+    "label": "Sync problem",
+    "detail": "Boom"
+   }
+  },
+  {
+   "input": {
+    "isSyncing": true,
+    "isOnline": true,
+    "conflictCount": 0,
+    "lastError": "Boom",
+    "lastSyncedAt": null,
+    "now": 1791028800000
+   },
+   "status": {
+    "kind": "attention",
+    "label": "Sync problem",
+    "detail": "Boom"
+   }
+  },
+  {
+   "input": {
+    "isSyncing": true,
+    "isOnline": true,
+    "conflictCount": 0,
+    "lastError": null,
+    "lastSyncedAt": null,
+    "now": 1791028800000
+   },
+   "status": {
+    "kind": "syncing",
+    "label": "Syncing",
+    "detail": "Syncing your data…"
+   }
+  },
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": true,
+    "conflictCount": 0,
+    "lastError": null,
+    "lastSyncedAt": null,
+    "now": 1791028800000
+   },
+   "status": {
+    "kind": "idle",
+    "label": "Not synced yet",
+    "detail": "Your data will sync automatically."
+   }
+  },
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": true,
+    "conflictCount": 0,
+    "lastError": null,
+    "lastSyncedAt": null,
+    "now": 1791028800000,
+    "allowance": {
+     "nextAvailableAt": null
+    }
+   },
+   "status": {
+    "kind": "idle",
+    "label": "Not synced yet",
+    "detail": "Sync from Settings when you want to back up. Free plan: a sync is available now."
+   }
+  },
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": true,
+    "conflictCount": 0,
+    "lastError": null,
+    "lastSyncedAt": null,
+    "now": 1791028800000,
+    "allowance": {
+     "nextAvailableAt": "2026-11-03T12:00:00.000Z"
+    }
+   },
+   "status": {
+    "kind": "idle",
+    "label": "Not synced yet",
+    "detail": "Sync from Settings when you want to back up. Free plan: the next sync is available on 3 Nov 2026."
+   }
+  },
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": true,
+    "conflictCount": 0,
+    "lastError": null,
+    "lastSyncedAt": "2026-10-03T11:59:50.000Z",
+    "now": 1791028800000
+   },
+   "status": {
+    "kind": "synced",
+    "label": "Synced",
+    "detail": "Everything is up to date. Last synced just now."
+   }
+  },
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": true,
+    "conflictCount": 0,
+    "lastError": null,
+    "lastSyncedAt": "2026-10-03T11:59:01.000Z",
+    "now": 1791028800000
+   },
+   "status": {
+    "kind": "synced",
+    "label": "Synced",
+    "detail": "Everything is up to date. Last synced just now."
+   }
+  },
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": true,
+    "conflictCount": 0,
+    "lastError": null,
+    "lastSyncedAt": "2026-10-03T11:59:00.000Z",
+    "now": 1791028800000
+   },
+   "status": {
+    "kind": "synced",
+    "label": "Synced",
+    "detail": "Everything is up to date. Last synced 1 min ago."
+   }
+  },
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": true,
+    "conflictCount": 0,
+    "lastError": null,
+    "lastSyncedAt": "2026-10-03T11:01:00.000Z",
+    "now": 1791028800000
+   },
+   "status": {
+    "kind": "synced",
+    "label": "Synced",
+    "detail": "Everything is up to date. Last synced 59 min ago."
+   }
+  },
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": true,
+    "conflictCount": 0,
+    "lastError": null,
+    "lastSyncedAt": "2026-10-03T11:00:00.000Z",
+    "now": 1791028800000
+   },
+   "status": {
+    "kind": "synced",
+    "label": "Synced",
+    "detail": "Everything is up to date. Last synced 1 h ago."
+   }
+  },
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": true,
+    "conflictCount": 0,
+    "lastError": null,
+    "lastSyncedAt": "2026-10-02T12:01:00.000Z",
+    "now": 1791028800000
+   },
+   "status": {
+    "kind": "synced",
+    "label": "Synced",
+    "detail": "Everything is up to date. Last synced 23 h ago."
+   }
+  },
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": true,
+    "conflictCount": 0,
+    "lastError": null,
+    "lastSyncedAt": "2026-10-02T12:00:00.000Z",
+    "now": 1791028800000
+   },
+   "status": {
+    "kind": "synced",
+    "label": "Synced",
+    "detail": "Everything is up to date. Last synced 1 d ago."
+   }
+  },
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": true,
+    "conflictCount": 0,
+    "lastError": null,
+    "lastSyncedAt": "2026-09-28T12:00:00.000Z",
+    "now": 1791028800000
+   },
+   "status": {
+    "kind": "synced",
+    "label": "Synced",
+    "detail": "Everything is up to date. Last synced 5 d ago."
+   }
+  },
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": true,
+    "conflictCount": 0,
+    "lastError": null,
+    "lastSyncedAt": "2026-10-03T11:59:55.000Z",
+    "now": 1791028800000,
+    "allowance": {
+     "nextAvailableAt": "2026-09-03T12:00:00.000Z"
+    }
+   },
+   "status": {
+    "kind": "synced",
+    "label": "Synced",
+    "detail": "Everything is up to date. Last synced just now. Free plan: the next sync is available on 3 Sept 2026."
+   }
+  },
+  {
+   "input": {
+    "isSyncing": false,
+    "isOnline": true,
+    "conflictCount": 0,
+    "lastError": null,
+    "lastSyncedAt": "2026-10-03T11:59:55.000Z",
+    "now": 1791028800000,
+    "allowance": {
+     "nextAvailableAt": null
+    }
+   },
+   "status": {
+    "kind": "synced",
+    "label": "Synced",
+    "detail": "Everything is up to date. Last synced just now. Free plan: a sync is available now."
+   }
+  }
+ ],
+ "nextSync": [
+  {
+   "iso": "2026-01-15T12:00:00.000Z",
+   "text": "15 Jan 2026"
+  },
+  {
+   "iso": "2026-02-15T12:00:00.000Z",
+   "text": "15 Feb 2026"
+  },
+  {
+   "iso": "2026-03-15T12:00:00.000Z",
+   "text": "15 Mar 2026"
+  },
+  {
+   "iso": "2026-04-15T12:00:00.000Z",
+   "text": "15 Apr 2026"
+  },
+  {
+   "iso": "2026-05-15T12:00:00.000Z",
+   "text": "15 May 2026"
+  },
+  {
+   "iso": "2026-06-15T12:00:00.000Z",
+   "text": "15 Jun 2026"
+  },
+  {
+   "iso": "2026-07-15T12:00:00.000Z",
+   "text": "15 Jul 2026"
+  },
+  {
+   "iso": "2026-08-15T12:00:00.000Z",
+   "text": "15 Aug 2026"
+  },
+  {
+   "iso": "2026-09-15T12:00:00.000Z",
+   "text": "15 Sept 2026"
+  },
+  {
+   "iso": "2026-10-15T12:00:00.000Z",
+   "text": "15 Oct 2026"
+  },
+  {
+   "iso": "2026-11-15T12:00:00.000Z",
+   "text": "15 Nov 2026"
+  },
+  {
+   "iso": "2026-12-15T12:00:00.000Z",
+   "text": "15 Dec 2026"
+  }
+ ],
+ "planText": {
+  "freeSummary": "Free includes 1 AI-generated plan per day and one cloud sync every 30 days. Pro adds automatic sync on every device, 10 AI plans per hour with your choice of model, and higher limits.",
+  "whenProEnds": "If Pro ends, nothing is deleted. Everything stays on your device and in the cloud and you can still edit it; you just can't add beyond the Free limits until you upgrade again or delete something.",
+  "cancelNote": "No contracts. Cancel anytime. If Pro ends you keep all of your data."
+ }
+}

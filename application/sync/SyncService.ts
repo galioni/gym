@@ -24,6 +24,7 @@ import { HistoryLimitedCloudWorkout, historyCutoff } from "./historyWindow";
 import { reconcileDeletions } from "./deletionReconciliation";
 import {
   agreedBase,
+  agreedDaysBase,
   baseAfterPartialWrite,
   collectionHashes,
   baseDaysFrom,
@@ -492,7 +493,7 @@ export class SyncService {
         finalDays = {};
         daysBase = await this.daysBaseAfterPartialWrite(base.days);
       }
-      const nextBase: SyncBase = { days: daysBase ?? baseDaysFrom(finalDays), templates: base.templates, plans: base.plans, settings: base.settings };
+      const nextBase: SyncBase = { days: daysBase ?? (await this.agreedDaysBase(finalDays, base.days)), templates: base.templates, plans: base.plans, settings: base.settings };
       for (const collection of collections) {
         try {
           nextBase[collection.baseKey] = await this.applyCollection(collection, base[collection.baseKey], resolution[collection.entity]);
@@ -630,6 +631,12 @@ export class SyncService {
       });
     }
     return collections;
+  }
+
+  /** The base for workout days after a sync: what this device verifiably holds now, not what the merge intended (see agreedDaysBase). */
+  private async agreedDaysBase(finalDays: Record<string, DayData>, previous: Record<string, string>): Promise<Record<string, string>> {
+    const localAfter = await this.deps.localWorkoutRepository.readSnapshot();
+    return agreedDaysBase(finalDays, localAfter ? localAfter.data : null, previous);
   }
 
   /**

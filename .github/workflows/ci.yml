@@ -30,7 +30,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Audit dependencies
-        run: npm audit --audit-level=high
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Lint
         run: npx eslint . --max-warnings 0

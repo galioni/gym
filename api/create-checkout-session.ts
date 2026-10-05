@@ -2,7 +2,7 @@ import { requireAuth } from "./_lib/authContext.js";
 import { ApiRequest, ApiResponse, setCorsHeaders, handlePreflight, parseJsonBody, isAllowedReturnUrl } from "./_lib/http.js";
 import { attachApiRequestObservability } from "./_lib/observability.js";
 import { getStripeProPriceId } from "./_lib/apiEnv.js";
-import { getSubscription, setSubscription } from "./_lib/subscriptionGuard.js";
+import { getSubscription, hasProAccess, setSubscription } from "./_lib/subscriptionGuard.js";
 import {
   createStripeCustomer,
   createCheckoutSession,
@@ -32,6 +32,13 @@ export default async function handler(req: ApiRequest, res: ApiResponse): Promis
     }
 
     const subscription = await getSubscription(auth.userId);
+
+    // Someone already paying through the App Store or Google Play must not also be billed by Stripe.
+    if (hasProAccess(subscription) && (subscription.source === "apple" || subscription.source === "google")) {
+      const store = subscription.source === "apple" ? "the App Store" : "Google Play";
+      res.status(409).json({ error: `You already have an active subscription through ${store}. Manage it there.` });
+      return;
+    }
 
     // Create or reuse Stripe customer
     let stripeCustomerId = subscription.stripeCustomerId;

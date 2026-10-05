@@ -6,6 +6,8 @@ export interface SubscriptionInfo {
   status: string;
   stripeCustomerId: string | null;
   currentPeriodEnd: string | null;
+  /** Who bills the subscription: Stripe (managed on the web) or a mobile store (managed there). */
+  source?: "stripe" | "apple" | "google" | null;
 }
 
 const FREE: SubscriptionInfo = {

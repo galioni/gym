@@ -16,6 +16,10 @@
 #   mail          (profile) captures GoTrue emails; stands in for the SMTP provider
 #   stripe        (profile) stripe-mock; stands in for api.stripe.com
 #   studio, meta  (profile) database/auth admin UI
+#   realtime      (profile) Supabase Realtime: the "changed" hint between a user's devices
+#
+# Host ports can be moved so two stacks (or another project) can run side by side:
+#   GYM_GATEWAY_PORT (54321)  GYM_DB_PORT (54322)  GYM_STUDIO_PORT (54323)
 name: gym-app
 
 x-no-autostart: &no-autostart
@@ -40,7 +44,7 @@ services:
       JWT_SECRET: ${SUPABASE_JWT_SECRET}
       JWT_EXP: "3600"
     ports:
-      - "127.0.0.1:54322:5432"
+      - "127.0.0.1:${GYM_DB_PORT:-54322}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:ro
@@ -58,6 +62,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      # With the `realtime` profile, wait for Realtime to create its schema first: migration 20261001170000 creates the
+      # listening policy on realtime.messages only if that table already exists. Ignored when the profile is not used.
+      realtime:
+        condition: service_healthy
+        required: false
     environment:
       PGPASSWORD: ${GYM_POSTGRES_PASSWORD}
     entrypoint: ["sh", "/migrate.sh"]
@@ -74,7 +83,7 @@ services:
     environment:
       GOTRUE_API_HOST: 0.0.0.0
       GOTRUE_API_PORT: "9999"
-      API_EXTERNAL_URL: http://localhost:54321
+      API_EXTERNAL_URL: http://localhost:${GYM_GATEWAY_PORT:-54321}
       GOTRUE_DB_DRIVER: postgres
       GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${GYM_POSTGRES_PASSWORD}@db:5432/postgres
       GOTRUE_SITE_URL: http://localhost:5180
@@ -118,7 +127,7 @@ services:
       - auth
       - rest
     ports:
-      - "127.0.0.1:54321:8000"
+      - "127.0.0.1:${GYM_GATEWAY_PORT:-54321}:8000"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
 
@@ -141,6 +150,9 @@ services:
         condition: service_completed_successfully
     environment:
       GYM_DOCKER: "1"
+      # The browser talks to the gateway on the host's port. A process variable beats .env.local, so a stack started on another
+      # GYM_GATEWAY_PORT (two stacks on one machine) needs no edit to that file.
+      VITE_SUPABASE_URL: http://localhost:${GYM_GATEWAY_PORT:-54321}
     command: ["npx", "vite", "--host", "0.0.0.0"]
     ports:
       - "127.0.0.1:5180:5180"
@@ -177,6 +189,41 @@ services:
     profiles: ["stripe"]
     image: stripe/stripe-mock:latest
 
+  # Supabase Realtime: carries the Broadcast hint "something changed, sync now" (flag `realtime_sync`, migration
+  # 20261001170000). Start with `npm run gym:up -- realtime`, which also prepares the database for it (see gym.mjs). The
+  # gateway serves it at /realtime/v1; the tenant is the self-host default `realtime-dev`, found from the Host header.
+  realtime:
+    <<: *no-autostart
+    profiles: ["realtime"]
+    image: public.ecr.aws/supabase/realtime:v2.140.3
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: "4000"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: supabase_admin
+      DB_PASSWORD: ${GYM_POSTGRES_PASSWORD}
+      DB_NAME: postgres
+      DB_AFTER_CONNECT_QUERY: SET search_path = _realtime
+      DB_ENC_KEY: supabaserealtime
+      API_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      METRICS_JWT_SECRET: ${SUPABASE_JWT_SECRET}
+      SECRET_KEY_BASE: ${SUPABASE_JWT_SECRET}
+      ERL_AFLAGS: -proto_dist inet_tcp
+      DNS_NODES: "''"
+      RLIMIT_NOFILE: "10000"
+      APP_NAME: realtime
+      SEED_SELF_HOST: "true"
+      RUN_JANITOR: "true"
+    healthcheck:
+      # Also makes Realtime connect to the database and create its `realtime` schema (realtime.messages, realtime.send).
+      test: ["CMD-SHELL", "curl -sSfL --head -o /dev/null -H \"Authorization: Bearer ${GYM_ANON_KEY}\" http://localhost:4000/api/tenants/realtime-dev/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
   meta:
     <<: *no-autostart
     profiles: ["studio"]
@@ -206,12 +253,12 @@ services:
       DEFAULT_ORGANIZATION_NAME: gym-app
       DEFAULT_PROJECT_NAME: local
       SUPABASE_URL: http://gateway:8000
-      SUPABASE_PUBLIC_URL: http://localhost:54321
+      SUPABASE_PUBLIC_URL: http://localhost:${GYM_GATEWAY_PORT:-54321}
       SUPABASE_ANON_KEY: ${GYM_ANON_KEY}
       SUPABASE_SERVICE_KEY: ${GYM_SERVICE_ROLE_KEY}
       AUTH_JWT_SECRET: ${SUPABASE_JWT_SECRET}
     ports:
-      - "127.0.0.1:54323:3000"
+      - "127.0.0.1:${GYM_STUDIO_PORT:-54323}:3000"
 
 volumes:
   pgdata:

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useStaleReadGuard } from "../../sync/state/useStaleReadGuard";
 import { TemplateService } from "../../../application/workout/TemplateService";
 import { TEMPLATES } from "../../../constants";
 import { SessionType, TemplateData, TemplateSectionKey, Templates } from "../../../types";
@@ -28,6 +29,7 @@ interface UseTemplatesResult {
  */
 export function useTemplates(service: TemplateService, reloadToken = 0): UseTemplatesResult {
   const [templates, setTemplates] = useState<Templates>(TEMPLATES);
+  const { track, readFresh } = useStaleReadGuard();
   const [isLoaded, setIsLoaded] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const [history, setHistory] = useState<
@@ -43,9 +45,10 @@ export function useTemplates(service: TemplateService, reloadToken = 0): UseTemp
 
     const load = async () => {
       try {
-        const loaded = await service.loadTemplates();
-        if (!isCancelled) {
-          setTemplates(loaded);
+        // Not a read that an edit overtook (see useStaleReadGuard): that would undo the edit on screen.
+        const fresh = await readFresh(() => service.loadTemplates(), () => isCancelled);
+        if (fresh && !isCancelled) {
+          setTemplates(fresh.value);
         }
       } catch (error) {
         console.error("Failed to load templates", error);
@@ -60,7 +63,7 @@ export function useTemplates(service: TemplateService, reloadToken = 0): UseTemp
     return () => {
       isCancelled = true;
     };
-  }, [service, reloadToken]);
+  }, [service, reloadToken, readFresh]);
 
   const saveSectionTemplate = useCallback(
     (session: SessionType, section: TemplateSectionKey, rows: TemplateData[TemplateSectionKey]) => {
@@ -86,14 +89,14 @@ export function useTemplates(service: TemplateService, reloadToken = 0): UseTemp
             [section]: rows,
           },
         };
-        void service.saveTemplates(next).catch(() => {
+        void track(service.saveTemplates(next)).catch(() => {
           setLastError("Failed to save template changes.");
         });
         return next;
       });
       return [];
     },
-    [service]
+    [service, track]
   );
 
   const undoSectionTemplate = useCallback(
@@ -112,7 +115,7 @@ export function useTemplates(service: TemplateService, reloadToken = 0): UseTemp
             [section]: previousValue.map((row) => ({ ...row })),
           },
         };
-        void service.saveTemplates(next).catch(() => {
+        void track(service.saveTemplates(next)).catch(() => {
           setLastError("Failed to save template changes.");
         });
         return next;
@@ -126,7 +129,7 @@ export function useTemplates(service: TemplateService, reloadToken = 0): UseTemp
         },
       }));
     },
-    [service]
+    [service, track]
   );
 
   const resetSectionTemplate = useCallback(
@@ -148,13 +151,13 @@ export function useTemplates(service: TemplateService, reloadToken = 0): UseTemp
             [section]: service.getDefaultSection(session, section),
           },
         };
-        void service.saveTemplates(next).catch(() => {
+        void track(service.saveTemplates(next)).catch(() => {
           setLastError("Failed to save template changes.");
         });
         return next;
       });
     },
-    [service]
+    [service, track]
   );
 
   const saveTemplateVideoUrl = useCallback(
@@ -168,21 +171,21 @@ export function useTemplates(service: TemplateService, reloadToken = 0): UseTemp
             videoUrl: videoUrl || undefined,
           },
         };
-        void service.saveTemplates(next).catch(() => {
+        void track(service.saveTemplates(next)).catch(() => {
           setLastError("Failed to save template changes.");
         });
         return next;
       });
     },
-    [service]
+    [service, track]
   );
 
   const replaceTemplates = useCallback(
     async (newTemplates: Templates): Promise<void> => {
       setTemplates(newTemplates);
-      await service.saveTemplates(newTemplates);
+      await track(service.saveTemplates(newTemplates));
     },
-    [service]
+    [service, track]
   );
 
   const addSessionType = useCallback(
@@ -195,7 +198,7 @@ export function useTemplates(service: TemplateService, reloadToken = 0): UseTemp
       setLastError(null);
       setTemplates(result.templates);
       try {
-        await service.saveTemplates(result.templates);
+        await track(service.saveTemplates(result.templates));
         return result;
       } catch {
         setLastError("Failed to save template changes.");
@@ -205,7 +208,7 @@ export function useTemplates(service: TemplateService, reloadToken = 0): UseTemp
         };
       }
     },
-    [service, templates]
+    [service, templates, track]
   );
 
   const removeSessionType = useCallback(
@@ -218,7 +221,7 @@ export function useTemplates(service: TemplateService, reloadToken = 0): UseTemp
       setLastError(null);
       setTemplates(result.templates);
       try {
-        await service.saveTemplates(result.templates);
+        await track(service.saveTemplates(result.templates));
         return result;
       } catch {
         setLastError("Failed to save template changes.");
@@ -228,7 +231,7 @@ export function useTemplates(service: TemplateService, reloadToken = 0): UseTemp
         };
       }
     },
-    [service, templates]
+    [service, templates, track]
   );
 
   const renameSessionType = useCallback(
@@ -241,14 +244,14 @@ export function useTemplates(service: TemplateService, reloadToken = 0): UseTemp
       setLastError(null);
       setTemplates(result.templates);
       try {
-        await service.saveTemplates(result.templates);
+        await track(service.saveTemplates(result.templates));
         return result;
       } catch {
         setLastError("Failed to save template changes.");
         return { status: "error", message: "Failed to save template changes." };
       }
     },
-    [service, templates]
+    [service, templates, track]
   );
 
   return {
