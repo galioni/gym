@@ -64,7 +64,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _openHistory() {
     final services = _services!;
     Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => AppScope(services: services, child: const HistoryScreen()),
+      builder: (_) => AppScope(services: services, child: HistoryScreen(now: services.clock)),
     ));
   }
 
