@@ -23,7 +23,7 @@ import { chromium, devices, firefox, webkit } from "@playwright/test";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const BASE = "http://localhost:5180/";
 const PASSWORD = "Passw0rd!local";
-const PROJECT = process.env.GYM_PROJECT ?? "gym-app";
+const PROJECT = process.env.GYM_PROJECT ?? "galioni-gym-dev";
 const ENGINE = { chromium, webkit, firefox }[process.env.GYM_BROWSER ?? "chromium"];
 const DEVICE = process.env.GYM_DEVICE;
 const SCENARIOS = (process.env.GYM_SCENARIOS ?? "sync,delete,settings,limits,allowance,history").split(",");

@@ -20,7 +20,7 @@
 #
 # Host ports can be moved so two stacks (or another project) can run side by side:
 #   GYM_GATEWAY_PORT (54321)  GYM_DB_PORT (54322)  GYM_STUDIO_PORT (54323)
-name: gym-app
+name: galioni-gym-dev
 
 x-no-autostart: &no-autostart
   restart: "no"

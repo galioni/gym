@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * gym-app local stack launcher (cross-platform wrapper around `docker compose -p gym-app`).
+ * gym-app local stack launcher (cross-platform wrapper around `docker compose -p galioni-gym-dev`).
  *
  * GYM_PROJECT=<name> runs an isolated copy of the stack (own containers and volumes), e.g. for CI.
  * GYM_GATEWAY_PORT / GYM_DB_PORT / GYM_STUDIO_PORT move the host ports (defaults 54321 / 54322 / 54323) when something else,
@@ -30,7 +30,7 @@ const ENV_FILE = path.join(ROOT, ".env.local");
 const ENV_BACKUP = path.join(ROOT, ".env.local.remote");
 const COMPOSE_FILE = path.join(ROOT, "docker", "compose.yaml");
 // Overridable so a throwaway stack (CI, rehearsals) never shares containers or volumes with your dev stack.
-const PROJECT = process.env.GYM_PROJECT ?? "gym-app";
+const PROJECT = process.env.GYM_PROJECT ?? "galioni-gym-dev";
 const MARKER = "# gym-app local stack";
 const PROFILES = ["mail", "stripe", "studio", "realtime"];
 const PORTS = {

@@ -119,7 +119,7 @@ jobs:
       - name: Pull images (with retries)
         run: |
           for i in 1 2 3 4 5 6; do
-            docker compose --env-file .env.local -f docker/compose.yaml -p gym-app pull --ignore-buildable && exit 0
+            docker compose --env-file .env.local -f docker/compose.yaml -p galioni-gym-dev pull --ignore-buildable && exit 0
             echo "pull attempt $i failed; waiting $((i * 30))s" >&2
             sleep $((i * 30))
           done
@@ -150,7 +150,7 @@ jobs:
 
       - name: Collect stack logs
         if: failure()
-        run: docker compose --env-file .env.local -f docker/compose.yaml -p gym-app logs --no-color > stack-logs.txt || true
+        run: docker compose --env-file .env.local -f docker/compose.yaml -p galioni-gym-dev logs --no-color > stack-logs.txt || true
 
       - name: Upload stack logs
         if: failure()
