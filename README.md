@@ -176,7 +176,7 @@ Rotation policy: rotate privileged secrets immediately if exposed; remove from s
 
 ## Local stack (Docker, works offline)
 
-Everything the app talks to runs in one Docker Compose project, `gym-app`. Nothing starts on its own
+Everything the app talks to runs in one Docker Compose project, `galioni-gym-dev`. Nothing starts on its own
 (`restart: "no"`); you start and stop it explicitly. Requires Docker Desktop. The first `up` pulls any missing images
 and runs `npm ci` inside the container, so it needs a network once.
 
@@ -228,7 +228,7 @@ Ports (localhost only): app 5180, API 3010, gateway 54321, Postgres 54322, Mailp
 
 Notes:
 - Sign-ups auto-confirm by default. To test confirmation emails set `GYM_AUTOCONFIRM=false` in `.env.local`, recreate `auth`, and start the `mail` profile.
-- Pro is a row in `public.subscriptions`. Grant it to a local user: `docker compose --env-file .env.local -f docker/compose.yaml -p gym-app exec db psql -U supabase_admin -d postgres -c "insert into public.subscriptions (user_id, plan, status) values ('<userId>', 'pro', 'active') on conflict (user_id) do update set plan = 'pro', status = 'active'"`
+- Pro is a row in `public.subscriptions`. Grant it to a local user: `docker compose --env-file .env.local -f docker/compose.yaml -p galioni-gym-dev exec db psql -U supabase_admin -d postgres -c "insert into public.subscriptions (user_id, plan, status) values ('<userId>', 'pro', 'active') on conflict (user_id) do update set plan = 'pro', status = 'active'"`
 - Not available offline: Google sign-in, AI plan generation (needs a provider key).
 - `gym:init` refuses to overwrite a generated `.env.local` because an existing Postgres volume keeps its original password; `gym:reset` first, then `gym:init -- --force`.
 
