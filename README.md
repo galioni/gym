@@ -222,7 +222,7 @@ Workouts, templates, plans and a few account preferences (the active plan and pl
 
 ### Continuous integration
 
-`.github/workflows/ci.yml` has two jobs. `ci` lints (zero warnings allowed), type-checks, runs the unit tests, builds, and runs the mocked Playwright specs. `stack` starts this Compose stack from an **empty database** (so every migration is applied from scratch, then re-run to prove idempotence), then runs `gym:test-db` and `gym:test-sync` on Chromium, WebKit and an iPhone profile. Text colours are guarded by `design/tokens.contrast.test.ts` (WCAG AA for both themes).
+`.github/workflows/ci.yml` has one job, `ci`: it lints (zero warnings allowed), type-checks, runs the unit tests, builds, and runs the mocked Playwright specs. The full-stack checks (`gym:test-db` and `gym:test-sync`, against this Compose stack started from an **empty database**) are not run in CI because they are too heavy; run them locally with `npm run gym:up`, `npm run gym:test-db` and `npm run gym:test-sync`. Text colours are guarded by `design/tokens.contrast.test.ts` (WCAG AA for both themes).
 
 Ports (localhost only): app 5180, API 3010, gateway 64321, Postgres 64322, Mailpit 8029, Studio 64323. These sit in the 64xxx block so they never collide with the Supabase CLI default stack (54321/54322, used by ccuk-hub). Move them with `GYM_GATEWAY_PORT`, `GYM_DB_PORT` and `GYM_STUDIO_PORT` if needed.
 
