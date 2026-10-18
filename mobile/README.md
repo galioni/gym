@@ -72,8 +72,8 @@ flutter test                      # about 530 tests, no network, no Docker
 - Screenshots (real fonts and icons) to look at the screens: `SCREENSHOT_DIR=build/screens flutter test test/tools/screenshots_test.dart`.
 - `test/live/live_supabase_test.dart` drives the real adapters against a **local** Supabase stack and is skipped unless configured.
   It refuses any host other than localhost. It needs `LIVE_SUPABASE_URL`, `LIVE_SUPABASE_ANON_KEY` and `LIVE_SUPABASE_SERVICE_KEY`
-  (from the stack's `.env.local`: `GYM_ANON_KEY`, `GYM_SERVICE_ROLE_KEY`). If another Supabase stack already holds ports 54321/54322,
-  start the gym stack on others first: `GYM_GATEWAY_PORT=64321 GYM_DB_PORT=64322 npm run gym:up`.
+  (from the stack's `.env.local`: `GYM_ANON_KEY`, `GYM_SERVICE_ROLE_KEY`). The gym stack defaults to 64321/64322 (the Supabase CLI default 54321/54322 is left free);
+  to move it use e.g. `GYM_GATEWAY_PORT=64321 GYM_DB_PORT=64322 npm run gym:up`.
 
 ## Build
 

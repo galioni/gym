@@ -19,7 +19,7 @@
 #   realtime      (profile) Supabase Realtime: the "changed" hint between a user's devices
 #
 # Host ports can be moved so two stacks (or another project) can run side by side:
-#   GYM_GATEWAY_PORT (54321)  GYM_DB_PORT (54322)  GYM_STUDIO_PORT (54323)
+#   GYM_GATEWAY_PORT (64321)  GYM_DB_PORT (64322)  GYM_STUDIO_PORT (64323)
 name: galioni-gym-dev
 
 x-no-autostart: &no-autostart
@@ -44,7 +44,7 @@ services:
       JWT_SECRET: ${SUPABASE_JWT_SECRET}
       JWT_EXP: "3600"
     ports:
-      - "127.0.0.1:${GYM_DB_PORT:-54322}:5432"
+      - "127.0.0.1:${GYM_DB_PORT:-64322}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:ro
@@ -83,7 +83,7 @@ services:
     environment:
       GOTRUE_API_HOST: 0.0.0.0
       GOTRUE_API_PORT: "9999"
-      API_EXTERNAL_URL: http://localhost:${GYM_GATEWAY_PORT:-54321}
+      API_EXTERNAL_URL: http://localhost:${GYM_GATEWAY_PORT:-64321}
       GOTRUE_DB_DRIVER: postgres
       GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${GYM_POSTGRES_PASSWORD}@db:5432/postgres
       GOTRUE_SITE_URL: http://localhost:5180
@@ -127,7 +127,7 @@ services:
       - auth
       - rest
     ports:
-      - "127.0.0.1:${GYM_GATEWAY_PORT:-54321}:8000"
+      - "127.0.0.1:${GYM_GATEWAY_PORT:-64321}:8000"
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
 
@@ -152,7 +152,7 @@ services:
       GYM_DOCKER: "1"
       # The browser talks to the gateway on the host's port. A process variable beats .env.local, so a stack started on another
       # GYM_GATEWAY_PORT (two stacks on one machine) needs no edit to that file.
-      VITE_SUPABASE_URL: http://localhost:${GYM_GATEWAY_PORT:-54321}
+      VITE_SUPABASE_URL: http://localhost:${GYM_GATEWAY_PORT:-64321}
     command: ["npx", "vite", "--host", "0.0.0.0"]
     ports:
       - "127.0.0.1:5180:5180"
@@ -182,7 +182,7 @@ services:
     profiles: ["mail"]
     image: axllent/mailpit:latest
     ports:
-      - "127.0.0.1:8026:8025"
+      - "127.0.0.1:8029:8025"
 
   stripe:
     <<: *no-autostart
@@ -253,12 +253,12 @@ services:
       DEFAULT_ORGANIZATION_NAME: gym-app
       DEFAULT_PROJECT_NAME: local
       SUPABASE_URL: http://gateway:8000
-      SUPABASE_PUBLIC_URL: http://localhost:${GYM_GATEWAY_PORT:-54321}
+      SUPABASE_PUBLIC_URL: http://localhost:${GYM_GATEWAY_PORT:-64321}
       SUPABASE_ANON_KEY: ${GYM_ANON_KEY}
       SUPABASE_SERVICE_KEY: ${GYM_SERVICE_ROLE_KEY}
       AUTH_JWT_SECRET: ${SUPABASE_JWT_SECRET}
     ports:
-      - "127.0.0.1:${GYM_STUDIO_PORT:-54323}:3000"
+      - "127.0.0.1:${GYM_STUDIO_PORT:-64323}:3000"
 
 volumes:
   pgdata:

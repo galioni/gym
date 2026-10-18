@@ -19,7 +19,7 @@ const env = Object.fromEntries(
 );
 
 // Same variable (and default) as docker/compose.yaml and gym.mjs: the gateway may be on another host port.
-const BASE = `http://localhost:${process.env.GYM_GATEWAY_PORT || 54321}`;
+const BASE = `http://localhost:${process.env.GYM_GATEWAY_PORT || 64321}`;
 const ANON = env.GYM_ANON_KEY;
 const SERVICE = env.GYM_SERVICE_ROLE_KEY;
 let failures = 0;
