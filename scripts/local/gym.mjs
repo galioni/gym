@@ -3,7 +3,7 @@
  * gym-app local stack launcher (cross-platform wrapper around `docker compose -p galioni-gym-dev`).
  *
  * GYM_PROJECT=<name> runs an isolated copy of the stack (own containers and volumes), e.g. for CI.
- * GYM_GATEWAY_PORT / GYM_DB_PORT / GYM_STUDIO_PORT move the host ports (defaults 54321 / 54322 / 54323) when something else,
+ * GYM_GATEWAY_PORT / GYM_DB_PORT / GYM_STUDIO_PORT move the host ports (defaults 64321 / 64322 / 64323) when something else,
  * such as another Supabase project, already uses them. Export them for every command, including test-db and test-sync.
  *
  *   node scripts/local/gym.mjs init [--force]     generate .env.local with local-only secrets
@@ -34,9 +34,9 @@ const PROJECT = process.env.GYM_PROJECT ?? "galioni-gym-dev";
 const MARKER = "# gym-app local stack";
 const PROFILES = ["mail", "stripe", "studio", "realtime"];
 const PORTS = {
-  gateway: process.env.GYM_GATEWAY_PORT || "54321",
-  db: process.env.GYM_DB_PORT || "54322",
-  studio: process.env.GYM_STUDIO_PORT || "54323",
+  gateway: process.env.GYM_GATEWAY_PORT || "64321",
+  db: process.env.GYM_DB_PORT || "64322",
+  studio: process.env.GYM_STUDIO_PORT || "64323",
 };
 
 const base64url = (input) => Buffer.from(input).toString("base64url");
@@ -80,7 +80,7 @@ function init(force) {
     `GYM_SERVICE_ROLE_KEY=${service}`,
     "",
     "# Browser (Vite). Auth and data go through the local gateway; /api calls are proxied to the API container.",
-    "VITE_SUPABASE_URL=http://localhost:54321",
+    `VITE_SUPABASE_URL=http://localhost:${PORTS.gateway}`,
     `VITE_SUPABASE_ANON_KEY=${anon}`,
     "VITE_SUPABASE_REDIRECT_URL=http://localhost:5180",
     "",
@@ -166,7 +166,7 @@ switch (command) {
     if (code === 0) {
       console.log("\n  App        http://localhost:5180      API   http://localhost:3010");
       console.log(`  Gateway    http://localhost:${PORTS.gateway}     DB    postgresql://postgres@localhost:${PORTS.db}/postgres`);
-      if (rest.includes("mail")) console.log("  Mail UI    http://localhost:8026");
+      if (rest.includes("mail")) console.log("  Mail UI    http://localhost:8029");
       if (rest.includes("studio")) console.log(`  Studio     http://localhost:${PORTS.studio}`);
       if (realtime) console.log(`  Realtime   http://localhost:${PORTS.gateway}/realtime/v1  (hint is off until: update public.app_flags set enabled = true where name = 'realtime_sync')`);
       console.log("  Stop with: npm run gym:down\n");

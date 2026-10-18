@@ -1,6 +1,6 @@
 -- Demo data for the LOCAL stack: 28 days of workouts for an account that already exists.
 --   npm run gym:seed -- you@example.com
--- Sign up in the app first (the local mail UI is at http://localhost:8026 with `gym:up -- mail`). Idempotent: running it
+-- Sign up in the app first (the local mail UI is at http://localhost:8029 with `gym:up -- mail`). Idempotent: running it
 -- again rewrites the same days. Never run this against a hosted project: it is applied by the local launcher only.
 \set ON_ERROR_STOP on
 
