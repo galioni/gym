@@ -96,7 +96,7 @@ select gym_test.expect_count($$select 1 from information_schema.role_table_grant
 -- ===========================================================================
 select gym_test.become('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
 insert into public.workout_days (user_id, day, session_type, main_notes)
-  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '2026-10-01', 'gym', 'A secret');
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', current_date, 'gym', 'A secret');
 select gym_test.expect_count($$select 1 from public.workout_days$$, 1, 'A can insert and read their own day');
 select gym_test.expect_error($$insert into public.workout_days (user_id, day, session_type) values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '2026-10-02', 'gym')$$,
   '42501', 'A cannot insert a row owned by B');
@@ -108,7 +108,7 @@ select gym_test.expect_count($$select 1 from public.workout_days$$, 0, 'B cannot
 select gym_test.expect_affected($$update public.workout_days set main_notes = 'hacked'$$, 0, 'B cannot update A''s days');
 select gym_test.expect_affected($$delete from public.workout_days$$, 0, 'B cannot delete A''s days');
 insert into public.workout_days (user_id, day, session_type)
-  values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '2026-10-01', 'swim');
+  values ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', current_date, 'swim');
 select gym_test.expect_count($$select 1 from public.workout_days$$, 1, 'B can use the same calendar day independently');
 
 select gym_test.become_admin();
@@ -123,7 +123,7 @@ select gym_test.expect_error($$insert into public.workout_days (user_id, day, se
 -- Upsert path used by sync (insert ... on conflict do update) and server-owned timestamps.
 select gym_test.become('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
 select gym_test.expect_affected($$insert into public.workout_days (user_id, day, session_type, main_notes, updated_at)
-  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '2026-10-01', 'gym', 'A edited', '2001-01-01')
+  values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', current_date, 'gym', 'A edited', '2001-01-01')
   on conflict (user_id, day) do update set main_notes = excluded.main_notes, updated_at = excluded.updated_at$$, 1,
   'upsert on (user_id, day) updates the existing row');
 select gym_test.expect_count($$select 1 from public.workout_days where main_notes = 'A edited' and updated_at = now()$$, 1,
